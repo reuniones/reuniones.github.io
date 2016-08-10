@@ -1,0 +1,88 @@
+﻿<!doctype html >
+<html lang="es-ar" ng-app="single-page-app">
+<head ng-controller="AppCtrl">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular-route.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.5.7/es5-shim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.5.7/es5-sham.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/json3/3.3.2/json3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.34.2/es6-shim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.34.2/es6-sham.min.js"></script>
+    <script src="https://wzrd.in/standalone/es7-shim@latest"></script>
+    <!--<script src="//cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>-->
+    <!--<script src="//libs.cartocdn.com/cartodb.js/v3/3.15.8/cartodb.js"></script>-->
+    <!-- Latest compiled and minified CSS -->
+    <!--<link rel="stylesheet" href="//cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />-->
+    <!--<script src="angular-leaflet-directive.js"></script>-->
+     <script src="script.js"></script>
+    <script src="config.js"></script>
+    <title>{{pageTitle}}</title>
+   
+</head>
+<body>
+    <div ng-controller="cfgController">
+
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <div class="container">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#/">{{congregacion}}</a>
+                </div>
+
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <ul class="nav navbar-nav">
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" ng-show="mnuPredicacion">Predicación <span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li ng-show="mnuSalidas"><a href="#/salidas">Salidas</a></li>
+                                <li ng-show="mnuTerritorios"><a href="#/territorios">Territorios</a></li>
+                                <li ng-show="mnuInforme"role="separator" class="divider"></li>
+                                <li ng-show="mnuInforme"><a href="#/informe">Informe</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"  ng-show="mnuReuniones">Reuniones<span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="#/programa" ng-show="mnuPrograma">Programa semanal</a></li>
+                                <li><a href="#/vivo" ng-show="mnuEmision">Emisión en directo</a></li>
+
+                            </ul>
+                        </li>
+
+                    </ul>
+
+
+                </div>
+                <!-- /.navbar-collapse --         <ul class="nav navbar-nav">
+                  <li class="active"><a href="#/">Home<span class="sr-only">(current)</span></a></li>
+                  <li><a href="#/about">About us</a></li>
+                  <li><a href="#/about">Read tutorial</a></li>
+                </ul> -->
+            </div>
+        </nav>
+
+        <div class="container" style="padding-top:60px;">
+            <div ng-view>
+                <!-- <div ng-view class="jumbotron"></div>-->
+            </div>
+        </div>
+    </div> 
+</body>
+</html>
