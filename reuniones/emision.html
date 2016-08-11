@@ -1,5 +1,14 @@
-﻿
-<div>
+﻿<div ng-controller="transmision">
+    <div class="btn-group pull-right">
+        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <span class="glyphicon glyphicon glyphicon-option-horizontal" aria-hidden="true" />
+        </button>
+        <ul class="dropdown-menu">
+            <li><a href="{{urlvideoflash}}">Visor Flash</a></li>
+            <li><a href="{{urlvideostream}}">Vista alternativa</a></li>
+        </ul>
+    </div>
+    <h1>Emisión en directo de las reuniones</h1>
     <div class="alert alert-success alert-dismissible" role="alert">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">×</span>
@@ -21,11 +30,13 @@
             Informar asistencia
         </button>
     </div>
-    <div class="embed-responsive embed-responsive-16by9" ng-controller="transmision"> 
-       {{test}}
+    <div class="embed-responsive embed-responsive-16by9">
+        
         <iframe class="embed-responsive-item" frameborder="0" width="100%" height="100%"
                 ng-src="{{urlvideo}}"
-                allowfullscreen><a href="{{urlvideo}}" class="btn btn-default btn-lg" role="button">Haga clic aquí para continuar</a></iframe>
+                allowfullscreen>
+         
+        </iframe>
     </div>
     <!-- Modal -->
     <form action="https://docs.google.com/forms/d/e/1FAIpQLScgQYKZTZ-GlhXhYNVgg8OS2XtBGhGQ9Gn1Vtpi6cRW_2m0lA/formResponse"

@@ -90,7 +90,7 @@ app.config(['$routeProvider', '$locationProvider', function ($routeProvider, $lo
       templateUrl: 'reuniones/reuniones.html', title: 'Reuniones'
   })
   .when('/vivo', {
-      templateUrl: 'reuniones/vivo.html', title: 'Emisión en directo'
+      templateUrl: 'reuniones/emision.html', title: 'Emisión en directo'
   })
   .when('/finde', {
       templateUrl: 'reuniones/finde.html', title: 'Co. Churruarín'
@@ -151,11 +151,37 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
 
     var urldigestor1 = __env.videoUrlDigestor1; //"http://www.dailymotion.com/embed/video/";
     var urldigestor2 = __env.videoUrlDigestor2; //"?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=1&chromeless=0&theme=dark";
+    var urldigestor2Flash = __env.videoUrlDigestor2Flash; //"http://www.dailymotion.com/embed/video/";
+    var videoUrlStream = __env.videoUrlStream
     $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
+    $scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
+    $scope.urlvideostream = videoUrlStream + videohoy;
     $scope.test = hoy.getDay()
 
 }]);
 
+app.controller('transmisionfull', ['$scope', '$sce', '__env', function ($scope, $sce, __env) {
+    var videosemana = __env.videoIdSemana //"x4a2fbi";
+    var videofinde = __env.videoIdSemana //"x4jw7bs";
+    var hoy = new Date();
+    var videohoy
+    if (hoy.getDay() == 6 || hoy.getDay() == 0) {
+        videohoy = videosemana;
+    } else {
+        videohoy = videofinde;
+    };
+
+    var urldigestor1 = __env.videoUrlDigestor1; //"http://www.dailymotion.com/embed/video/";
+    var urldigestor2 = __env.videoUrlDigestor2; //"?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=1&chromeless=0&theme=dark";
+    var urldigestor2Flash = __env.videoUrlDigestor2Flash; //"http://www.dailymotion.com/embed/video/";
+    var videoUrlStream = __env.videoUrlStream
+    $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
+    $scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
+    $scope.urlvideostream = videoUrlStream + videohoy;
+    var urlvideostream = videoUrlStream + videohoy;
+    //$window.location.href = urlvideostream;
+
+}]);
 
 app.controller('programa', ['$scope', '$sce', '__env', function ($scope, $sce, __env) {
     $scope.urlPrograma = $sce.trustAsResourceUrl(__env.programaUrl1 + __env.programaIdSheets + __env.programaUrl2);
