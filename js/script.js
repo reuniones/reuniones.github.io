@@ -89,8 +89,8 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
     $scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
     $scope.urlvideostream = videoUrlStream + videohoy;
-    $scope.test = hoy.getDay()
-
+    $scope.test = hoy.getDay();
+    //$scope.oscuro = false;
 }]);
 
 app.controller('transmisionfull', ['$scope', '$sce', '__env', function ($scope, $sce, __env) {
