@@ -77,9 +77,9 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     var hoy = new Date();
     var videohoy
     if (hoy.getDay() == 6 || hoy.getDay() == 0) {
-        videohoy = videosemana;
-    } else {
         videohoy = videofinde;
+    } else {
+        videohoy = videosemana;
     };
 
     var urldigestor1 = __env.videoUrlDigestor1; //"http://www.dailymotion.com/embed/video/";
