@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="prefetch" href="menu.html">
+    <link rel="prefetch" href="inicio.html">
+    
+    <title>{{pageTitle}}</title>
+</head>
+<body>
+    <div ng-include src="'menu.html'"></div><div ng-controller="cfgController"> <div class="container" style="padding-top:60px;"> <div ng-view> </div></div></div>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.7/angular-route.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
@@ -25,11 +33,8 @@
     }
   });
     </script>
-    <link rel="prefetch" href="menu.html">
-    <link rel="prefetch" href="inicio.html">
-    <title>{{pageTitle}}</title>
-</head>
-<body>
-    <div ng-include src="'menu.html'"></div><div ng-controller="cfgController"> <div class="container" style="padding-top:60px;"> <div ng-view> </div></div></div>
+    <link rel="prefetch" ng-controller="programa" href="{{urlPrograma}}"/><link rel="prefetch" ng-controller="salidas" href="{{urlSalidas}}" />
+    <link rel="prefetch" href="reuniones/programa.html">
+    <link rel="prefetch" href="predicacion/salidas.html">
 </body>
 </html>
