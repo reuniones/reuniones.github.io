@@ -90,7 +90,9 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     $scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
     $scope.urlvideostream = videoUrlStream + videohoy;
     $scope.test = hoy.getDay();
+    console.log(hoy.getDay())
     //$scope.oscuro = false;
+    console.log(hoy)
 }]);
 
 app.controller('transmisionfull', ['$scope', '$sce', '__env', function ($scope, $sce, __env) {

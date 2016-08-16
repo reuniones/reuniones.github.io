@@ -1,11 +1,11 @@
 ﻿<div ng-controller="transmision">
     <div ng-show="oscuro2" style="background-color:rgba(0, 0, 0, 0.68); position:fixed; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;"></div>
-
+    
     <div class="btn-group pull-right">
         <div class="btn-group" data-toggle="buttons">
             <label class="btn btn-default ">
                 
-                <input  type="checkbox" ng-model="oscuro2" autocomplete="off"><span class="glyphicon glyphicon-lamp" />
+                <input id="velador2" type="checkbox" onchange="velador.checked=velador2.checked" autocomplete="off"><span class="glyphicon glyphicon-lamp" />
             </label>
         </div>
 

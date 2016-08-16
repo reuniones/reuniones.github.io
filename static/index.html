@@ -1,0 +1,105 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Estado de trabajo del territorio</title>
+    <meta name="robots" content="noindex" />
+    <meta name="robots" content="nofollow" />
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../favicon.ico">
+    <style>
+        html, body, #map
+        {
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+    <link rel="stylesheet" href="../css/cartodb.css" />
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body role="document">
+    <div id="map">
+        <script src="../js/cartodb.js"></script>
+        <script>
+            function main() {
+                cartodb.createVis('map', 'https://abelbour.cartodb.com/api/v2/viz/b9ead05c-da2c-11e4-b0ec-0e853d047bba/viz.json', {
+                    shareable: true,
+                    title: false,
+                    description: false,
+                    search: false,
+                    tiles_loader: true,
+                    center_lat: -31.749299255325756,
+                    center_lon: -60.479693412780755,
+                    zoom: 15,
+                    cartodb_logo: false,
+                    mobile_layout: true,
+                    layer_selector: true
+                })
+        .done(function (vis, layers) {
+            // layer 0 is the base layer, layer 1 is cartodb layer
+            // setInteraction is disabled by default
+            layers[1].setInteraction(true);
+            var sublayer = layers[1].getSubLayer(1);
+
+            sublayer.infowindow.set('template', $('#infowindow_template').html());
+            sublayer.infowindow.set('sanitizeTemplate', false);
+            //layers[1].on('featureOver', function(e, latlng, pos, data) {
+            //  cartodb.log.log(e, latlng, pos, data);
+            //});
+            // you can get the native map to work with it
+            var map = vis.getNativeMap();
+            // now, perform any operations you need
+            // map.setZoom(3);
+            // map.panTo([50.5, 30.5]);
+        })
+        .error(function (err) {
+            console.log(err);
+        });
+            }
+            window.onload = main;
+    </script>
+        <script type="infowindow/html" id="infowindow_template">
+    <div class="cartodb-popup dark v2">
+  <a href="#close" class="cartodb-popup-close-button close">x</a>
+  <div class="cartodb-popup-content-wrapper">
+    <div class="cartodb-popup-content">
+      <h4>territorio</h4>
+      <p>{{territorio}}</p>
+      <h4>Manzana</h4>
+      <p>{{mza}}</p>
+      <h4>d&iacute;as sin predicar</h4>
+      <p>{{ultimoabarcado}}</p>
+      <a href="https://abelbour.cartodb.com/api/v2/sql?q=INSERT INTO actividad (fecha, tm) VALUES (current_date, '{{tm}}')&api_key=e97f1858a51f808129279849967e3e2cfa3accee" 
+      target="frame" class="btn btn-default btn-block" onclick="this.className='btn btn-success btn-block'"><b> Informar </b></a><iframe name="frame" hidden></iframe>
+    </div>
+  </div>
+  <div class="cartodb-popup-tip-container"></div>
+</div>
+    </script>
+    </div>
+    <iframe id="track" hidden></iframe>
+    <script>
+        var trackurl = 'https://abelbour.cartodb.com/api/v2/sql?q=INSERT INTO tracker (pag, datos) VALUES (\'' + encodeURI(window.location.href) + '\',\'' + encodeURI(navigator.userAgent) + '\')&api_key=e97f1858a51f808129279849967e3e2cfa3accee';
+        document.getElementById('track').src = trackurl;
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+  m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+        ga('create', 'UA-61680803-2', 'auto');
+        ga('send', 'pageview');
+
+    </script>
+</body>
+</html>
