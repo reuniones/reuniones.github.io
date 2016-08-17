@@ -15,11 +15,11 @@
     window.__env.salidasUrl1 = '//docs.google.com/spreadsheets/d/';
     window.__env.salidasUrl2 = '/pubhtml?gid=0&single=true&widget=false&headers=false&chrome=false';
     //switches para activar los menus
-    window.__env.mnuPredicacion = true;
-    window.__env.mnuSalidas = true;
+    window.__env.mnuPredicacion = false;
+    window.__env.mnuSalidas = false;
     window.__env.mnuTerritorios = true;
     window.__env.mnuInforme = true;
-    window.__env.mnuReuniones = true;
+    window.__env.mnuReuniones = false;
     window.__env.mnuPrograma = true;
     window.__env.mnuEmision = true;
     window.__env.emisionAsistencia = true;
