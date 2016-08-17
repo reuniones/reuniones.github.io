@@ -1,39 +1,58 @@
-﻿<div ng-controller="transmision">
+﻿
+<div ng-controller="transmision">
     <div ng-show="oscuro2" style="background-color:rgba(0, 0, 0, 0.68); position:fixed; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;"></div>
-    
+
     <div class="btn-group pull-right">
-        <div class="btn-group" data-toggle="buttons">
+        <!--<div class="btn-group" data-toggle="buttons">
             <label class="btn btn-default ">
-                
+
                 <input id="velador2" type="checkbox" onchange="velador.checked=velador2.checked" autocomplete="off"><span class="glyphicon glyphicon-lamp" />
             </label>
-        </div>
-
+        </div>-->
         <div class="btn-group">
             <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <span class="glyphicon glyphicon-option-horizontal" aria-hidden="true" />
             </button>
             <ul class="dropdown-menu">
-                <li><a href="{{urlvideoflash}}">Visor Flash</a></li>
-                <li><a href="{{urlvideostream}}">Vista alternativa</a></li>
+                <li class="dropdown-header"><strong>Solución de problemas</strong></li>
+                <li>
+                    <a href="{{urlvideoflash}}">Visor Flash</a>
+                </li>
+                <li>
+                    <a href="{{urlvideostream}}">Vista alternativa</a>
+                </li>
+                <li class="dropdown-header"><strong><em>Entre semana</em></strong></li>
+                <li>
+                    <a href="{{urlvideoflash}}">Visor Flash</a>
+                </li>
+                <li>
+                    <a href="{{urlvideostream}}">Vista alternativa</a>
+                </li>
+                <li class="dropdown-header"><strong><em>Fin de semana</em></strong></li>
+                <li>
+                    <a href="{{urlvideoflash}}">Visor Flash</a>
+                </li>
+                <li>
+                    <a href="{{urlvideostream}}">Vista alternativa</a>
+                </li>
             </ul>
         </div>
     </div>
-
     <h1>Emisión en directo de las reuniones</h1>
     <div class="alert alert-success alert-dismissible" role="alert">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">×</span>
         </button>
-        <strong>Ingrese la contraseña.</strong>
+        <strong>Ingrese la contraseña para ver la emisión.</strong>
         <br>
-        Por favor, ingrese la contraseña provista para comenzar a ver la emisión en directo.
+        Por favor, no divulgue la contraseña que le fue provista.
     </div>
     <div class="alert alert-warning alert-dismissible" role="alert" id="alertasistencia" ng-show="emisionAsistencia">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">×</span>
         </button>
-        <strong>Informe su asistencia.</strong><br>
+        <strong>Informe su asistencia.</strong>
+        <br>
         Por favor, informe cuántos están viendo el programa desde su conexión para que puedan
         ser contados en la asistencia total de la reunión.
         <br />
@@ -44,7 +63,6 @@
     </div>
     <span hidden>{{test}}</span>
     <div class="embed-responsive embed-responsive-16by9">
-
         <iframe class="embed-responsive-item" frameborder="0" width="100%" height="100%"
                 ng-src="{{urlvideo}}"
                 allowfullscreen></iframe>
@@ -73,7 +91,8 @@
                         </div>
                         <label>
                             ¿Cuántos están viendo el programa desde su conexión?
-                        </label><br>
+                        </label>
+                        <br>
                         <div class="btn-group" data-toggle="buttons">
                             <label class="btn btn-default active">
                                 <input type="radio" name="entry.1028703534" id="inlineRadio1" value="1" checked>

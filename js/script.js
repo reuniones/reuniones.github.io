@@ -94,6 +94,11 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     //$scope.oscuro = false;
     console.log(hoy);
     $scope.emisionAsistencia = __env.emisionAsistencia;
+    //$scope.show = true;
+
+    //$scope.closeAlert = function (index) {
+    //    $scope.show = false;
+    //};
 }]);
 
 app.controller('transmisionfull', ['$scope', '$sce', '__env', function ($scope, $sce, __env) {
