@@ -6,7 +6,7 @@
     window.__env.videoUrlDigestor2 = '?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=1&chromeless=0&theme=dark';
     window.__env.videoUrlDigestor2Flash = '?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=0&chromeless=0&theme=dark';
     window.__env.videoUrlStream = '//www.dailymotion.com/embed/video/';
-    window.__env.nombreCongregacion = 'Co. Norte';
+    window.__env.nombreCongregacion = 'Co. L.S.A. Paraná';
     window.__env.programaIdSheets = '1BzuB98iqVhP6h2hr6RJELaRFOc9O2A5bj74mvQyapSQ';
     window.__env.programaUrl1 = '//docs.google.com/spreadsheets/d/';
     window.__env.programaUrl2 = '/pubhtml'; //?widget=true&headers=false&chrome=false';
