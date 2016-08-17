@@ -1,16 +1,18 @@
 ﻿<!doctype html>
-<html ng-app="single-page-app">
-<head ng-controller="AppCtrl">
+<html>
+<head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="prefetch" href="/menu.html">
-    <link rel="prefetch" href="/reuniones/emision.html">
     
     <title></title> 
 </head>
-<body>
+<body><div class="container"></div>
+    <h1>Descargas</h1>
+<h2>Scripts de emisión</h2>
+<p><a href="victoria.zip">Victoria</a></p>
+
     <div ng-include src="'/menu.html'"></div><div ng-controller="cfgController"> <div class="container"> <div ng-view> </div></div></div>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <link rel="stylesheet" href="/css/bootstrap.min.css">
@@ -25,7 +27,5 @@
    
 
 </body>
-<h1>Descargas</h1>
-<h2>Scripts de emisión</h2>
-<p><a href="victoria.zip">Victoria</a></p>
+
 </html>
