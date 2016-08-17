@@ -73,7 +73,7 @@ app.controller('cfgController', function ($scope, __env) {
 
 app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce, __env) {
     var videosemana = __env.videoIdSemana //"x4a2fbi";
-    var videofinde = __env.videoIdSemana //"x4jw7bs";
+    var videofinde = __env.videoIdFinde //"x4jw7bs";
     var hoy = new Date();
     var videohoy
     if (hoy.getDay() == 6 || hoy.getDay() == 0) {
@@ -89,6 +89,10 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
     $scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
     $scope.urlvideostream = videoUrlStream + videohoy;
+    $scope.urlvideoflashfinde = $sce.trustAsResourceUrl(urldigestor1 + videofinde + urldigestor2Flash);
+    $scope.urlvideostreamfinde = videoUrlStream + videofinde;
+    $scope.urlvideoflashsemana = $sce.trustAsResourceUrl(urldigestor1 + videosemana + urldigestor2Flash);
+    $scope.urlvideostreamsemana = videoUrlStream + videosemana;
     $scope.test = hoy.getDay();
     console.log(hoy.getDay());
     //$scope.oscuro = false;
@@ -103,7 +107,7 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
 
 app.controller('transmisionfull', ['$scope', '$sce', '__env', function ($scope, $sce, __env) {
     var videosemana = __env.videoIdSemana //"x4a2fbi";
-    var videofinde = __env.videoIdSemana //"x4jw7bs";
+    var videofinde = __env.videoIdFinde //"x4jw7bs";
     var hoy = new Date();
     var videohoy
     if (hoy.getDay() == 6 || hoy.getDay() == 0) {
