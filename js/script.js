@@ -87,8 +87,8 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     var urldigestor2Flash = __env.videoUrlDigestor2Flash; //"http://www.dailymotion.com/embed/video/";
     var videoUrlStream = __env.videoUrlStream
     $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
-    $scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
-    $scope.urlvideostream = videoUrlStream + videohoy;
+    $scope.urlvideoflash = urldigestor1 + videohoy + urldigestor2Flash;
+    $scope.urlvideostream = "http://dai.ly/" + videohoy;
     $scope.urlvideoflashfinde = $sce.trustAsResourceUrl(urldigestor1 + videofinde + urldigestor2Flash);
     $scope.urlvideostreamfinde = videoUrlStream + videofinde;
     $scope.urlvideoflashsemana = $sce.trustAsResourceUrl(urldigestor1 + videosemana + urldigestor2Flash);
