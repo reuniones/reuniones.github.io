@@ -89,6 +89,7 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
     $scope.urlvideoflash = urldigestor1 + videohoy + urldigestor2Flash;
     $scope.urlvideostream = "http://dai.ly/" + videohoy;
+    $scope.urlvideostreamfull = "http://dai.ly/" + videohoy;
     $scope.urlvideoflashfinde = $sce.trustAsResourceUrl(urldigestor1 + videofinde + urldigestor2Flash);
     $scope.urlvideostreamfinde = videoUrlStream + videofinde;
     $scope.urlvideoflashsemana = $sce.trustAsResourceUrl(urldigestor1 + videosemana + urldigestor2Flash);
@@ -122,7 +123,7 @@ app.controller('transmisionfull', ['$scope', '$sce', '__env', function ($scope, 
     var videoUrlStream = __env.videoUrlStream
     $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
     $scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
-    $scope.urlvideostream = videoUrlStream + videohoy;
+    $scope.urlvideostream = videoUrlStream + videohoy + urldigestor2;
     var urlvideostream = videoUrlStream + videohoy;
     //$window.location.href = urlvideostream;
 
