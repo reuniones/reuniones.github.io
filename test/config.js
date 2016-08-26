@@ -1,7 +1,7 @@
 ﻿(function (window) {
     window.__env = window.__env || {};
-    window.__env.videoIdSemana = 'x4o08h1';
-    window.__env.videoIdFinde = 'x4o08h1';
+    window.__env.videoIdSemana = 'x4qi561';
+    window.__env.videoIdFinde = 'x4qi561';
     window.__env.videoUrlDigestor1 = '//www.dailymotion.com/embed/video/';
     window.__env.videoUrlDigestor2 = '?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=1&chromeless=0&theme=dark';
     window.__env.videoUrlDigestor2Flash = '?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=0&chromeless=0&theme=dark';
