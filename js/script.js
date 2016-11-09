@@ -32,7 +32,7 @@ app.config(['$routeProvider', '$locationProvider', function ($routeProvider, $lo
     templateUrl: 'reuniones/reuniones.html', title: 'Reuniones'
 })
 .when('/vivo', {
-    templateUrl: 'reuniones/emision.html', title: 'Emisión en directo'
+    templateUrl: '/reuniones/emision.html', title: 'Emisión en directo'
 })
 .when('/finde', {
     templateUrl: 'reuniones/finde.html', title: 'Co. Churruarín'

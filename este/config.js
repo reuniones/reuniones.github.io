@@ -19,11 +19,11 @@
     window.__env.mnuSalidas = true;
     window.__env.mnuTerritorios = false;
     window.__env.mnuInforme = false;
-    window.__env.mnuReuniones = false;
+    window.__env.mnuReuniones = true;
     window.__env.mnuPrograma = false;
-    window.__env.mnuEmision = false;
+    window.__env.mnuEmision = true;
     window.__env.emisionAsistencia = false;
-    window.__env.paginaInicio = '/reuniones/emision.html';
+    window.__env.paginaInicio = '/iniciocong.html' //'/reuniones/emision.html';
     // API url
    
     // Base url
