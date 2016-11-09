@@ -11,12 +11,12 @@
     window.__env.programaUrl1 = '//docs.google.com/spreadsheets/d/';
     window.__env.programaUrl2 = '/pubhtml'; //?widget=true&headers=false&chrome=false';
     window.__env.programaUrlDescargaPdf = '/export?format=pdf';
-    window.__env.salidasIdSheets = '1JuiB_XVz-jO_0Yrzu82pF2d3cbWkDhBwhcp5wF2lOrA';
+    window.__env.salidasIdSheets = '1z7CZcqH8i4bz0xHc8J4md8c52ZMWxYgakFeCRqroX5o';
     window.__env.salidasUrl1 = '//docs.google.com/spreadsheets/d/';
     window.__env.salidasUrl2 = '/pubhtml?gid=0&single=true&widget=false&headers=false&chrome=false';
     //switches para activar los menus
     window.__env.mnuPredicacion = false;
-    window.__env.mnuSalidas = false;
+    window.__env.mnuSalidas = true;
     window.__env.mnuTerritorios = false;
     window.__env.mnuInforme = false;
     window.__env.mnuReuniones = false;
