@@ -20,7 +20,7 @@ app.config(['$routeProvider', '$locationProvider', function ($routeProvider, $lo
         templateUrl: 'predicacion/predicacion.html', title: 'Predicación'
     })
 .when('/salidas', {
-    templateUrl: 'predicacion/salidas.html', title: 'Salidas al ministerio del campo'
+    templateUrl: '/predicacion/salidas.html', title: 'Salidas al ministerio del campo'
 })
 .when('/territorios', {
     templateUrl: 'predicacion/territorios.html', title: 'Territorios'
