@@ -15,7 +15,7 @@
     window.__env.salidasUrl1 = '//docs.google.com/spreadsheets/d/';
     window.__env.salidasUrl2 = '/pubhtml?gid=0&single=true&widget=false&headers=false&chrome=false';
     //switches para activar los menus
-    window.__env.mnuPredicacion = false;
+    window.__env.mnuPredicacion = true;
     window.__env.mnuSalidas = true;
     window.__env.mnuTerritorios = false;
     window.__env.mnuInforme = false;
