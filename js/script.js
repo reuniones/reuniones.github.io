@@ -85,7 +85,7 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     var urldigestor1 = __env.videoUrlDigestor1; //"http://www.dailymotion.com/embed/video/";
     var urldigestor2 = __env.videoUrlDigestor2; //"?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=1&chromeless=0&theme=dark";
     var urldigestor2Flash = __env.videoUrlDigestor2Flash; //"http://www.dailymotion.com/embed/video/";
-    var videoUrlStream = __env.videoUrlStream
+    var videoUrlStream = __env.videoUrlStream;
     $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
     $scope.urlvideoflash = urldigestor1 + videohoy + urldigestor2Flash;
     $scope.urlvideostream = "http://dai.ly/" + videohoy;
@@ -94,7 +94,7 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     $scope.urlvideostreamfinde = videoUrlStream + videofinde;
     $scope.urlvideoflashsemana = $sce.trustAsResourceUrl(urldigestor1 + videosemana + urldigestor2Flash);
     $scope.urlvideostreamsemana = videoUrlStream + videosemana;
-    $scope.urlvideoDM = "http://www.dailymotion.com/video/" + videosemana;
+    $scope.urlvideoDM = "http://www.dailymotion.com/video/" + videohoy;
     $scope.test = hoy.getDay();
     console.log(hoy.getDay());
     //$scope.oscuro = false;
