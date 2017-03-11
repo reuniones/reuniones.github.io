@@ -94,6 +94,7 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     $scope.urlvideostreamfinde = videoUrlStream + videofinde;
     $scope.urlvideoflashsemana = $sce.trustAsResourceUrl(urldigestor1 + videosemana + urldigestor2Flash);
     $scope.urlvideostreamsemana = videoUrlStream + videosemana;
+    $scope.urlvideoDM = "http://www.dailymotion.com/video/" + videosemana;
     $scope.test = hoy.getDay();
     console.log(hoy.getDay());
     //$scope.oscuro = false;
