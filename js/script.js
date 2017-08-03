@@ -106,7 +106,7 @@ app.controller('transmision', ['$scope', '$sce', '__env', function ($scope, $sce
     //$scope.closeAlert = function (index) {
     //    $scope.show = false;
     //};
-}]);
+}]);http://www.dailymotion.com/video/x4l22bb#
 
 app.controller('transmisionfull', ['$scope', '$sce', '__env', function ($scope, $sce, __env) {
     var videosemana = __env.videoIdSemana //"x4a2fbi";
