@@ -124,9 +124,13 @@ app.controller('transmisionfull', ['$scope', '$sce', '__env', function ($scope, 
     var urldigestor2Flash = __env.videoUrlDigestor2Flash; //"http://www.dailymotion.com/embed/video/";
     var videoUrlStream = __env.videoUrlStream
     $scope.urlvideo = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2);
-    $scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
-    $scope.urlvideostream = videoUrlStream + videohoy + "?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=1&chromeless=0&theme=dark";
-    var urlvideostream = videoUrlStream + videohoy;
+    //$scope.urlvideoflash = $sce.trustAsResourceUrl(urldigestor1 + videohoy + urldigestor2Flash);
+    //$scope.urlvideostream = videoUrlStream + videohoy + "?api=postMessage&id=player&syndication=lr:175159&autoplay=1&mute=0&info=0&logo=0&related=0&social=0&controls=1&quality=auto&html=1&chromeless=0&theme=dark";
+    //var urlvideostream = videoUrlStream + videohoy;
+    $scope.urlvideoflash = urldigestor1 + videohoy + urldigestor2Flash;
+    $scope.urlvideostream = "http://dai.ly/" + videohoy;
+    $scope.urlvideostreamfull = "http://dai.ly/" + videohoy;
+    $scope.urlvideoDM = "http://www.dailymotion.com/video/" + videohoy;
     //$window.location.href = urlvideostream;
 
 }]);
