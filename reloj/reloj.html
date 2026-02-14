@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="auto">
+<head>
+  <link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#000000">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reloj</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.cdnfonts.com/css/led-calculator" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      transition: background-color 0.3s, color 0.3s;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="container">
+    <!-- Top Icons -->
+     
+
+   
+    <div class="d-flex justify-content-end gap-3 mb-3">
+          <div class="text-muted">
+    <i class="bi bi-clock me-2"></i><span id="clockTime">...</span>
+  </div>
+      <span id="connectionStatus" title="Estado de conexión" class="fs-5 text-success">🟢</span>
+    <button class="btn btn-sm btn-outline-secondary" id="shareBtn" title="Compartir">
+      <i class="bi bi-share"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" id="settingsBtn" title="Configuración" data-bs-toggle="modal" data-bs-target="#settingsModal">
+      <i class="bi bi-gear"></i>
+    </button>
+    </div>
+
+    <!-- Responsive Columns -->
+    <div class="row g-4">
+      <!-- Panel A -->
+      <div class="col-12 col-md-6">
+        <div class="border rounded-3 p-4 shadow-sm">
+
+<div class="position-relative mb-3">
+  <div class="pantalla-box"><span id="displayText" style="padding: .25em 1em .25em 1em">&nbsp;</span></div>
+  <div class="position-absolute top-0 end-0 m-2">
+    <input type="checkbox" class="btn-check" id="blinkSwitch" autocomplete="off">
+    <label class="btn btn-outline-warning btn-sm icon-label-btn" for="blinkSwitch" title="Parpadear">
+      <i class="bi bi-brightness-high"></i>
+    </label>
+  </div>
+</div>
+
+
+
+
+<div class="btn-group btn-group-lg w-100 mb-3 text-uppercase " role="group" aria-label="Mostrar">
+  <input type="radio" class="btn-check" name="displayMode" id="displayClock" value="clock" autocomplete="off">
+<label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displayClock">
+  <i class="bi bi-clock me-1"></i> 
+  Hora
+</label>
+
+  <input type="radio" class="btn-check" name="displayMode" id="displayStopwatch" value="stopwatch" autocomplete="off">
+  <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displayStopwatch">
+    <i class="bi bi-stopwatch me-1"></i> 
+    Crono
+  </label>
+
+  <input type="radio" class="btn-check" name="displayMode" id="displaySign" value="sign" autocomplete="off">
+  <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displaySign">
+    <i class="bi bi-exclamation-octagon me-1"></i>
+    Cartel
+  </label>
+</div>
+
+
+
+
+
+        </div>
+      </div>
+
+      <!-- Panel B -->
+      <div class="col-12 col-md-6">
+        <div class="border rounded-3 p-4 shadow-sm">
+            <div class="mb-3 position-relative text-center">
+  <button id="decreaseBtn" class="btn btn-outline-danger position-absolute start-0 top-50 translate-middle-y">
+    -1
+  </button>
+  <div id="stopwatchTime" class="cronometro d-inline-block px-2">&nbsp;</div>
+  <button id="increaseBtn" class="btn btn-outline-success position-absolute end-0 top-50 translate-middle-y">
+    +1
+  </button>
+</div>
+
+
+          <div class="mb-3 d-none">
+            <h3 id="stopwatchStatus" class="text-uppercase"></h3>
+          </div>
+
+<div class="btn-group btn-group-lg w-100 mb-3 text-uppercase" role="group">
+  <button id="startPauseBtn" class="btn btn-outline-success w-100 text-uppercase icon-label-btn">
+    <i class="bi bi-play-fill"></i> Inicio
+  </button>
+  <button id="resetBtn" class="btn btn-outline-info w-100 text-uppercase icon-label-btn">
+    <i class="bi bi-arrow-counterclockwise"></i> Reset
+  </button>
+</div>          
+          <div class="mb-3">
+            <label for="countdownInput" class="form-label d-block text-start">Duración de la parte</label>
+            
+<output id="countdownOutput" class="form-text d-block text-end">0 min</output>
+            <input type="range" class="form-range" id="countdownInput" min="0" max="60" step="1">
+
+<select id="presetDuration" class="form-select form-select-sm">
+  <option value="">Presets</option>
+  <option value="1">1</option>
+  <option value="2">2</option>
+  <option value="3">3</option>
+  <option value="4">4</option>
+  <option value="5">5</option>
+  <option value="7">7</option>
+  <option value="8">8</option>
+  <option value="10">10 (Discurso, perlas)</option>
+  <option value="15">15</option>
+  <option value="30">30 (Estudio bíblico de cong.)</option>
+  <option value="60">60 (La Atalaya)</option>
+</select>
+          </div>
+<!-- Full-width button group -->
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="settingsModalLabel">Configuración</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="urlInput" class="form-label">URL del reloj</label>
+            <input type="text" id="urlInput" class="form-control">
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="countdownModeSwitch">
+            <label class="form-check-label" for="countdownModeSwitch">Cuenta regresiva</label>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="autoShowSwitch">
+            <label class="form-check-label" for="autoShowSwitch">Mostrar cronómetro automáticamente</label>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="blinkBeforeOvertimeSwitch">
+            <label class="form-check-label" for="blinkBeforeOvertimeSwitch">Parpadear antes de tiempo excedido</label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="darkModeSwitch">
+            <label class="form-check-label" for="darkModeSwitch">Modo oscuro</label>
+          </div>
+          <div class="mb-3">
+            <label for="overtimeModeSelect" class="form-label">Tiempo excedido</label>
+            <select id="overtimeModeSelect" class="form-select">
+              <option value="normal">Continuar</option>
+              <option value="blink">Parpadear</option>
+              <option value="sign">Cartel TIEMPO</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button id="saveSettingsBtn" class="btn btn-primary">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content text-center p-3">
+      <h5 class="modal-title mb-3" id="shareModalLabel">Compartir Reloj</h5>
+      <canvas id="qrCanvas" class="mx-auto mb-3"></canvas>
+      <a id="whatsappShare" href="#" target="_blank" class="btn btn-success w-100 mb-2">
+        <i class="bi bi-whatsapp me-1"></i> Compartir por WhatsApp
+      </a>
+      <button id="installBtn" class="btn btn-outline-primary w-100 mb-2 d-none">
+  <i class="bi bi-download me-1"></i> Instalar como app
+</button>
+
+      <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+  <!-- Bootstrap & Script -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Dark mode toggle based on system and manual override
+    const updateTheme = (forceDark) => {
+      document.documentElement.setAttribute('data-bs-theme', forceDark ? 'dark' : 'light');
+    };
+    const darkSwitch = document.getElementById('darkModeSwitch');
+    if (darkSwitch) {
+      darkSwitch.addEventListener('change', () => {
+        updateTheme(darkSwitch.checked);
+      });
+      // Default to system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      darkSwitch.checked = prefersDark;
+      updateTheme(prefersDark);
+    }
+  </script>
+</body>
+</html>

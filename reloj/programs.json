@@ -1,0 +1,23 @@
+{
+  "entre_semana": {
+    "title": "Reunión de entre semana",
+    "type": "entre_semana",
+    "items": [
+      { "order": 1, "title": "Palabras de introducción", "duration": 1 },
+      { "order": 2, "title": "Discurso", "duration": 10 },
+      { "order": 3, "title": "Busquemos perlas escondidas", "duration": 10 },
+      { "order": 4, "title": "Lectura de la Biblia", "duration": 4 },
+      { "order": 5, "title": "Seamos mejores maestros (sección completa)", "duration": 15 },
+      { "order": 6, "title": "Nuestra vida cristiana (primera parte)", "duration": 15 },
+      { "order": 7, "title": "Estudio bíblico de congregación", "duration": 30 }
+    ]
+  },
+  "fin_de_semana": {
+    "title": "Reunión de fin de semana",
+    "type": "fin_de_semana",
+    "items": [
+      { "order": 1, "title": "Discurso público", "duration": 30 },
+      { "order": 2, "title": "Estudio de la Atalaya", "duration": 60 }
+    ]
+  }
+}

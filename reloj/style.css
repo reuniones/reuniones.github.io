@@ -1,0 +1,268 @@
+/* ------------------------------------------
+  Base Layout
+------------------------------------------- */
+.btn-group > label {
+  flex: 1 1 0;
+  text-align: center;
+}
+
+/* ------------------------------------------
+  Font Imports
+------------------------------------------- */
+@import url('https://fonts.cdnfonts.com/css/led-calculator');
+
+/* ------------------------------------------
+  Display Panel Styling
+------------------------------------------- */
+.pantalla-box {
+  width: 100%;
+  max-width: 80%;
+  background-color: black;
+  color: red;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-family: 'LED Calculator', monospace;
+  font-size: clamp(1.2rem, 5vw, 65px);
+  text-align: center;
+  margin: 5px auto 10px auto;
+  padding: 0.5rem 1rem;
+  border: 3px solid gray;
+  border-radius: 0.5rem;
+  text-shadow: 0 0 4px red, 0 0 15px red;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: hidden;
+  position: relative;
+}
+
+/* Special mode: Cartel/sign mode */
+.pantalla-sign {
+  background-color: red;
+  color: black;
+  text-shadow: 0 0 4px black, 0 0 15px black;
+}
+
+/* Special mode: Blinking display */
+.pantalla-blink {
+  animation: blinker 1s linear infinite;
+}
+
+/* Blinking animation for pantalla */
+@keyframes blinker {
+  10%   { opacity: 1; text-shadow: 0 0 4px red; }
+  50%   { opacity: 1; text-shadow: 0 0 4px red, 0 0 20px red; }
+  60%   { opacity: 0.5; text-shadow: none; }
+  100%  { opacity: 0.5; text-shadow: none; }
+}
+
+/* ------------------------------------------
+  Stopwatch Display
+------------------------------------------- */
+.cronometro {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-family: 'LED Calculator', monospace;
+  font-size: clamp(1.2rem, 5vw, 65px);
+  text-align: center;
+}
+
+/* Colon blink effect while stopwatch is running */
+.stopwatch-running span.colon {
+  animation: colon-blink 1s steps(1, start) infinite;
+}
+
+/* Whole stopwatch blinks when paused */
+.stopwatch-blink {
+  animation: colon-blink 1s steps(1, start) infinite;
+}
+
+@keyframes colon-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0.5; }
+}
+
+/* ------------------------------------------
+  Icon Label Buttons
+------------------------------------------- */
+.icon-label-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  padding: 0.75rem;
+  height: 5em;
+  font-weight: bold;
+}
+
+.icon-label-btn i {
+  font-size: 1.5rem;
+  margin-bottom: 0.2rem;
+  font-weight: 800;
+}
+
+/* ------------------------------------------
+  Blur State Styling (used when disconnected)
+------------------------------------------- */
+.blurred {
+  filter: blur(2px);
+  opacity: 0.5;
+}
+
+/* ------------------------------------------
+  Optional Custom Display Button States (commented)
+------------------------------------------- */
+/*
+.btn-check:checked + .btn-display {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.btn-display {
+  background-color: #0dcaf0;
+  color: white;
+  border-color: #0dcaf0;
+}
+*/
+
+#clockTime {
+  font-weight: 500;
+}
+
+#blinkSwitch + label {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+#stopwatchTime.cronometro {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+  line-height: 1.2;
+}
+
+/* Custom button for toggle mode buttons */
+.btn-display {
+  background-color: var(--bs-info-bg-subtle);
+  color: white;
+  border: 1px solid var(--bs-info);
+  transition: background-color 0.2s ease;
+}
+
+.btn-display:hover,
+.btn-display:focus,
+.btn-check:checked + .btn-display {
+  background-color: var(--bs-danger);
+  border-color: var(--bs-danger);
+  color: white;
+}
+
+
+/* === UNIVERSAL BUTTON STYLE OVERRIDE === */
+
+/* Base: info subtle background, white text */
+.btn {
+  background-color: var(--bs-info-bg-subtle);
+  color: white;
+  border: 1px solid var(--bs-info);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Hover, focus, checked: danger highlight */
+.btn:hover,
+.btn:focus,
+.btn-check:checked + .btn {
+  background-color: var(--bs-danger);
+  border-color: var(--bs-danger);
+  color: white;
+}
+
+/* Preserve text/icon contrast */
+.btn i {
+  color: inherit;
+}
+
+/* Rounded pill buttons like connection status */
+.badge.rounded-pill {
+  font-weight: 500;
+}
+
+/* Optional: slight size normalization */
+.btn-sm, .btn {
+  font-size: 0.9rem;
+}
+.panel-title {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  text-align: center;
+}
+
+.small-seconds {
+  font-size: 0.6em;
+  margin-left: 0.2em;
+  opacity: 0.8;
+}
+
+.panel-blur {
+  filter: blur(3px);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Blink animation */
+@keyframes blink {
+  50% { opacity: 0.3; }
+}
+
+.blinking {
+  animation: blink 1s linear infinite;
+}
+
+/* Darker text for warning pill */
+.connection-warning {
+  color: #212529 !important; /* Bootstrap's text-dark */
+}
+
+.topbar {
+  background-color: rgba(25, 67, 75, 0.5); /* dark with translucency */
+  backdrop-filter: blur(8px);              /* blur behind */
+  -webkit-backdrop-filter: blur(8px);      /* Safari support */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  z-index: 1020;                            /* above content */
+}
+
+.program-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+.program-item:nth-child(odd) {
+  background-color: var(--bs-body-bg);
+}
+.program-item:nth-child(even) {
+  background-color: var(--bs-secondary-bg-subtle);
+}
+.program-item.active {
+  background-color: var(--bs-info-bg-subtle);
+  border: 1px solid white;
+  color: white;
+  font-weight: bold;
+}
+.program-item span {
+  flex: 1;
+}
+.program-item .order {
+  flex: 0 0 1.5em;
+}
+.program-item .assigned,
+.program-item .measured {
+  flex: 0 0 4em;
+  text-align: end;
+}
