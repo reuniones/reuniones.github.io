@@ -32,8 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let suppressChange = false;
   let eventSource;
   let lastEventTime = Date.now();
-  let reconnectStartTime = null;
-  let currentDisplayMode = "";
   let blinkEnabled = false;
   let stopwatchState = "reset";
 
@@ -42,14 +40,24 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("programUI").style.display = "";
 
   const todayKey = new Date().toISOString().slice(0, 10);
-const storedDay = localStorage.getItem("lastUsedDate");
+  const storedDay = localStorage.getItem("lastUsedDate");
 
-const clockUrlInput = document.getElementById("urlInput");
-const savedIp = getClockIpFromCookie();
+  const clockUrlInput = document.getElementById("urlInput");
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryClock = urlParams.get('clock');
 
-if (clockUrlInput && !clockUrlInput.value && savedIp) {
-  clockUrlInput.value = `http://${savedIp}`;
-}
+  if (queryClock && clockUrlInput) {
+    clockUrlInput.value = queryClock;
+    const ipMatch = queryClock.match(/^http:\/\/(\d{1,3}(?:\.\d{1,3}){3})$/);
+    if (ipMatch) {
+      document.cookie = `clock_ip=${ipMatch[1]}; path=/; max-age=31536000`;
+    }
+  }
+
+  const savedIp = getClockIpFromCookie();
+  if (clockUrlInput && !clockUrlInput.value && savedIp) {
+    clockUrlInput.value = `http://${savedIp}`;
+  }
 clockUrlInput?.addEventListener("input", () => {
   let url = clockUrlInput.value.trim();
   if (!url.startsWith("http://")) {
@@ -274,16 +282,6 @@ function setPanelBlur(active) {
 }
 
 
-  // document.getElementById("reconnectNowBtn").addEventListener("click", () => {
-  //   reconnecting = false;
-  //   tryReconnect();
-  // });
-
-const ip = getClockIpFromCookie();
-if (ip && clockUrlInput && !clockUrlInput.value) {
-  clockUrlInput.value = `http://${ip}`;
-}
-
 function normalizeUrlInput(raw) {
   if (!/^https?:\/\//.test(raw)) {
     raw = "http://" + raw;
@@ -500,374 +498,242 @@ if (row) {
     location.reload();
   });
 
-  // === Connection via EventSource ===
-  function connectEventSource() {
-    if (eventSource) eventSource.close();
-    eventSource = new EventSource(`${getUrl()}/events`);
-    lastEventTime = Date.now();
-    reconnectStartTime = null;
-    // updateConnectionStatus("connected");
-    setBlur(false);
-    const reconnectModal = bootstrap.Modal.getInstance(document.getElementById("reconnectModal"));
-    if (reconnectModal) reconnectModal.hide?.();
+  // === Reconnection Monitor Loop ===
+  let reconnecting = false;
+
+  function getUrlsToTry() {
+    const urls = [];
+    const inputUrl = document.getElementById("urlInput")?.value?.trim();
+    if (inputUrl) {
+      urls.push(normalizeUrlInput(inputUrl));
+    }
+    const cookieIp = getClockIpFromCookie();
+    if (cookieIp) {
+      const cookieUrl = `http://${cookieIp}`;
+      if (!urls.includes(cookieUrl)) urls.push(cookieUrl);
+    }
+    if (!urls.includes("http://reloj.local")) {
+      urls.push("http://reloj.local");
+    }
+    return urls;
+  }
+
+  function connect(url) {
+    if (eventSource) {
+      eventSource.close();
+    }
+    
+    console.log(`Connecting to ${url}...`);
+    eventSource = new EventSource(`${url}/events`);
+    
+    let opened = false;
+    const timeout = setTimeout(() => {
+      if (!opened) {
+        console.warn(`Connection to ${url} timed out.`);
+        eventSource.close();
+        handleConnectionFailure();
+      }
+    }, 5000);
+
+    eventSource.onopen = () => {
+      opened = true;
+      clearTimeout(timeout);
+      currentBaseUrl = url;
+      reconnecting = false;
+      updateConnectionStatus("connected");
+      setBlur(false);
+      const reconnectModal = bootstrap.Modal.getInstance(document.getElementById("reconnectModal"));
+      if (reconnectModal) reconnectModal.hide?.();
+    };
 
     eventSource.addEventListener("state", (e) => {
       lastEventTime = Date.now();
       if (connectionStatus !== "connected") {
         updateConnectionStatus("connected");
       }
-      const data = JSON.parse(e.data);
-
-      switch (data.id) {
-        case "text_sensor-timeclock":
-          const clockElem = document.getElementById("clockTime");
-          
-            clockElem.textContent = data.value;
-
-          break;
-
-        case "text_sensor-stopwatch":
-          const el = document.getElementById("stopwatchTime");
-          let formatted = data.value;
-          if (stopwatchState === "running") {
-            formatted = formatted.replace(/:/g, '<span class="colon">:</span>');
-            el.classList.add("stopwatch-running");
-          } else {
-            el.classList.remove("stopwatch-running");
-          }
-
-          // Parse stopwatch time in seconds
-          const match = data.value.match(/(\d+):(\d+)/);
-          if (match) {
-            stopwatchTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-            updateLiveMeasuredTime(stopwatchTime);
-          }
-
-
-          el.innerHTML = formatted;
-          break;
-
-        case "text_sensor-display_text":
-          const displayEl = document.getElementById("displayText");
-          if (currentDisplayMode === 'clock' && data.value.length >= 3) {
-            const trimmed = data.value;
-            const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
-            const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
-            displayEl.innerHTML = smallerLastTwo;
-          } else {
-            displayEl.textContent = data.value;
-          }
-          break;
-
-        case "text_sensor-txt_stopwatch_state":
-          stopwatchState = data.value;
-          const labelMap = {
-            running: "Pausa",
-            paused: "Inicio",
-            reset: "Inicio"
-          };
-          const iconMap = {
-            running: "bi-pause-fill",
-            paused: "bi-play-fill",
-            reset: "bi-play-fill"
-          };
-
-          // Update button label and icon
-          document.getElementById("startPauseLabel").textContent = labelMap[data.value] || "Inicio";
-          document.getElementById("startPauseIcon").className = `bi ${iconMap[data.value]}`;
-
-          // Optional: update visible status (hidden currently)
-          document.getElementById("stopwatchStatus").textContent = labelMap[data.value];
-          updateStopwatchClass();
-          break;
-
-
-        case "select-sel_display_mode":
-          currentDisplayMode = data.value;
-          syncDisplayModeRadio(data.value);
-          break;
-
-        case "switch-sw_blink":
-          suppressChange = true;
-          blinkEnabled = data.value === true;
-          document.getElementById("blinkSwitch").checked = blinkEnabled;
-          updatePantallaClass();
-          suppressChange = false;
-          break;
-
-        case "number-countdown_minutes":
-          suppressChange = true;
-          document.getElementById("countdownInput").value = data.value;
-          updateCountdownOutput(data.value);
-          suppressChange = false;
-          break;
-
-        case "select-sel_stopwatch_mode":
-          suppressChange = true;
-          document.getElementById("countdownModeSwitch").checked = data.value === "countdown";
-          suppressChange = false;
-          break;
-
-        case "switch-stopwatch_auto_show":
-          suppressChange = true;
-          document.getElementById("autoShowSwitch").checked = data.value === true;
-          suppressChange = false;
-          break;
-
-        case "switch-stopwatch_blink_before_overtime":
-          suppressChange = true;
-          document.getElementById("blinkBeforeOvertimeSwitch").checked = data.value === true;
-          suppressChange = false;
-          break;
-
-        case "select-sel_overtime_mode":
-          suppressChange = true;
-          document.getElementById("overtimeModeSelect").value = data.value;
-          suppressChange = false;
-          break;
-
-        // Connection info
-        case "text_sensor-ip":
-          document.getElementById("infoIP").textContent = data.value;
-          // Save to cookie
-          document.cookie = `clock_ip=${data.value}; path=/; max-age=31536000`; // 1 year
-          break;
-        case "text_sensor-ssid": document.getElementById("infoSSID").textContent = data.value; break;
-        case "text_sensor-bssid": document.getElementById("infoBSSID").textContent = data.value; break;
-        case "text_sensor-mac": document.getElementById("infoMAC").textContent = data.value; break;
-        case "text_sensor-dns": document.getElementById("infoDNS").textContent = data.value; break;
-        case "text_sensor-esphome_version": document.getElementById("infoVersion").textContent = data.value; break;
-      }
+      handleStateEvent(JSON.parse(e.data));
     });
 
     eventSource.onerror = () => {
-      // Do NOT close or reconnect here.
-      // Just flag the time so the monitor can handle logic safely.
-      if (!reconnectStartTime) reconnectStartTime = Date.now();
+      if (!opened) {
+        clearTimeout(timeout);
+        handleConnectionFailure();
+      } else {
+        // If it was already open and now failed, let the monitor loop handle it
+        console.warn("EventSource connection lost.");
+      }
     };
-
   }
 
-  connectEventSource();
+  function handleConnectionFailure() {
+    if (reconnecting) return; // already in a retry loop
+    tryReconnect();
+  }
 
-  // === Reconnection Monitor Loop ===
-  let reconnecting = false;
+  function tryReconnect() {
+    if (reconnecting) return;
+    reconnecting = true;
+    updateConnectionStatus("connecting");
+    setPanelBlur(true);
+
+    const urls = getUrlsToTry();
+    let index = 0;
+
+    function attemptNext() {
+      if (index >= urls.length) {
+        updateConnectionStatus("disconnected");
+        showReconnectHelp();
+        reconnecting = false;
+        return;
+      }
+
+      const url = urls[index++];
+      const tempEs = new EventSource(`${url}/events`);
+      let success = false;
+      
+      const timeout = setTimeout(() => {
+        if (!success) {
+          tempEs.close();
+          attemptNext();
+        }
+      }, 3000);
+
+      tempEs.onopen = () => {
+        success = true;
+        clearTimeout(timeout);
+        tempEs.close();
+        connect(url);
+      };
+
+      tempEs.onerror = () => {
+        if (!success) {
+          clearTimeout(timeout);
+          tempEs.close();
+          attemptNext();
+        }
+      };
+    }
+
+    attemptNext();
+  }
+
+  function handleStateEvent(data) {
+    switch (data.id) {
+      case "text_sensor-timeclock":
+        document.getElementById("clockTime").textContent = data.value;
+        break;
+
+      case "text_sensor-stopwatch":
+        const stopEl = document.getElementById("stopwatchTime");
+        let formatted = data.value;
+        if (stopwatchState === "running") {
+          formatted = formatted.replace(/:/g, '<span class="colon">:</span>');
+          stopEl.classList.add("stopwatch-running");
+        } else {
+          stopEl.classList.remove("stopwatch-running");
+        }
+
+        const match = data.value.match(/(\d+):(\d+)/);
+        if (match) {
+          stopwatchTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+          updateLiveMeasuredTime(stopwatchTime);
+        }
+        stopEl.innerHTML = formatted;
+        break;
+
+      case "text_sensor-display_text":
+        const displayElem = document.getElementById("displayText");
+        displayElem.classList.remove("pantalla-scroll");
+        if (data.value.length > 8) {
+          displayElem.innerHTML = `<span class="pantalla-scroll">${data.value}</span>`;
+        } else if (currentDisplayMode === 'clock' && data.value.length >= 3) {
+            const trimmed = data.value;
+            const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
+            const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
+            displayElem.innerHTML = smallerLastTwo;
+        } else {
+          displayElem.textContent = data.value;
+        }
+        break;
+
+      case "text_sensor-txt_stopwatch_state":
+        stopwatchState = data.value;
+        const labelMap = { running: "Pausa", paused: "Inicio", reset: "Inicio" };
+        const iconMap = { running: "bi-pause-fill", paused: "bi-play-fill", reset: "bi-play-fill" };
+        document.getElementById("startPauseLabel").textContent = labelMap[data.value] || "Inicio";
+        document.getElementById("startPauseIcon").className = `bi ${iconMap[data.value]}`;
+        updateStopwatchClass();
+        break;
+
+      case "select-sel_display_mode":
+        currentDisplayMode = data.value;
+        syncDisplayModeRadio(data.value);
+        break;
+
+      case "switch-sw_blink":
+        suppressChange = true;
+        blinkEnabled = data.value === true;
+        document.getElementById("blinkSwitch").checked = blinkEnabled;
+        updatePantallaClass();
+        suppressChange = false;
+        break;
+
+      case "number-countdown_minutes":
+        suppressChange = true;
+        document.getElementById("countdownInput").value = data.value;
+        updateCountdownOutput(data.value);
+        suppressChange = false;
+        break;
+
+      case "select-sel_stopwatch_mode":
+        suppressChange = true;
+        document.getElementById("countdownModeSwitch").checked = data.value === "countdown";
+        suppressChange = false;
+        break;
+
+      case "switch-stopwatch_auto_show":
+        suppressChange = true;
+        document.getElementById("autoShowSwitch").checked = data.value === true;
+        suppressChange = false;
+        break;
+
+      case "switch-stopwatch_blink_before_overtime":
+        suppressChange = true;
+        document.getElementById("blinkBeforeOvertimeSwitch").checked = data.value === true;
+        suppressChange = false;
+        break;
+
+      case "select-sel_overtime_mode":
+        suppressChange = true;
+        document.getElementById("overtimeModeSelect").value = data.value;
+        suppressChange = false;
+        break;
+
+      case "text-custom_sign":
+        document.getElementById("customSignInput").value = data.value;
+        break;
+
+      case "text_sensor-ip":
+        document.getElementById("infoIP").textContent = data.value;
+        document.cookie = `clock_ip=${data.value}; path=/; max-age=31536000`;
+        break;
+      case "text_sensor-ssid": document.getElementById("infoSSID").textContent = data.value; break;
+      case "text_sensor-bssid": document.getElementById("infoBSSID").textContent = data.value; break;
+      case "text_sensor-mac": document.getElementById("infoMAC").textContent = data.value; break;
+      case "text_sensor-dns": document.getElementById("infoDNS").textContent = data.value; break;
+      case "text_sensor-esphome_version": document.getElementById("infoVersion").textContent = data.value; break;
+    }
+  }
 
   setInterval(() => {
     const now = Date.now();
     const elapsed = now - lastEventTime;
-
     if (!reconnecting && elapsed > CONNECTING_THRESHOLD_MS) {
-      reconnecting = true;
-      updateConnectionStatus("connecting");
-      setBlur(true);
       tryReconnect();
     }
-  }, 500);
+  }, 1000);
 
-function tryReconnect() {
-  const urlsToTry = [];
-
-  if (!urlsToTry.includes("http://reloj.local")) {
-    urlsToTry.push("http://reloj.local");
-  }
-
-  const inputUrl = document.getElementById("clockUrl")?.value?.trim();
-  if (inputUrl?.startsWith("http://")) {
-    urlsToTry.push(normalizeUrlInput(inputUrl));
-  }
-
-  const cookieIp = getClockIpFromCookie();
-  if (cookieIp) {
-    const cookieUrl = `http://${cookieIp}`;
-    if (!urlsToTry.includes(cookieUrl)) urlsToTry.push(cookieUrl);
-  }
-
-
-
-  tryNextUrl(urlsToTry, 0);
-}
-
-
-function tryNextUrl(urls, index) {
-  if (index >= urls.length) {
-    updateConnectionStatus("disconnected");
-    showReconnectHelp();
-    reconnecting = false;
-    return;
-  }
-
-  const url = urls[index];
-  reconnecting = true;
-
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
-  }
-
-  const es = new EventSource(`${url}/events`);
-
-  let opened = false;
-
-  es.onopen = () => {
-    opened = true;
-    currentBaseUrl = url; // ✅ update the active URL
-    eventSource = es;
-    reconnecting = false;
-    setupEventSourceHandlers();
-  };
-
-  es.onerror = () => {
-    es.close();
-    if (!opened) {
-      setTimeout(() => tryNextUrl(urls, index + 1), 1000);
-    }
-  };
-}
-
-
-
-function getClockIpFromCookie() {
-  const match = document.cookie.match(/(?:^|; )clock_ip=([^;]+)/);
-  return match ? match[1] : null;
-}
-
-function setupEventSourceHandlers(source) {
-  source.addEventListener("state", (e) => {
-    const data = JSON.parse(e.data);
-    lastEventTime = Date.now();
-
-
-      switch (data.id) {
-        case "text_sensor-timeclock":
-          document.getElementById("clockTime").textContent = data.value;
-          break;
-
-        case "text_sensor-stopwatch":
-          const el = document.getElementById("stopwatchTime");
-          let formatted = data.value;
-          if (stopwatchState === "running") {
-            formatted = formatted.replace(/:/g, '<span class="colon">:</span>');
-            el.classList.add("stopwatch-running");
-          } else {
-            el.classList.remove("stopwatch-running");
-          }
-
-          // Parse stopwatch time in seconds
-          const match = data.value.match(/(\d+):(\d+)/);
-          if (match) {
-            stopwatchTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-            updateLiveMeasuredTime(stopwatchTime);
-          }
-
-
-          el.innerHTML = formatted;
-          break;
-
-case "text_sensor-display_text": {
-  const displayElem = document.getElementById("displayText");
-
-  // Remove old scroll span if it exists
-  displayElem.classList.remove("pantalla-scroll");
-
-  if (data.value.length > 8) {
-    displayElem.innerHTML = `<span class="pantalla-scroll">${data.value}</span>`;
-  } else {
-    displayElem.textContent = data.value;
-  }
-
-  break;
-}
-
-        case "text_sensor-txt_stopwatch_state":
-          stopwatchState = data.value;
-          const labelMap = {
-            running: "Pausa",
-            paused: "Inicio",
-            reset: "Inicio"
-          };
-          const iconMap = {
-            running: "bi-pause-fill",
-            paused: "bi-play-fill",
-            reset: "bi-play-fill"
-          };
-
-          // Update button label and icon
-          document.getElementById("startPauseLabel").textContent = labelMap[data.value] || "Inicio";
-          document.getElementById("startPauseIcon").className = `bi ${iconMap[data.value]}`;
-
-          // Optional: update visible status (hidden currently)
-          document.getElementById("stopwatchStatus").textContent = labelMap[data.value];
-          updateStopwatchClass();
-          break;
-
-
-        case "select-sel_display_mode":
-          syncDisplayModeRadio(data.value);
-          break;
-
-        case "switch-sw_blink":
-          suppressChange = true;
-          blinkEnabled = data.value === true;
-          document.getElementById("blinkSwitch").checked = blinkEnabled;
-          updatePantallaClass();
-          suppressChange = false;
-          break;
-
-        case "number-countdown_minutes":
-          suppressChange = true;
-          document.getElementById("countdownInput").value = data.value;
-          updateCountdownOutput(data.value);
-          suppressChange = false;
-          break;
-
-        case "select-sel_stopwatch_mode":
-          suppressChange = true;
-          document.getElementById("countdownModeSwitch").checked = data.value === "countdown";
-          suppressChange = false;
-          break;
-
-        case "switch-stopwatch_auto_show":
-          suppressChange = true;
-          document.getElementById("autoShowSwitch").checked = data.value === true;
-          suppressChange = false;
-          break;
-
-        case "switch-stopwatch_blink_before_overtime":
-          suppressChange = true;
-          document.getElementById("blinkBeforeOvertimeSwitch").checked = data.value === true;
-          suppressChange = false;
-          break;
-
-        case "select-sel_overtime_mode":
-          suppressChange = true;
-          document.getElementById("overtimeModeSelect").value = data.value;
-          suppressChange = false;
-          break;
-
-        case "text-custom_sign":
-          document.getElementById("customSignInput").value = data.value;
-
-          break;
-
-        // Connection info
-        case "text_sensor-ip":
-          document.getElementById("infoIP").textContent = data.value;
-          // Save to cookie
-          document.cookie = `clock_ip=${data.value}; path=/; max-age=31536000`; // 1 year
-          break;
-        case "text_sensor-ssid": document.getElementById("infoSSID").textContent = data.value; break;
-        case "text_sensor-bssid": document.getElementById("infoBSSID").textContent = data.value; break;
-        case "text_sensor-mac": document.getElementById("infoMAC").textContent = data.value; break;
-        case "text_sensor-dns": document.getElementById("infoDNS").textContent = data.value; break;
-        case "text_sensor-esphome_version": document.getElementById("infoVersion").textContent = data.value; break;
-      }
-  });
-
-  source.onerror = () => {
-    console.warn("EventSource error. Waiting for reconnect...");
-  };
-}
+  tryReconnect();
 
 
 
