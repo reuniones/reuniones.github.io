@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reloj-v4.8'; // increment to force update
+const CACHE_NAME = 'reloj-v4.9'; // increment to force update
 const ASSETS = [
   './',
   './index.html',
@@ -10,54 +10,44 @@ const ASSETS = [
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css'
 ];
 
-// On install: cache files
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
 
-// On activate: delete old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// On fetch: Network-first strategy with selective caching
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // 1. Skip non-GET requests
-  if (event.request.method !== 'GET') return;
-
-  // 2. Identify and skip clock-specific communication
-  const isSelf = url.origin === self.location.origin;
+  // 1. COMPLETELY IGNORE CLOCK REQUESTS
+  // If the protocol is HTTP (while the app is HTTPS) or it matches clock patterns,
+  // we MUST return and not call event.respondWith().
+  // This allows the browser's "Insecure Content" setting to take effect.
+  const isHttp = url.protocol === 'http:';
   const isSse = url.pathname.endsWith('/events');
   const isRelojLocal = url.hostname.endsWith('reloj.local');
   const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(url.hostname);
 
-  // We only treat it as a "clock request" if it's NOT our own origin
-  // This prevents issues when testing the app on http://127.0.0.1:5500
-  const isExternalClock = !isSelf && (isIp || isRelojLocal);
-
-  if (isSse || isExternalClock) {
-    return; // Direct browser handling
+  if (isHttp || isSse || isRelojLocal || isIp) {
+    return; 
   }
 
-  // 3. App assets: Network-first, fallback to cache
+  // 2. ONLY HANDLE APP ASSETS
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Cache successful responses from our origin or CDNs
         if (response && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
@@ -65,11 +55,8 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(err => {
-        // Fallback to cache if network fails
-        return caches.match(event.request).then(cachedResponse => {
-          if (cachedResponse) return cachedResponse;
-          // If no cache and no network, re-throw to let browser handle as network error
-          // instead of returning undefined (which causes a TypeError in respondWith)
+        return caches.match(event.request).then(res => {
+          if (res) return res;
           throw err;
         });
       })

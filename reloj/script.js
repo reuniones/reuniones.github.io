@@ -408,6 +408,7 @@ function setPanelBlur(active) {
     if (settingsModal && document.getElementById("settingsModal").classList.contains("show")) return;
 
     const ua = navigator.userAgent;
+    const isHttps = window.location.protocol === "https:";
 
     const clockUrl = getClockUrlFromCookie();
     const urls = [
@@ -428,15 +429,22 @@ function setPanelBlur(active) {
     const instList = document.getElementById("mixedContentInstructions");
     instList.innerHTML = "";
 
+    if (isHttps) {
+      const warnLi = document.createElement("li");
+      warnLi.className = "text-warning fw-bold mb-2";
+      warnLi.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> Estás usando una conexión segura (HTTPS), pero el reloj usa una conexión normal (HTTP). Por seguridad, el navegador bloquea la conexión a menos que le des permiso.';
+      instList.appendChild(warnLi);
+    }
+
     let browserHelp = "";
     if (/Chrome/.test(ua)) {
-      browserHelp = "Hacé clic en el candado en la barra de direcciones → 'Configuración del sitio' → permitir contenido no seguro.";
+      browserHelp = "1. Hacé clic en el icono a la izquierda de la barra de direcciones → 'Configuración del sitio' → 'Contenido no seguro' → 'Permitir'.<br>2. Si sigue fallando, es por una protección de Chrome (PNA). Podés probar entrar a <code>chrome://flags/#block-insecure-private-network-requests</code> y ponerlo en 'Disabled'.";
     } else if (/Firefox/.test(ua)) {
-      browserHelp = "Hacé clic en el escudo a la izquierda de la barra de direcciones y desactivá la protección para esta página.";
+      browserHelp = "Hacé clic en el icono del escudo a la izquierda de la barra de direcciones y desactivá 'Protección contra el rastreo mejorada' para este sitio.";
     } else if (/Safari/.test(ua)) {
-      browserHelp = "Activá el menú 'Desarrollo' y desactivá la protección contra contenido inseguro.";
+      browserHelp = "En el menú 'Desarrollo', desactivá 'Restricciones de contenido mixto' (o permití contenido HTTP en la configuración).";
     } else {
-      browserHelp = "Permití contenido mixto (HTTP) en la configuración del navegador.";
+      browserHelp = "Permití 'Contenido mixto' o 'Contenido no seguro' en la configuración de privacidad de tu navegador para este sitio.";
     }
 
     const li = document.createElement("li");
