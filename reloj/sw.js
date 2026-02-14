@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reloj-v4.5'; // increment to force update
+const CACHE_NAME = 'reloj-v4.8'; // increment to force update
 const ASSETS = [
   './',
   './index.html',
@@ -32,15 +32,46 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// On fetch: try network first, fallback to cache
+// On fetch: Network-first strategy with selective caching
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+
+  // 1. Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+
+  // 2. Identify and skip clock-specific communication
+  const isSelf = url.origin === self.location.origin;
+  const isSse = url.pathname.endsWith('/events');
+  const isRelojLocal = url.hostname.endsWith('reloj.local');
+  const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(url.hostname);
+
+  // We only treat it as a "clock request" if it's NOT our own origin
+  // This prevents issues when testing the app on http://127.0.0.1:5500
+  const isExternalClock = !isSelf && (isIp || isRelojLocal);
+
+  if (isSse || isExternalClock) {
+    return; // Direct browser handling
+  }
+
+  // 3. App assets: Network-first, fallback to cache
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        // Cache successful responses from our origin or CDNs
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(err => {
+        // Fallback to cache if network fails
+        return caches.match(event.request).then(cachedResponse => {
+          if (cachedResponse) return cachedResponse;
+          // If no cache and no network, re-throw to let browser handle as network error
+          // instead of returning undefined (which causes a TypeError in respondWith)
+          throw err;
+        });
+      })
   );
 });

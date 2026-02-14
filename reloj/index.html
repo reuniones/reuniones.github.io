@@ -221,7 +221,10 @@
         <div class="modal-body">
           <div class="mb-3">
             <label for="urlInput" class="form-label">URL del reloj</label>
-            <input type="text" id="urlInput" class="form-control">
+            <input type="text" id="urlInput" class="form-control" placeholder="reloj.local o 192.168.1.50">
+            <div class="invalid-feedback">
+              Por favor, ingresá una URL o IP válida (ej: 192.168.1.50 o reloj.local).
+            </div>
           </div>
           <div class="form-check mb-2">
             <input class="form-check-input" type="checkbox" id="countdownModeSwitch">

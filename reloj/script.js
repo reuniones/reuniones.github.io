@@ -3,6 +3,39 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(console.error);
 }
 
+function getClockUrlFromCookie() {
+  const match = document.cookie.match(/(?:^|; )clock_url=([^;]+)/);
+  if (match) return decodeURIComponent(match[1]);
+  // Fallback to old clock_ip cookie
+  const ipMatch = document.cookie.match(/(?:^|; )clock_ip=([^;]+)/);
+  return ipMatch ? `http://${ipMatch[1]}` : null;
+}
+
+function saveClockUrlToCookie(url) {
+  document.cookie = `clock_url=${encodeURIComponent(url)}; path=/; max-age=31536000`;
+}
+
+function normalizeUrlInput(raw) {
+  if (!/^https?:\/\//.test(raw)) {
+    raw = "http://" + raw;
+  }
+  return raw;
+}
+
+function isValidClockUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    // Allow 'reloj.local', IP addresses, or any valid hostname longer than 3 chars
+    const isValidHost = host === "reloj.local" || 
+                        /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || 
+                        (host.includes(".") && host.length > 3);
+    return isValidHost && (parsed.protocol === "http:" || parsed.protocol === "https:");
+  } catch (e) {
+    return false;
+  }
+}
+
 // ========== Configurable Timeouts ==========
 const RECONNECT_DELAY_MS = 5000;        // Retry every 2s
 const CONNECTING_THRESHOLD_MS = 2500;   // Show "Conectando" after 2.5s
@@ -35,9 +68,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let blinkEnabled = false;
   let stopwatchState = "reset";
 
-  document.getElementById("enableProgramSwitch").checked = true;
-  document.getElementById("programSelector").style.display = "";
-  document.getElementById("programUI").style.display = "";
+  document.getElementById("enableProgramSwitch").checked = false;
+  document.getElementById("programSelector").style.display = "none";
+  document.getElementById("programUI").style.display = "none";
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const storedDay = localStorage.getItem("lastUsedDate");
@@ -48,32 +81,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (queryClock && clockUrlInput) {
     clockUrlInput.value = queryClock;
-    const ipMatch = queryClock.match(/^http:\/\/(\d{1,3}(?:\.\d{1,3}){3})$/);
-    if (ipMatch) {
-      document.cookie = `clock_ip=${ipMatch[1]}; path=/; max-age=31536000`;
+    saveClockUrlToCookie(queryClock);
+  }
+
+  const savedUrl = getClockUrlFromCookie();
+  if (clockUrlInput && !clockUrlInput.value && savedUrl) {
+    clockUrlInput.value = savedUrl;
+  }
+
+  clockUrlInput?.addEventListener("input", () => {
+    const raw = clockUrlInput.value.trim();
+    if (!raw) {
+      clockUrlInput.classList.remove("is-valid", "is-invalid");
+      return;
     }
-  }
 
-  const savedIp = getClockIpFromCookie();
-  if (clockUrlInput && !clockUrlInput.value && savedIp) {
-    clockUrlInput.value = `http://${savedIp}`;
-  }
-clockUrlInput?.addEventListener("input", () => {
-  let url = clockUrlInput.value.trim();
-  if (!url.startsWith("http://")) {
-    url = "http://" + url;
-    clockUrlInput.value = url; // normalize in input
-  }
-
-  // Save valid IPs to cookie
-  const ipMatch = url.match(/^http:\/\/(\d{1,3}(?:\.\d{1,3}){3})$/);
-  if (ipMatch) {
-    document.cookie = `clock_ip=${ipMatch[1]}; path=/; max-age=31536000`;
-  }
-
-  // Try reconnecting immediately
-  tryReconnect();
-});
+    const normalized = normalizeUrlInput(raw);
+    if (isValidClockUrl(normalized)) {
+      clockUrlInput.classList.remove("is-invalid");
+      clockUrlInput.classList.add("is-valid");
+      saveClockUrlToCookie(normalized);
+      // Try reconnecting immediately only if valid
+      tryReconnect();
+    } else {
+      clockUrlInput.classList.remove("is-valid");
+      clockUrlInput.classList.add("is-invalid");
+    }
+  });
 
 
 if (storedDay !== todayKey) {
@@ -282,18 +316,6 @@ function setPanelBlur(active) {
 }
 
 
-function normalizeUrlInput(raw) {
-  if (!/^https?:\/\//.test(raw)) {
-    raw = "http://" + raw;
-  }
-  return raw;
-}
-
-function isValidClockUrl(url) {
-  return /^http:\/\/(reloj\.local|\d{1,3}(\.\d{1,3}){3})$/.test(url);
-}
-
-
   document.getElementById("openSettingsBtn").addEventListener("click", () => {
     const reconnectModal = bootstrap.Modal.getInstance(document.getElementById("reconnectModal"));
     reconnectModal?.hide();
@@ -387,10 +409,10 @@ function isValidClockUrl(url) {
 
     const ua = navigator.userAgent;
 
-    const clockIp = getClockIpFromCookie();
+    const clockUrl = getClockUrlFromCookie();
     const urls = [
       "http://reloj.local",
-      ...(clockIp ? [`http://${clockIp}`] : [])
+      ...(clockUrl ? [clockUrl] : [])
     ];
 
     // === Fill clockAddresses list ===
@@ -507,10 +529,9 @@ if (row) {
     if (inputUrl) {
       urls.push(normalizeUrlInput(inputUrl));
     }
-    const cookieIp = getClockIpFromCookie();
-    if (cookieIp) {
-      const cookieUrl = `http://${cookieIp}`;
-      if (!urls.includes(cookieUrl)) urls.push(cookieUrl);
+    const savedUrl = getClockUrlFromCookie();
+    if (savedUrl) {
+      if (!urls.includes(savedUrl)) urls.push(savedUrl);
     }
     if (!urls.includes("http://reloj.local")) {
       urls.push("http://reloj.local");
@@ -716,6 +737,11 @@ if (row) {
       case "text_sensor-ip":
         document.getElementById("infoIP").textContent = data.value;
         document.cookie = `clock_ip=${data.value}; path=/; max-age=31536000`;
+        // Also update clock_url if it was previously an IP or empty
+        const currentUrl = document.getElementById("urlInput")?.value;
+        if (!currentUrl || /^http:\/\/\d{1,3}(\.\d{1,3}){3}$/.test(currentUrl)) {
+          saveClockUrlToCookie(`http://${data.value}`);
+        }
         break;
       case "text_sensor-ssid": document.getElementById("infoSSID").textContent = data.value; break;
       case "text_sensor-bssid": document.getElementById("infoBSSID").textContent = data.value; break;
