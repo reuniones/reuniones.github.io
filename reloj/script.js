@@ -776,9 +776,21 @@ if (row) {
 
   // Update countdown text and sync preset
   function updateCountdownOutput(value) {
-    countdownOutput.textContent = `${value} min`;
-    const match = Array.from(presetDuration.options).find(opt => parseInt(opt.value) === value);
-    presetDuration.value = match ? match.value : "";
+    const numericValue = Number(value);
+    countdownOutput.textContent = `${numericValue} min`;
+    
+    // Find the option whose value matches the numeric value
+    let found = false;
+    for (const option of presetDuration.options) {
+      if (option.value && Number(option.value) === numericValue) {
+        presetDuration.value = option.value;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      presetDuration.value = "";
+    }
   }
 
   countdownInput.oninput = (e) => {
