@@ -411,10 +411,10 @@ function setPanelBlur(active) {
     const isHttps = window.location.protocol === "https:";
 
     const clockUrl = getClockUrlFromCookie();
-    const urls = [
+    const urls = Array.from(new Set([
       "http://reloj.local",
       ...(clockUrl ? [clockUrl] : [])
-    ];
+    ]));
 
     // === Fill clockAddresses list ===
     const addrList = document.getElementById("clockAddresses");

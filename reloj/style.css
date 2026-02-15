@@ -12,8 +12,14 @@
 @import url('https://fonts.cdnfonts.com/css/led-calculator');
 
 body {
-  font-family: 'Fira Sans', sans-serif;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
   transition: background-color 0.3s, color 0.3s;
+}
+
+h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
+  font-weight: 600 !important;
 }
 
 /* ------------------------------------------
@@ -32,7 +38,7 @@ body {
   padding: 0.5rem 1rem;
   border: 3px solid gray;
   border-radius: 0.5rem;
-  text-shadow: 0 0 4px red, 0 0 15px red;
+  text-shadow: 0 0 3px red, 0 0 15px rgba(255, 0, 0, 0.37);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: hidden;
@@ -53,10 +59,10 @@ body {
 
 /* Blinking animation for pantalla */
 @keyframes blinker {
-  10%   { opacity: 1; text-shadow: 0 0 4px red; }
-  50%   { opacity: 1; text-shadow: 0 0 4px red, 0 0 20px red; }
-  60%   { opacity: 0.5; text-shadow: none; }
-  100%  { opacity: 0.5; text-shadow: none; }
+  10%   { opacity: 1; }
+  50%   { opacity: 1; }
+  60%   { opacity: 0.5;  }
+  100%  { opacity: 0.5;  }
 }
 
 /* ------------------------------------------
@@ -95,13 +101,13 @@ body {
   font-size: 0.75rem;
   padding: 0.75rem;
   height: 5em;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .icon-label-btn i {
   font-size: 1.5rem;
   margin-bottom: 0.2rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 /* ------------------------------------------
@@ -130,7 +136,7 @@ body {
 */
 
 #clockTime {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 #blinkSwitch + label {
@@ -190,7 +196,7 @@ body {
 
 /* Rounded pill buttons like connection status */
 .badge.rounded-pill {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Optional: slight size normalization */
@@ -258,7 +264,7 @@ body {
   background-color: var(--bs-info-bg-subtle);
   border: 1px solid white;
   color: white;
-  font-weight: bold;
+  font-weight: 600;
 }
 .program-item span {
   flex: 1;
