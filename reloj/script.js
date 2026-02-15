@@ -532,19 +532,17 @@ if (row) {
   let reconnecting = false;
 
   function getUrlsToTry() {
-    const urls = [];
+    const urls = new Set();
     const inputUrl = document.getElementById("urlInput")?.value?.trim();
     if (inputUrl) {
-      urls.push(normalizeUrlInput(inputUrl));
+      urls.add(normalizeUrlInput(inputUrl));
     }
     const savedUrl = getClockUrlFromCookie();
     if (savedUrl) {
-      if (!urls.includes(savedUrl)) urls.push(savedUrl);
+      urls.add(savedUrl);
     }
-    if (!urls.includes("http://reloj.local")) {
-      urls.push("http://reloj.local");
-    }
-    return urls;
+    urls.add("http://reloj.local");
+    return Array.from(urls);
   }
 
   function connect(url) {
