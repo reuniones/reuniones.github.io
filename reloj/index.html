@@ -54,8 +54,11 @@
           <button class="btn btn-sm" id="shareBtn" title="Compartir">
             <i class="bi bi-share"></i>
           </button>
-          <button class="btn btn-sm" id="settingsBtn" title="Configuración" data-bs-toggle="modal" data-bs-target="#settingsModal">
+          <button class="btn btn-sm position-relative" id="settingsBtn" title="Configuración" data-bs-toggle="modal" data-bs-target="#settingsModal">
             <i class="bi bi-gear"></i>
+            <span id="settingsUpdateBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
+              <span class="visually-hidden">Actualización disponible</span>
+            </span>
           </button>
         </div>
       </div>
@@ -227,9 +230,14 @@
         <div class="modal-body">
           <div class="mb-3">
             <label for="urlInput" class="form-label">URL del reloj</label>
-            <input type="text" id="urlInput" class="form-control" placeholder="reloj.local o 192.168.1.50">
-            <div class="invalid-feedback">
-              Por favor, ingresá una URL o IP válida (ej: 192.168.1.50 o reloj.local).
+            <div class="input-group">
+              <input type="text" id="urlInput" class="form-control" placeholder="reloj.local o 192.168.1.50">
+              <button class="btn btn-outline-secondary" type="button" id="openScanBtn" title="Escanear Red">
+                <i class="bi bi-search"></i>
+              </button>
+              <div class="invalid-feedback">
+                Por favor, ingresá una URL o IP válida (ej: 192.168.1.50 o reloj.local).
+              </div>
             </div>
           </div>
           <div class="form-check mb-2">
@@ -258,12 +266,63 @@
           </div>
         </div>
         <div class="modal-footer d-flex justify-content-between">
-          <button type="button" class="btn btn-sm btn-link text-secondary p-0 border-0 bg-transparent shadow-none" id="openUpdateBtn" title="Actualizar Firmware">
-            <i class="bi bi-cpu fs-5"></i>
-          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-link text-secondary p-0 border-0 bg-transparent shadow-none position-relative" id="openUpdateBtn" title="Actualizar Firmware">
+              <i class="bi bi-cpu fs-5"></i>
+              <span id="firmwareUpdateBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
+                <span class="visually-hidden">Actualización disponible</span>
+              </span>
+            </button>
+          </div>
           <div>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             <button type="button" class="btn btn-primary" id="saveSettingsBtn">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔍 Scan Network Modal -->
+  <div class="modal fade" id="scanModal" tabindex="-1" aria-labelledby="scanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="scanModalLabel">Escanear Red</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-3">Buscá el reloj en tu red local intentando conectar con las IPs comunes.</p>
+          
+          <div class="mb-3">
+            <label for="subnetSelect" class="form-label">Subred</label>
+            <select id="subnetSelect" class="form-select">
+              <option value="192.168.1.0/24">192.168.1.x</option>
+              <option value="192.168.0.0/24">192.168.0.x</option>
+              <option value="10.0.0.0/24">10.0.0.x</option>
+              <option value="all">Todas las comunes</option>
+              <option value="custom">Personalizada</option>
+            </select>
+          </div>
+
+          <div id="customSubnetDiv" class="mb-3 d-none">
+            <label for="customSubnetInput" class="form-label">Subred (ej: 192.168.100)</label>
+            <input type="text" id="customSubnetInput" class="form-control" placeholder="192.168.100">
+          </div>
+
+          <button id="startScanBtn" class="btn btn-primary w-100 mb-3">
+            <i class="bi bi-search me-1"></i> Iniciar Escaneo
+          </button>
+
+          <div id="scanProgressDiv" class="d-none">
+            <div class="progress mb-2" style="height: 10px;">
+              <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <p class="small text-muted text-center" id="scanStatusText">Preparando...</p>
+          </div>
+
+          <div id="scanResults" class="list-group mt-3">
+            <!-- Results will appear here -->
           </div>
         </div>
       </div>
@@ -291,15 +350,20 @@
           
           <div class="mb-4">
             <h6 class="fw-bold">1. Descargar firmware</h6>
-            <p class="small text-muted">Descargá el archivo compilado más reciente.</p>
+            <p class="small text-muted mb-1">Descargá el archivo compilado más reciente.</p>
+            <div id="firmwareComparison" class="mb-2">
+              <p class="small text-secondary mb-0" id="deviceDate">Versión del dispositivo: Cargando...</p>
+              <p class="small text-secondary mb-0" id="firmwareDate">Última versión: Cargando...</p>
+              <div id="updateAlert" class="mt-2 d-none"></div>
+            </div>
             <a href="reloj.bin" download class="btn btn-outline-primary w-100">
               <i class="bi bi-download me-1"></i> Descargar reloj.bin
             </a>
           </div>
 
-          <div class="mb-3">
+          <div class="mb-4">
             <h6 class="fw-bold">2. Subir al reloj</h6>
-            <p class="small text-muted">Abrí la interfaz web del dispositivo y seleccioná el archivo descargado en la sección de OTA/Update.</p>
+            <p class="small text-muted mb-3">Abrí la interfaz web del dispositivo y seleccioná el archivo descargado en la sección de OTA/Update.</p>
             
             <div class="form-check mb-3">
               <input class="form-check-input" type="checkbox" id="confirmUpdateCheck">
@@ -308,9 +372,22 @@
               </label>
             </div>
 
-            <a href="#" id="clockUpdateLink" target="_blank" class="btn btn-danger w-100 disabled">
-              <i class="bi bi-box-arrow-up-right me-1"></i> Ir a la página de actualización
-            </a>
+            <div class="d-grid gap-2">
+              <a href="#" id="clockUpdateLink" target="_blank" class="btn btn-outline-danger disabled">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Ir a la página de actualización
+              </a>
+              <button id="autoUpdateBtn" class="btn btn-danger disabled">
+                <i class="bi bi-magic me-1"></i> Actualizar automáticamente
+              </button>
+            </div>
+          </div>
+
+          <div id="autoUpdateProgressDiv" class="d-none">
+            <h6 class="fw-bold" id="autoUpdateStatus">Iniciando...</h6>
+            <div class="progress mb-2" style="height: 20px;">
+              <div id="autoUpdateProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+            </div>
+            <p class="small text-muted" id="autoUpdateDetail">Descargando firmware desde GitHub...</p>
           </div>
         </div>
       </div>

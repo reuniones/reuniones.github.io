@@ -545,7 +545,8 @@ button:
     name: stopwatch_add_time
     on_press:
       - lambda: !lambda |-
-          id(stopwatch_time) + id(stopwatch_add_seconds).state < 0 ? id(stopwatch_time) = 0 : id(stopwatch_time) += id(stopwatch_add_seconds).state;    
+          id(stopwatch_time) + id(stopwatch_add_seconds).state < 0 ? id(stopwatch_time) = 0 : id(stopwatch_time) += id(stopwatch_add_seconds).state;
+          id(countdown_time_left) = id(countdown_time) - id(stopwatch_time);    
   - platform: restart
     id: reboot
     name: reboot  

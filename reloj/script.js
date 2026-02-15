@@ -49,6 +49,8 @@ let measuredTimes = {};
 let suppressNextStopwatchUpdate = false;
 let stopwatchTime = 0;
 let currentBaseUrl = "http://reloj.local";  // default fallback
+let deviceBuildDate = null;
+let serverFirmwareDate = null;
 
 
 
@@ -71,6 +73,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("enableProgramSwitch").checked = false;
   document.getElementById("programSelector").style.display = "none";
   document.getElementById("programUI").style.display = "none";
+
+  // Ensure slider starts at zero if not following program
+  const countdownInputInit = document.getElementById("countdownInput");
+  if (countdownInputInit) {
+    countdownInputInit.value = 0;
+    const countdownOutputInit = document.getElementById("countdownOutput");
+    if (countdownOutputInit) countdownOutputInit.textContent = "0 min";
+  }
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const storedDay = localStorage.getItem("lastUsedDate");
@@ -139,8 +149,9 @@ if (storedDay !== todayKey) {
       }
     });
 
+  fetchFirmwareDate();
 
-let currentProgramKey = "";
+  let currentProgramKey = "";
 
 function formatRecordedTime(seconds) {
   if (typeof seconds !== "number" || isNaN(seconds)) return "";
@@ -323,6 +334,58 @@ function setPanelBlur(active) {
   });
 
   // === Firmware Update Logic ===
+  async function fetchFirmwareDate() {
+    const el = document.getElementById("firmwareDate");
+    if (!el) return;
+    try {
+      const response = await fetch("https://api.github.com/repos/reuniones/reuniones.github.io/commits?path=reloj/reloj.bin&per_page=1");
+      if (response.ok) {
+        const commits = await response.json();
+        if (commits && commits.length > 0) {
+          serverFirmwareDate = new Date(commits[0].commit.committer.date);
+          const formatted = serverFirmwareDate.toLocaleString('es-ES', { 
+            day: '2-digit', month: '2-digit', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit' 
+          });
+          el.textContent = `Última versión: ${formatted}`;
+          compareFirmwareVersions();
+          return;
+        }
+      }
+      el.textContent = ""; // Hide if not found
+    } catch (e) {
+      console.error("Error fetching firmware date:", e);
+      el.textContent = "Fecha no disponible";
+    }
+  }
+
+  function compareFirmwareVersions() {
+    const alertEl = document.getElementById("updateAlert");
+    const settingsBadge = document.getElementById("settingsUpdateBadge");
+    const firmwareBadge = document.getElementById("firmwareUpdateBadge");
+    if (!deviceBuildDate || !serverFirmwareDate) return;
+
+    const isNewer = serverFirmwareDate.getTime() > (deviceBuildDate.getTime() + 60000);
+
+    if (isNewer) {
+      if (alertEl) {
+        alertEl.className = "alert alert-success mt-2 py-2 small";
+        alertEl.innerHTML = '<i class="bi bi-info-circle-fill me-2"></i> ¡Hay una versión más reciente disponible!';
+        alertEl.classList.remove("d-none");
+      }
+      settingsBadge?.classList.remove("d-none");
+      firmwareBadge?.classList.remove("d-none");
+    } else {
+      if (alertEl) {
+        alertEl.className = "alert alert-light mt-2 py-2 small text-muted";
+        alertEl.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> El firmware está actualizado.';
+        alertEl.classList.remove("d-none");
+      }
+      settingsBadge?.classList.add("d-none");
+      firmwareBadge?.classList.add("d-none");
+    }
+  }
+
   document.getElementById("openUpdateBtn")?.addEventListener("click", () => {
     // Hide settings and show update modal
     bootstrap.Modal.getInstance(document.getElementById("settingsModal"))?.hide();
@@ -341,17 +404,260 @@ function setPanelBlur(active) {
       clockLink?.classList.add("disabled");
     }
 
+    fetchFirmwareDate();
     updateModal.show();
   });
 
   document.getElementById("confirmUpdateCheck")?.addEventListener("change", (e) => {
     const clockLink = document.getElementById("clockUpdateLink");
+    const autoBtn = document.getElementById("autoUpdateBtn");
     if (e.target.checked) {
       clockLink?.classList.remove("disabled");
+      autoBtn?.classList.remove("disabled");
     } else {
       clockLink?.classList.add("disabled");
+      autoBtn?.classList.add("disabled");
     }
   });
+
+  document.getElementById("autoUpdateBtn")?.addEventListener("click", startAutomaticUpdate);
+
+  async function startAutomaticUpdate() {
+    const btn = document.getElementById("autoUpdateBtn");
+    const status = document.getElementById("autoUpdateStatus");
+    const detail = document.getElementById("autoUpdateDetail");
+    const progressDiv = document.getElementById("autoUpdateProgressDiv");
+    const progressBar = document.getElementById("autoUpdateProgressBar");
+    
+    if (!confirm("¿Estás seguro de que quieres iniciar la actualización automática? No cierres la ventana hasta que termine.")) return;
+
+    btn.disabled = true;
+    progressDiv.classList.remove("d-none");
+    
+    try {
+      // Step 1: Download from GitHub
+      status.textContent = "Descargando...";
+      detail.textContent = "Obteniendo el archivo reloj.bin de GitHub...";
+      const fwResponse = await fetch("reloj.bin");
+      if (!fwResponse.ok) throw new Error("No se pudo descargar el firmware de GitHub.");
+      const blob = await fwResponse.blob();
+
+      // Step 2: Upload to Clock
+      status.textContent = "Subiendo al reloj...";
+      detail.textContent = "Enviando firmware al dispositivo. No desconectes la alimentación.";
+      
+      const xhr = new XMLHttpRequest();
+      const uploadUrl = `${getUrl()}/update`;
+      
+      xhr.open("POST", uploadUrl, true);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          progressBar.style.width = `${percent}%`;
+          progressBar.textContent = `${percent}%`;
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          status.textContent = "¡Actualización exitosa!";
+          detail.textContent = "El reloj se está reiniciando. Esperá un minuto antes de volver a conectar.";
+          progressBar.classList.remove("progress-bar-animated");
+          progressBar.classList.add("bg-success");
+        } else {
+          throw new Error(`Error del reloj: ${xhr.statusText}`);
+        }
+      };
+
+      xhr.onerror = () => {
+        detail.textContent = "Error de conexión con el reloj. Asegurate de tener permitidos los 'Contenidos no seguros'.";
+        status.textContent = "Error de subida";
+        progressBar.classList.add("bg-danger");
+      };
+
+      const formData = new FormData();
+      formData.append("update", blob);
+      xhr.send(formData);
+
+    } catch (err) {
+      console.error("Auto-update error:", err);
+      status.textContent = "Error";
+      detail.textContent = err.message;
+      progressBar.classList.add("bg-danger");
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById("clockUpdateLink")?.addEventListener("click", () => {
+    const updateModal = bootstrap.Modal.getInstance(document.getElementById("updateModal"));
+    updateModal?.hide();
+  });
+
+  // === Network Scanning Logic ===
+  const openScanBtn = document.getElementById("openScanBtn");
+  const scanModalEl = document.getElementById("scanModal");
+  const startScanBtn = document.getElementById("startScanBtn");
+  const subnetSelect = document.getElementById("subnetSelect");
+  const customSubnetDiv = document.getElementById("customSubnetDiv");
+  const customSubnetInput = document.getElementById("customSubnetInput");
+  const scanProgressDiv = document.getElementById("scanProgressDiv");
+  const scanProgressBar = document.getElementById("scanProgressBar");
+  const scanStatusText = document.getElementById("scanStatusText");
+  const scanResults = document.getElementById("scanResults");
+
+  let isScanning = false;
+  let abortController = null;
+
+  openScanBtn?.addEventListener("click", () => {
+    bootstrap.Modal.getInstance(document.getElementById("settingsModal"))?.hide();
+    new bootstrap.Modal(scanModalEl).show();
+  });
+
+  subnetSelect?.addEventListener("change", (e) => {
+    customSubnetDiv.classList.toggle("d-none", e.target.value !== "custom");
+  });
+
+  startScanBtn?.addEventListener("click", async () => {
+    if (isScanning) {
+      isScanning = false;
+      abortController?.abort();
+      startScanBtn.innerHTML = '<i class="bi bi-search me-1"></i> Iniciar Escaneo';
+      scanStatusText.textContent = "Escaneo cancelado.";
+      return;
+    }
+
+    const subnets = [];
+    const val = subnetSelect.value;
+    if (val === "all") {
+      subnets.push("192.168.1", "192.168.0", "10.0.0");
+    } else if (val === "custom") {
+      const custom = customSubnetInput.value.trim();
+      // Match IP pattern and optional CIDR (e.g., 192.168.1.0/23)
+      const match = custom.match(/^(\d{1,3}\.\d{1,3}\.\d{1,3})(?:\.\d{1,3})?(?:\/(\d+))?/);
+      
+      if (!match) {
+        alert("Por favor, ingresá una subred válida (ej: 192.168.1.0/24).");
+        return;
+      }
+
+      const basePrefix = match[1]; // e.g., 192.168.1
+      const cidr = match[2] ? parseInt(match[2]) : 24;
+      const parts = basePrefix.split(".").map(Number);
+
+      if (cidr <= 24 && cidr >= 22) {
+        // Calculate range based on CIDR
+        // /24 = 1 subnet, /23 = 2 subnets, /22 = 4 subnets
+        const count = Math.pow(2, 24 - cidr); 
+        const startOctet = parts[2] & ~(count - 1); // Align to boundary
+        
+        for (let i = 0; i < count; i++) {
+          subnets.push(`${parts[0]}.${parts[1]}.${startOctet + i}`);
+        }
+      } else {
+        // Default or unsupported CIDR: just use the provided octets
+        subnets.push(basePrefix);
+      }
+    } else {
+      subnets.push(val.split(".").slice(0, 3).join("."));
+    }
+
+    isScanning = true;
+    startScanBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> Detener Escaneo';
+    scanProgressDiv.classList.remove("d-none");
+    scanResults.innerHTML = "";
+    scanProgressBar.style.width = "0%";
+    abortController = new AbortController();
+
+    const ips = [];
+    subnets.forEach(s => {
+      for (let i = 1; i <= 254; i++) ips.push(`${s}.${i}`);
+    });
+
+    const total = ips.length;
+    let completed = 0;
+    let ipIndex = 0;
+    const maxConcurrency = 40; // Maintain 40 active requests at all times
+
+    async function worker() {
+      while (isScanning && ipIndex < total) {
+        const ip = ips[ipIndex++];
+        try {
+          const found = await checkDevice(ip, abortController.signal);
+          if (found && isScanning) {
+            addScanResult(ip);
+          }
+        } catch (err) {
+          // Individual request error handled by checkDevice
+        } finally {
+          completed++;
+          const percent = Math.round((completed / total) * 100);
+          scanProgressBar.style.width = `${percent}%`;
+          scanStatusText.textContent = `Escaneando... (${completed}/${total})`;
+        }
+      }
+    }
+
+    // Start initial workers
+    const workers = [];
+    for (let i = 0; i < Math.min(maxConcurrency, total); i++) {
+      workers.push(worker());
+    }
+
+    await Promise.all(workers);
+
+    isScanning = false;
+    startScanBtn.innerHTML = '<i class="bi bi-search me-1"></i> Iniciar Escaneo';
+    if (completed === total) {
+      scanStatusText.textContent = "Escaneo finalizado.";
+    }
+  });
+
+  async function checkDevice(ip, signal) {
+    const url = `http://${ip}/text/controller_url`;
+    try {
+      const fetchPromise = fetch(url, { signal });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout")), 5000)
+      );
+      
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+      
+      // First check if we got a valid response
+      if (!response || !response.ok) return false;
+
+      // Then attempt to parse and validate JSON
+      try {
+        const data = await response.json();
+        return data && data.id === "text-controller_url";
+      } catch (jsonErr) {
+        console.debug(`IP ${ip} responded but is not a valid clock (Invalid JSON)`);
+        return false;
+      }
+    } catch (e) {
+      // Common for most IPs on the subnet to just fail/timeout
+      return false;
+    }
+  }
+
+  function addScanResult(ip) {
+    const btn = document.createElement("button");
+    btn.className = "list-group-item list-group-item-action list-group-item-success d-flex justify-content-between align-items-center";
+    btn.innerHTML = `
+      <span><i class="bi bi-cpu me-2"></i> Reloj encontrado en <strong>${ip}</strong></span>
+      <span class="badge bg-primary rounded-pill">Usar</span>
+    `;
+    btn.onclick = () => {
+      const url = `http://${ip}`;
+      clockUrlInput.value = url;
+      saveClockUrlToCookie(url);
+      bootstrap.Modal.getInstance(scanModalEl).hide();
+      new bootstrap.Modal(document.getElementById("settingsModal")).show();
+      // Apply and reconnect
+      tryReconnect();
+    };
+    scanResults.appendChild(btn);
+  }
 
 
   // === UI Blur Control ===
@@ -444,6 +750,7 @@ function setPanelBlur(active) {
     const clockUrl = getClockUrlFromCookie();
     const urls = Array.from(new Set([
       "http://reloj.local",
+      "http://reloj.lan",
       ...(clockUrl ? [clockUrl] : [])
     ]));
 
@@ -573,6 +880,7 @@ if (row) {
       urls.add(savedUrl);
     }
     urls.add("http://reloj.local");
+    urls.add("http://reloj.lan");
     return Array.from(urls);
   }
 
@@ -784,7 +1092,24 @@ if (row) {
       case "text_sensor-bssid": document.getElementById("infoBSSID").textContent = data.value; break;
       case "text_sensor-mac": document.getElementById("infoMAC").textContent = data.value; break;
       case "text_sensor-dns": document.getElementById("infoDNS").textContent = data.value; break;
-      case "text_sensor-esphome_version": document.getElementById("infoVersion").textContent = data.value; break;
+      case "text_sensor-esphome_version": 
+        document.getElementById("infoVersion").textContent = data.value; 
+        
+        // Parse build date from format: 2026.1.5 (config hash 0x66291bcd, built 2026-02-15 11:18:09 +0000)
+        const dateMatch = data.value.match(/built ([\d-]+ [\d:]+)/);
+        if (dateMatch) {
+          deviceBuildDate = new Date(dateMatch[1] + " UTC");
+          const deviceDateEl = document.getElementById("deviceDate");
+          if (deviceDateEl) {
+            const formatted = deviceBuildDate.toLocaleString('es-ES', { 
+              day: '2-digit', month: '2-digit', year: 'numeric', 
+              hour: '2-digit', minute: '2-digit' 
+            });
+            deviceDateEl.textContent = `Versión instalada: ${formatted}`;
+          }
+          compareFirmwareVersions();
+        }
+        break;
     }
   }
 
