@@ -438,13 +438,13 @@ function setPanelBlur(active) {
 
     let browserHelp = "";
     if (/Chrome/.test(ua)) {
-      browserHelp = "1. Hacé clic en el icono a la izquierda de la barra de direcciones → 'Configuración del sitio' → 'Contenido no seguro' → 'Permitir'.<br>2. Si sigue fallando, es por una protección de Chrome (PNA). Podés probar entrar a <code>chrome://flags/#block-insecure-private-network-requests</code> y ponerlo en 'Disabled'.";
+      browserHelp = "1. Hacé clic en el icono a la izquierda de la barra de direcciones → 'Configuración del sitio' → 'Contenido no seguro' → 'Permitir'.<br>2. Asegurate de que ningún bloqueador de publicidad (uBlock, AdBlock, etc.) esté interfiriendo.<br>3. Asegurate de permitir el acceso a la red local en la configuración del sitio o cuando el navegador lo solicite.";
     } else if (/Firefox/.test(ua)) {
-      browserHelp = "Hacé clic en el icono del escudo a la izquierda de la barra de direcciones y desactivá 'Protección contra el rastreo mejorada' para este sitio.";
+      browserHelp = "1. Hacé clic en el icono del escudo a la izquierda de la barra de direcciones y desactivá 'Protección contra el rastreo mejorada'.<br>2. Desactivá bloqueadores de publicidad para este sitio.";
     } else if (/Safari/.test(ua)) {
-      browserHelp = "En el menú 'Desarrollo', desactivá 'Restricciones de contenido mixto' (o permití contenido HTTP en la configuración).";
+      browserHelp = "1. En el menú 'Desarrollo', desactivá 'Restricciones de contenido mixto'.<br>2. En iOS/iPadOS, asegurate de dar permiso para 'Red Local' en los Ajustes de Privacidad para tu navegador.";
     } else {
-      browserHelp = "Permití 'Contenido mixto' o 'Contenido no seguro' en la configuración de privacidad de tu navegador para este sitio.";
+      browserHelp = "Permití 'Contenido mixto' o 'Contenido no seguro' y asegurate de que no haya bloqueadores de publicidad o restricciones de red local activas.";
     }
 
     const li = document.createElement("li");
