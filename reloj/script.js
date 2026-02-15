@@ -322,6 +322,37 @@ function setPanelBlur(active) {
     new bootstrap.Modal(document.getElementById("settingsModal")).show();
   });
 
+  // === Firmware Update Logic ===
+  document.getElementById("openUpdateBtn")?.addEventListener("click", () => {
+    // Hide settings and show update modal
+    bootstrap.Modal.getInstance(document.getElementById("settingsModal"))?.hide();
+    const updateModal = new bootstrap.Modal(document.getElementById("updateModal"));
+    
+    // Update the link to the clock
+    const clockLink = document.getElementById("clockUpdateLink");
+    if (clockLink) {
+      clockLink.href = getUrl();
+    }
+    
+    // Reset confirmation
+    const check = document.getElementById("confirmUpdateCheck");
+    if (check) {
+      check.checked = false;
+      clockLink?.classList.add("disabled");
+    }
+
+    updateModal.show();
+  });
+
+  document.getElementById("confirmUpdateCheck")?.addEventListener("change", (e) => {
+    const clockLink = document.getElementById("clockUpdateLink");
+    if (e.target.checked) {
+      clockLink?.classList.remove("disabled");
+    } else {
+      clockLink?.classList.add("disabled");
+    }
+  });
+
 
   // === UI Blur Control ===
   function setBlur(active) {

@@ -257,9 +257,61 @@
             </select>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button type="button" class="btn btn-primary" id="saveSettingsBtn">Guardar</button>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-link text-secondary p-0 border-0 bg-transparent shadow-none" id="openUpdateBtn" title="Actualizar Firmware">
+            <i class="bi bi-cpu fs-5"></i>
+          </button>
+          <div>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" class="btn btn-primary" id="saveSettingsBtn">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⬆️ Update Firmware Modal -->
+  <div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="updateModalLabel">Actualizar Firmware</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>¡Atención!</strong> Una actualización fallida puede dejar el reloj inoperativo. Asegurate de tener una conexión estable y <strong>no desconectar la alimentación</strong> durante el proceso.
+          </div>
+
+          <div class="alert alert-warning small">
+            <i class="bi bi-wifi-off me-2"></i>
+            <strong>Aviso:</strong> Los ajustes de WiFi se restablecerán y el reloj ya no será accesible desde esta página hasta que se conecte nuevamente a la misma red WiFi que tu computadora.
+          </div>
+          
+          <div class="mb-4">
+            <h6 class="fw-bold">1. Descargar firmware</h6>
+            <p class="small text-muted">Descargá el archivo compilado más reciente.</p>
+            <a href="reloj.bin" download class="btn btn-outline-primary w-100">
+              <i class="bi bi-download me-1"></i> Descargar reloj.bin
+            </a>
+          </div>
+
+          <div class="mb-3">
+            <h6 class="fw-bold">2. Subir al reloj</h6>
+            <p class="small text-muted">Abrí la interfaz web del dispositivo y seleccioná el archivo descargado en la sección de OTA/Update.</p>
+            
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="confirmUpdateCheck">
+              <label class="form-check-label small" for="confirmUpdateCheck">
+                Entiendo los riesgos y deseo proceder.
+              </label>
+            </div>
+
+            <a href="#" id="clockUpdateLink" target="_blank" class="btn btn-danger w-100 disabled">
+              <i class="bi bi-box-arrow-up-right me-1"></i> Ir a la página de actualización
+            </a>
+          </div>
         </div>
       </div>
     </div>
