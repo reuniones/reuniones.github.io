@@ -448,7 +448,7 @@ function setPanelBlur(active) {
     }
 
     const li = document.createElement("li");
-    li.textContent = browserHelp;
+    li.innerHTML = browserHelp;
     instList.appendChild(li);
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("reconnectModal"));
