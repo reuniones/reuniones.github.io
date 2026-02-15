@@ -329,12 +329,12 @@
     </div>
   </div>
 
-  <!-- ⬆️ Update Firmware Modal -->
-  <div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
+  <!-- ⬆️ 1. Update Consent Modal -->
+  <div class="modal fade" id="updateConsentModal" tabindex="-1" aria-labelledby="updateConsentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="updateModalLabel">Actualizar Firmware</h5>
+          <h5 class="modal-title" id="updateConsentModalLabel">Advertencia de Actualización</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
@@ -348,46 +348,77 @@
             <strong>Aviso:</strong> Los ajustes de WiFi se restablecerán y el reloj ya no será accesible desde esta página hasta que se conecte nuevamente a la misma red WiFi que tu computadora.
           </div>
           
-          <div class="mb-4">
-            <h6 class="fw-bold">1. Descargar firmware</h6>
-            <p class="small text-muted mb-1">Descargá el archivo compilado más reciente.</p>
-            <div id="firmwareComparison" class="mb-2">
-              <p class="small text-secondary mb-0" id="deviceDate">Versión del dispositivo: Cargando...</p>
-              <p class="small text-secondary mb-0" id="firmwareDate">Última versión: Cargando...</p>
-              <div id="updateAlert" class="mt-2 d-none"></div>
-            </div>
-            <a href="reloj.bin" download class="btn btn-outline-primary w-100">
-              <i class="bi bi-download me-1"></i> Descargar reloj.bin
-            </a>
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="confirmUpdateConsentCheck">
+            <label class="form-check-label small" for="confirmUpdateConsentCheck">
+              Entiendo los riesgos y deseo proceder.
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="proceedWithUpdateButton" disabled>Continuar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⬆️ 2. Update Method Modal -->
+  <div class="modal fade" id="updateMethodModal" tabindex="-1" aria-labelledby="updateMethodModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="updateMethodModalLabel">Actualizar Firmware</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="firmwareComparison" class="mb-3">
+            <p class="small text-secondary mb-0" id="deviceDate">Versión del dispositivo: Cargando...</p>
+            <p class="small text-secondary mb-0" id="firmwareDate">Última versión: Cargando...</p>
+            <div id="updateAlert" class="mt-2 d-none"></div>
           </div>
 
-          <div class="mb-4">
-            <h6 class="fw-bold">2. Subir al reloj</h6>
-            <p class="small text-muted mb-3">Abrí la interfaz web del dispositivo y seleccioná el archivo descargado en la sección de OTA/Update.</p>
-            
-            <div class="form-check mb-3">
-              <input class="form-check-input" type="checkbox" id="confirmUpdateCheck">
-              <label class="form-check-label small" for="confirmUpdateCheck">
-                Entiendo los riesgos y deseo proceder.
-              </label>
-            </div>
+          <!-- Tabs Navigation -->
+          <ul class="nav nav-tabs nav-fill mb-3" id="updateTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="auto-tab" data-bs-toggle="tab" data-bs-target="#auto-pane" type="button" role="tab" aria-controls="auto-pane" aria-selected="true">Automática</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual-pane" type="button" role="tab" aria-controls="manual-pane" aria-selected="false">Manual</button>
+            </li>
+          </ul>
 
-            <div class="d-grid gap-2">
-              <a href="#" id="clockUpdateLink" target="_blank" class="btn btn-outline-danger disabled">
-                <i class="bi bi-box-arrow-up-right me-1"></i> Ir a la página de actualización
-              </a>
-              <button id="autoUpdateBtn" class="btn btn-danger disabled">
-                <i class="bi bi-magic me-1"></i> Actualizar automáticamente
+          <!-- Tabs Content -->
+          <div class="tab-content" id="updateTabsContent">
+            <!-- Automatic Update Tab -->
+            <div class="tab-pane fade show active" id="auto-pane" role="tabpanel" aria-labelledby="auto-tab">
+              <p class="small text-muted">El reloj descargará e instalará el firmware automáticamente. Este proceso tardará unos minutos.</p>
+              <button id="autoUpdateBtn" class="btn btn-danger w-100 mt-2">
+                <i class="bi bi-magic me-1"></i> Iniciar Actualización Automática
               </button>
+              <div id="autoUpdateProgressDiv" class="d-none mt-3">
+                <h6 class="fw-bold" id="autoUpdateStatus">Iniciando...</h6>
+                <p class="small text-muted" id="autoUpdateDetail">Enviando comando al reloj...</p>
+              </div>
             </div>
-          </div>
 
-          <div id="autoUpdateProgressDiv" class="d-none">
-            <h6 class="fw-bold" id="autoUpdateStatus">Iniciando...</h6>
-            <div class="progress mb-2" style="height: 20px;">
-              <div id="autoUpdateProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+            <!-- Manual Update Tab -->
+            <div class="tab-pane fade" id="manual-pane" role="tabpanel" aria-labelledby="manual-tab">
+              <div class="mb-4">
+                <h6 class="fw-bold">1. Descargar firmware</h6>
+                <p class="small text-muted mb-2">Descargá el archivo compilado más reciente.</p>
+                <a href="reloj.bin" download class="btn btn-outline-primary w-100">
+                  <i class="bi bi-download me-1"></i> Descargar reloj.bin
+                </a>
+              </div>
+              <div class="mb-3">
+                <h6 class="fw-bold">2. Subir al reloj</h6>
+                <p class="small text-muted mb-2">Abrí la interfaz web del dispositivo y seleccioná el archivo descargado.</p>
+                <a href="#" id="clockUpdateLink" target="_blank" class="btn btn-outline-danger w-100">
+                  <i class="bi bi-box-arrow-up-right me-1"></i> Ir a la página del reloj
+                </a>
+              </div>
             </div>
-            <p class="small text-muted" id="autoUpdateDetail">Descargando firmware desde GitHub...</p>
           </div>
         </div>
       </div>
