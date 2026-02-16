@@ -1,4 +1,6 @@
-const CACHE_NAME = 'reloj-v4.9'; // increment to force update
+// Service Worker: Stale-While-Revalidate strategy
+// This allows offline use but ensures the cache is updated in the background
+const CACHE_NAME = 'reloj-v5.1';
 const ASSETS = [
   './',
   './index.html',
@@ -7,7 +9,8 @@ const ASSETS = [
   './manifest.webmanifest',
   './programs.json',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css'
+  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css',
+  'https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js'
 ];
 
 self.addEventListener('install', event => {
@@ -29,36 +32,33 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // 1. COMPLETELY IGNORE CLOCK REQUESTS
-  // If the protocol is HTTP (while the app is HTTPS) or it matches clock patterns,
-  // we MUST return and not call event.respondWith().
-  // This allows the browser's "Insecure Content" setting to take effect.
-  const isHttp = url.protocol === 'http:';
+  // 1. SKIP CLOCK COMMUNICATION (Mixed Content / Local Network)
+  // We MUST bypass SW for these to avoid caching errors and respect browser security settings
   const isSse = url.pathname.endsWith('/events');
-  const isRelojLocal = url.hostname.endsWith('reloj.local');
   const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(url.hostname);
-
-  if (isHttp || isSse || isRelojLocal || isIp) {
-    return; 
+  const isLocalDomain = url.hostname.endsWith('.local') || url.hostname.endsWith('.lan');
+  
+  if (isSse || isIp || isLocalDomain || event.request.method !== 'GET') {
+    return;
   }
 
-  // 2. ONLY HANDLE APP ASSETS
-  if (event.request.method !== 'GET') return;
-
+  // 2. STALE-WHILE-REVALIDATE for App Assets
+  // Serve from cache immediately, then update cache from network in background
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(err => {
-        return caches.match(event.request).then(res => {
-          if (res) return res;
-          throw err;
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(event.request).then(cachedResponse => {
+        const fetchPromise = fetch(event.request).then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        }).catch(err => {
+          // Network failed, already handled by returning cachedResponse below
         });
-      })
+
+        // Return cached response if available, otherwise wait for network
+        return cachedResponse || fetchPromise;
+      });
+    })
   );
 });

@@ -1,6 +1,11 @@
 // Register the service worker for PWA support
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(console.error);
+  
+  // Reload page when a new Service Worker takes control
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
 }
 
 function getClockUrlFromCookie() {
@@ -322,6 +327,7 @@ function renderProgramItems() {
 
 function highlightCurrentItem() {
   renderProgramItems(); // re-render with updated active row
+  if (!document.getElementById("enableProgramSwitch")?.checked) return;
   const item = currentProgram.items[currentItemIndex];
   if (item.duration) {
     sendCustomCommand(`/number/countdown_minutes/set?value=${item.duration}`);
@@ -404,6 +410,9 @@ document.getElementById("enableProgramSwitch").addEventListener("change", e => {
   const show = e.target.checked;
   document.getElementById("programUI").style.display = show ? "" : "none";
   document.getElementById("programSelector").style.display = show ? "" : "none";
+  if (show && currentProgram) {
+    highlightCurrentItem();
+  }
 });
 
 
