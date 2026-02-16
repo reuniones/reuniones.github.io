@@ -11,6 +11,11 @@
 ------------------------------------------- */
 @import url('https://fonts.cdnfonts.com/css/led-calculator');
 
+html {
+  scroll-padding-top: 70px; /* Account for sticky topbar height */
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Montserrat', sans-serif;
   font-weight: 300;
@@ -247,6 +252,16 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
   z-index: 1020;                            /* above content */
 }
 
+.mini-led {
+  font-family: 'LED Calculator', monospace;
+  color: white;
+  font-size: 1.35rem; /* ~50% bigger than original 0.9rem */
+}
+
+.mini-displays i {
+  font-size: 1rem; /* Match standard clock icon size */
+}
+
 .program-item {
   display: flex;
   justify-content: space-between;
@@ -276,4 +291,74 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 .program-item .measured {
   flex: 0 0 4em;
   text-align: end;
+}
+
+/* ------------------------------------------
+  Mobile Optimization
+------------------------------------------- */
+@media (max-width: 767.98px) {
+  .app-panel {
+    border: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0 !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  .btn-label, .page-title, .status-text {
+    display: none !important;
+  }
+
+  .mini-displays {
+    display: flex !important;
+  }
+
+  #connectionStatus {
+    padding: 0.4rem 0.5rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #connectionStatus i {
+    margin-right: 0 !important;
+  }
+
+  .topbar {
+    justify-content: flex-end !important;
+  }
+
+  .icon-label-btn {
+    height: 3.5em !important;
+  }
+
+  .icon-label-btn i {
+    margin-bottom: 0 !important;
+    font-size: 1.25rem !important;
+  }
+  
+  .pantalla-box {
+    max-width: 100% !important;
+    border-width: 2px !important;
+  }
+
+  .panel-title {
+    position: static !important;
+    transform: none !important;
+    text-align: left !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+  }
+}
+
+/* ------------------------------------------
+  Extra Narrow Screens
+------------------------------------------- */
+@media (max-width: 525px) {
+  .clock-container {
+    display: none !important;
+  }
 }

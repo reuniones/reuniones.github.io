@@ -809,7 +809,7 @@ function setPanelBlur(active) {
 
     const [color, icon, label] = iconMap[state] || iconMap.disconnected;
     el.className = `badge rounded-pill ${color}`;
-    el.innerHTML = `<i class="bi ${icon} me-1"></i> ${label}`;
+    el.innerHTML = `<i class="bi ${icon} me-1"></i> <span class="status-text">${label}</span>`;
 
     // Redirect modal target based on state
     if (state === "connected") {
@@ -1186,12 +1186,13 @@ if (row) {
 
   function updateStopwatchUI(value) {
     const stopEl = document.getElementById("stopwatchTime");
+    const miniStopEl = document.getElementById("miniStopwatchText");
     let formatted = value;
     if (stopwatchState === "running") {
       formatted = formatted.replace(/:/g, '<span class="colon">:</span>');
-      stopEl.classList.add("stopwatch-running");
+      stopEl?.classList.add("stopwatch-running");
     } else {
-      stopEl.classList.remove("stopwatch-running");
+      stopEl?.classList.remove("stopwatch-running");
     }
 
     const match = value.match(/(\d+):(\d+)/);
@@ -1199,21 +1200,27 @@ if (row) {
       stopwatchTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
       updateLiveMeasuredTime(stopwatchTime);
     }
-    stopEl.innerHTML = formatted;
+    if (stopEl) stopEl.innerHTML = formatted;
+    if (miniStopEl) miniStopEl.textContent = value;
   }
 
   function updateDisplayTextUI(value) {
     const displayElem = document.getElementById("displayText");
-    displayElem.classList.remove("pantalla-scroll");
-    if (value.length > 8) {
-      displayElem.innerHTML = `<span class="pantalla-scroll">${value}</span>`;
-    } else if (currentDisplayMode === 'clock' && value.length >= 3) {
-        const trimmed = value;
-        const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
-        const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
-        displayElem.innerHTML = smallerLastTwo;
-    } else {
-      displayElem.textContent = value;
+    const miniDisplayElem = document.getElementById("miniDisplayText");
+    if (miniDisplayElem) miniDisplayElem.textContent = value;
+
+    if (displayElem) {
+      displayElem.classList.remove("pantalla-scroll");
+      if (value.length > 8) {
+        displayElem.innerHTML = `<span class="pantalla-scroll">${value}</span>`;
+      } else if (currentDisplayMode === 'clock' && value.length >= 3) {
+          const trimmed = value;
+          const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
+          const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
+          displayElem.innerHTML = smallerLastTwo;
+      } else {
+        displayElem.textContent = value;
+      }
     }
   }
 

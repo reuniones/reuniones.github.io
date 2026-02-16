@@ -47,14 +47,27 @@
 <body>
       <!-- 🕒 Top bar: Clock, connection status, share/settings -->
     <div class="topbar d-flex justify-content-between align-items-center mb-3 sticky-top px-4 py-1">
-      <div class="fw-semibold text-white fs-5">RELOJ | CRONÓMETRO</div>
+      <div class="fw-semibold text-white fs-5 page-title">RELOJ | CRONÓMETRO</div>
+      
+      <!-- Mini Displays for Mobile -->
+      <div class="mini-displays d-none gap-3 me-auto">
+        <a href="#panel-pantalla" class="text-decoration-none d-flex align-items-center gap-1 text-white">
+          <i class="bi bi-tv"></i>
+          <span id="miniDisplayText" class="mini-led">---</span>
+        </a>
+        <a href="#panel-crono" class="text-decoration-none d-flex align-items-center gap-1 text-white">
+          <i class="bi bi-stopwatch"></i>
+          <span id="miniStopwatchText" class="mini-led">0:00</span>
+        </a>
+      </div>
+
       <div class="d-flex align-items-center gap-3">
-        <div class="d-flex align-items-center gap-2 panel-blurable">
+        <div class="d-flex align-items-center gap-2 panel-blurable clock-container">
           <i class="bi bi-clock"></i>
           <span id="clockTime"></span>
         </div>
         <span id="connectionStatus" class="badge rounded-pill bg-success" role="button" data-bs-toggle="modal" data-bs-target="#connectionModal">
-          <i class="bi bi-check-circle-fill me-1"></i> Conectado
+          <i class="bi bi-check-circle-fill me-1"></i> <span class="status-text">Conectado</span>
         </span>
         <div class="btn-group" role="group">
           <button class="btn btn-sm" id="shareBtn" title="Compartir">
@@ -74,9 +87,9 @@
     <div class="row g-2">
 
       <!-- 📺 Left Panel: Display screen + mode selector -->
-      <div class="col-12 col-md-6">
-        <div class="border rounded-3 p-4 shadow-sm bg-secondary-subtle position-relative panel-blurable">
-          <h6 class="text-uppercase text-white fw-bold panel-title">Pantalla</h6>
+      <div class="col-12 col-md-6" id="panel-pantalla">
+        <div class="border rounded-3 p-4 shadow-sm bg-secondary-subtle position-relative panel-blurable app-panel">
+          <h6 class="text-uppercase text-white fw-bold panel-title"><i class="bi bi-tv me-2"></i>Pantalla</h6>
 
 
 
@@ -97,19 +110,19 @@
           <div class="btn-group btn-group-lg w-100 mb-3 text-uppercase" role="group" aria-label="Mostrar">
             <input type="radio" class="btn-check" name="displayMode" id="displayClock" value="clock" autocomplete="off">
             <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displayClock">
-              <i class="bi bi-clock me-1"></i> Hora
+              <i class="bi bi-clock me-1"></i> <span class="btn-label">Hora</span>
             </label>
 
             <input type="radio" class="btn-check" name="displayMode" id="displayStopwatch" value="stopwatch" autocomplete="off">
             <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displayStopwatch">
-              <i class="bi bi-stopwatch me-1"></i> Crono
+              <i class="bi bi-stopwatch me-1"></i> <span class="btn-label">Crono</span>
             </label>
 
             <div class="btn-group w-100" role="group">
               <!-- Main Cartel Toggle -->
               <input type="radio" class="btn-check" name="displayMode" id="displaySign" value="sign" autocomplete="off">
               <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displaySign">
-                <i class="bi bi-exclamation-octagon me-1"></i> Cartel
+                <i class="bi bi-exclamation-octagon me-1"></i> <span class="btn-label">Cartel</span>
               </label>
 
               <!-- Dropdown Toggle -->
@@ -127,10 +140,10 @@
       </div>
 
       <!-- ⏱️ Right Panel: Stopwatch + controls -->
-      <div class="col-12 col-md-6">
-        <div class="border rounded-3 p-4 shadow-sm bg-secondary-subtle position-relative panel-blurable">
+      <div class="col-12 col-md-6" id="panel-crono">
+        <div class="border rounded-3 p-4 shadow-sm bg-secondary-subtle position-relative panel-blurable app-panel">
 
-          <h6 class="text-uppercase text-white fw-bold panel-title">Cronómetro</h6>
+          <h6 class="text-uppercase text-white fw-bold panel-title"><i class="bi bi-stopwatch me-2"></i>Cronómetro</h6>
 
 
 
@@ -151,11 +164,11 @@
           <div class="btn-group btn-group-lg w-100 mb-3 text-uppercase" role="group">
             <button id="startPauseBtn" class="btn btn-outline-success w-100 text-uppercase icon-label-btn">
               <i class="bi" id="startPauseIcon"></i>
-              <span id="startPauseLabel"></span>
+              <span id="startPauseLabel" class="btn-label"></span>
             </button>
 
             <button id="resetBtn" class="btn btn-outline-info w-100 text-uppercase icon-label-btn">
-              <i class="bi bi-arrow-counterclockwise"></i> Reset
+              <i class="bi bi-arrow-counterclockwise"></i> <span class="btn-label">Reset</span>
             </button>
           </div>
 
