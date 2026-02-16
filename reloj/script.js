@@ -167,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
     hardcodedUrls.forEach(url => {
       const item = document.createElement("div");
       item.className = "list-group-item d-flex justify-content-between align-items-center bg-body-tertiary";
-      item.innerHTML = `<span class="small font-monospace">${url}</span><span class="badge bg-secondary rounded-pill">Fijo</span>`;
+      item.innerHTML = `<span class="small font-monospace">${url}</span>`;
       urlManagementList.appendChild(item);
     });
 
