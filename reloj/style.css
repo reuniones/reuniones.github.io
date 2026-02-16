@@ -73,13 +73,6 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
   100% { transform: translateX(-100%); }
 }
 
-/* Special mode: Cartel/sign mode */
-.pantalla-sign {
-  background-color: red;
-  color: black;
-  text-shadow: 0 0 4px black, 0 0 15px black;
-}
-
 /* Special mode: Blinking display */
 .pantalla-blink {
   animation: blinker 1s linear infinite;

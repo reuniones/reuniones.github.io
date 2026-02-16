@@ -837,7 +837,6 @@ function setPanelBlur(active) {
   // === Apply Pantalla Classes ===
   function updatePantallaClass() {
     const el = document.getElementById("displayText");
-    el.classList.toggle("pantalla-sign", currentDisplayMode === "sign");
     el.classList.toggle("pantalla-blink", blinkEnabled);
   }
 
@@ -1211,6 +1210,9 @@ if (row) {
 
     // Trim trailing spaces for cleaner UI display (flexbox handles centering)
     const trimmedValue = value.trimEnd();
+    
+    // Update browser page title
+    document.title = trimmedValue ? `Reloj - ${trimmedValue}` : "Reloj";
 
     const displayElem = document.getElementById("displayText");
     const miniDisplayElem = document.getElementById("miniDisplayText");
