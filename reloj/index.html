@@ -228,41 +228,53 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="urlInput" class="form-label">URL del reloj</label>
-            <div class="input-group">
-              <input type="text" id="urlInput" class="form-control" placeholder="reloj.local o 192.168.1.50">
-              <button class="btn btn-outline-secondary" type="button" id="openScanBtn" title="Escanear Red">
-                <i class="bi bi-search"></i>
-              </button>
-              <div class="invalid-feedback">
-                Por favor, ingresá una URL o IP válida (ej: 192.168.1.50 o reloj.local).
-              </div>
+          <!-- Reloj Section -->
+          <div class="mb-4">
+            <h6 class="fw-bold small text-uppercase mb-3">Reloj</h6>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="countdownModeSwitch">
+              <label class="form-check-label" for="countdownModeSwitch">Cuenta regresiva</label>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="autoShowSwitch">
+              <label class="form-check-label" for="autoShowSwitch">Mostrar cronómetro automáticamente</label>
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="blinkBeforeOvertimeSwitch">
+              <label class="form-check-label" for="blinkBeforeOvertimeSwitch">Parpadear antes de tiempo excedido</label>
+            </div>
+            <div class="mb-3">
+              <label for="overtimeModeSelect" class="form-label small">Tiempo excedido</label>
+              <select id="overtimeModeSelect" class="form-select form-select-sm">
+                <option value="normal">Continuar</option>
+                <option value="blink">Parpadear</option>
+                <option value="sign">Cartel TIEMPO</option>
+              </select>
             </div>
           </div>
-          <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="countdownModeSwitch">
-            <label class="form-check-label" for="countdownModeSwitch">Cuenta regresiva</label>
-          </div>
-          <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="autoShowSwitch">
-            <label class="form-check-label" for="autoShowSwitch">Mostrar cronómetro automáticamente</label>
-          </div>
-          <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="blinkBeforeOvertimeSwitch">
-            <label class="form-check-label" for="blinkBeforeOvertimeSwitch">Parpadear antes de tiempo excedido</label>
-          </div>
-          <!-- <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="darkModeSwitch">
-            <label class="form-check-label" for="darkModeSwitch">Modo oscuro</label>
-          </div> -->
-          <div class="mb-3">
-            <label for="overtimeModeSelect" class="form-label">Tiempo excedido</label>
-            <select id="overtimeModeSelect" class="form-select">
-              <option value="normal">Continuar</option>
-              <option value="blink">Parpadear</option>
-              <option value="sign">Cartel TIEMPO</option>
-            </select>
+
+          <!-- Conexión Section -->
+          <div class="mb-2">
+            <h6 class="fw-bold small text-uppercase mb-3">Conexión</h6>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Direcciones para intentar conectar</label>
+              <div id="urlManagementList" class="list-group list-group-flush border rounded mb-2">
+                <!-- Populated by JS -->
+              </div>
+              
+              <div class="input-group input-group-sm">
+                <input type="text" id="newUrlInput" class="form-control" placeholder="ej: 192.168.1.50">
+                <button class="btn btn-outline-primary" type="button" id="addUrlBtn">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" id="openScanBtn" title="Escanear Red">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+              <div id="newUrlFeedback" class="invalid-feedback d-none">
+                Ingresá una dirección válida.
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer d-flex justify-content-between">
@@ -460,28 +472,110 @@
 
   <!-- ❌ Reconnect Help Modal -->
   <div class="modal fade" id="reconnectModal" tabindex="-1" aria-labelledby="reconnectModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="reconnectModalLabel">No es posible conectarse con el reloj</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <div class="modal-header text-bg-danger">
+          <h5 class="modal-title" id="reconnectModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Error de conexión</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          <ul>
-          <li>Puede ser que no esté bien configurada la dirección del reloj.</li></ul>
-          <div class="d-flex justify-content-end">
-            <button id="openSettingsBtn" class="btn btn-outline-light">Configuración</button>
-          </div>
+          <p class="mb-4">No se puede establecer una conexión con el reloj. Esto puede deberse a problemas de red, configuración o restricciones de seguridad del navegador. La siguiente información puede ayudarte a diagnosticar el problema:</p>
           
-          <ul>
-          <li>Asegurate de permitir contenido mixto en tu navegador para las URLs del reloj:</li>
-          <ul id="clockAddresses"></ul>
-          </ul>
+          <div id="diagAlertContainer"></div>
+          <div id="triedUrlsContainer" class="mb-3 d-none">
+            <p class="small text-muted mb-1">Direcciones intentadas:</p>
+            <div id="triedUrlsList" class="d-flex flex-wrap gap-1"></div>
+          </div>
+          <p class="mb-4">Las siguientes acciones pueden ayudarte a resolver el problema:</p>
 
-          <p><strong>Cómo permitir contenido mixto:</strong></p>
-          <ul id="mixedContentInstructions"></ul>
-          <p>El sistema continuará intentando reconectarse.</p>
+          <div class="accordion accordion-flush border rounded shadow-sm" id="reconnectAccordion">
+            <!-- Step 1: WiFi -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWifi">
+                  <i class="bi bi-wifi me-2"></i> Verificar conexión a la red
+                </button>
+              </h2>
+              <div id="collapseWifi" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted">
+                  <p>Asegurate de que el reloj esté encendido y conectado a la misma red que este dispositivo.</p>
+                  <p>Podés verificar que el reloj se conectó <b>si muestra la hora actualizada.</b></p>
+                  <div class="bg-body-tertiary p-2 rounded">
+                    <strong>Si cambió la configuración del wifi, acabás de instalar el reloj o actualizaste el firmware, seguí estos pasos:</strong>
+                    <ol class="mb-0 ps-3 mt-1">
+                      <li>Buscá la red WiFi <strong>"Reloj"</strong> y conectate.</li>
+                      <li>Entrá a <code>http://192.168.4.1</code> para configurar el WiFi.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
 
+            <!-- Step 2: Permissions -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePerms">
+                  <i class="bi bi-shield-check me-2"></i> Permitir contenido inseguro y acceso a la red local
+                </button>
+              </h2>
+              <div id="collapsePerms" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted">
+                  <p>Por seguridad el navegador bloquea conexiones a dispositivos dentro de la red local o sin encriptación. Seguí las siguientes instrucciones para permitir la conexión en tu navegador.</p>
+                  <div id="browserSpecificInstructions" class="alert alert-warning py-2 mb-0">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Adblock -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdblock">
+                  <i class="bi bi-plugin me-2"></i> Desactivar plugins que bloquean el acceso
+                </button>
+              </h2>
+              <div id="collapseAdblock" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted">
+                  Extensiones como <strong>uBlock</strong> o <strong>AdBlock</strong> pueden interferir con las conexiones locales. Desactivalos para este sitio.
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: IP / Scan -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIP">
+                  <i class="bi bi-gear-wide-connected me-2"></i> Configurar dirección IP o escanear la red
+                </button>
+              </h2>
+              <div id="collapseIP" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted text-center">
+                  <p>Si verificaste los pasos anteriores pero sigue sin conectarse, podés intentar  ingresar la dirección IP del reloj en el diálogo de configuración. Ahí también se puede escanear la red para encontrar la dirección IP del reloj.</p>
+                  <p>Tené en cuenta que la dirección IP puede cambiar con el tiempo.</p>
+                  <button class="btn btn-sm btn-outline-primary" id="openSettingsBtn">
+                    Configuración
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 5: Developer -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDev">
+                  <i class="bi bi-chat-dots me-2"></i> Contactar al desarrollador
+                </button>
+              </h2>
+              <div id="collapseDev" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted">
+                  Sólo después de intentar todos los pasos anteriores varias veces, contactá al desarrollador para obtener soporte técnico.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="small text-center text-muted mt-4 mb-0">El sistema seguirá intentando conectar automáticamente.</p>
         </div>
       </div>
     </div>

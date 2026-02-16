@@ -69,6 +69,58 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastEventTime = Date.now();
   let blinkEnabled = false;
   let stopwatchState = "reset";
+  let lastSecurityViolation = null;
+  const triedUrls = new Map(); // url -> status ('trying', 'blocked', 'failed', 'connected')
+
+  function updateTriedUrlsUI() {
+    const container = document.getElementById("triedUrlsContainer");
+    const list = document.getElementById("triedUrlsList");
+    if (!container || !list) return;
+
+    if (triedUrls.size > 0) {
+      container.classList.remove("d-none");
+      list.innerHTML = "";
+      triedUrls.forEach((status, url) => {
+        const badge = document.createElement("span");
+        badge.className = "badge border font-monospace py-1 px-2 ";
+        let icon = "";
+        
+        if (status === 'trying') {
+          badge.className += "text-primary border-primary blinking";
+          icon = '<i class="bi bi-arrow-repeat me-1"></i>';
+        } else if (status === 'blocked') {
+          badge.className += "text-warning border-warning";
+          icon = '<i class="bi bi-shield-lock-fill me-1"></i>';
+        } else if (status === 'failed') {
+          badge.className += "text-danger border-danger";
+          icon = '<i class="bi bi-x-circle me-1"></i>';
+        } else if (status === 'connected') {
+          badge.className += "text-success border-success fw-bold";
+          icon = '<i class="bi bi-check-circle-fill me-1"></i>';
+        }
+
+        badge.innerHTML = `${icon}${url}`;
+        list.appendChild(badge);
+      });
+    }
+  }
+
+  // Listen for browser security blocks (Mixed Content / CSP)
+  document.addEventListener('securitypolicyviolation', (e) => {
+    const blockedUrl = e.blockedURI;
+    lastSecurityViolation = {
+      uri: blockedUrl,
+      directive: e.violatedDirective,
+      timestamp: Date.now()
+    };
+    
+    // Mark this URL as blocked in our tracker
+    const normalized = blockedUrl.split('/events')[0].split('/text')[0].replace(/\/$/, "");
+    if (triedUrls.has(normalized)) {
+      triedUrls.set(normalized, 'blocked');
+      updateTriedUrlsUI();
+    }
+  });
 
   document.getElementById("enableProgramSwitch").checked = false;
   document.getElementById("programSelector").style.display = "none";
@@ -85,39 +137,83 @@ document.addEventListener("DOMContentLoaded", () => {
   const todayKey = new Date().toISOString().slice(0, 10);
   const storedDay = localStorage.getItem("lastUsedDate");
 
-  const clockUrlInput = document.getElementById("urlInput");
-  const urlParams = new URLSearchParams(window.location.search);
-  const queryClock = urlParams.get('clock');
+  // === URL Management Logic ===
+  const urlManagementList = document.getElementById("urlManagementList");
+  const newUrlInput = document.getElementById("newUrlInput");
+  const addUrlBtn = document.getElementById("addUrlBtn");
+  const hardcodedUrls = ["http://reloj.local", "http://reloj.lan"];
+  let extraUrls = loadExtraUrls();
 
-  if (queryClock && clockUrlInput) {
-    clockUrlInput.value = queryClock;
-    saveClockUrlToCookie(queryClock);
+  function loadExtraUrls() {
+    const json = localStorage.getItem("extra_clock_urls");
+    return json ? new Set(JSON.parse(json)) : new Set();
   }
 
-  const savedUrl = getClockUrlFromCookie();
-  if (clockUrlInput && !clockUrlInput.value && savedUrl) {
-    clockUrlInput.value = savedUrl;
+  function saveExtraUrls() {
+    localStorage.setItem("extra_clock_urls", JSON.stringify(Array.from(extraUrls)));
   }
 
-  clockUrlInput?.addEventListener("input", () => {
-    const raw = clockUrlInput.value.trim();
-    if (!raw) {
-      clockUrlInput.classList.remove("is-valid", "is-invalid");
-      return;
-    }
+  function renderUrlManagementList() {
+    if (!urlManagementList) return;
+    urlManagementList.innerHTML = "";
+    
+    // Display Hardcoded
+    hardcodedUrls.forEach(url => {
+      const item = document.createElement("div");
+      item.className = "list-group-item d-flex justify-content-between align-items-center bg-body-tertiary";
+      item.innerHTML = `<span class="small font-monospace">${url}</span><span class="badge bg-secondary rounded-pill">Fijo</span>`;
+      urlManagementList.appendChild(item);
+    });
 
+    // Display Extra
+    extraUrls.forEach(url => {
+      const item = document.createElement("div");
+      item.className = "list-group-item d-flex justify-content-between align-items-center";
+      item.innerHTML = `<span class="small font-monospace">${url}</span>
+        <button class="btn btn-sm btn-link text-danger p-0 border-0 remove-url-btn" data-url="${url}">
+          <i class="bi bi-trash"></i>
+        </button>`;
+      urlManagementList.appendChild(item);
+    });
+
+    // Add event listeners to remove buttons
+    document.querySelectorAll(".remove-url-btn").forEach(btn => {
+      btn.onclick = () => {
+        extraUrls.delete(btn.dataset.url);
+        saveExtraUrls();
+        renderUrlManagementList();
+        tryReconnect();
+      };
+    });
+  }
+
+  addUrlBtn?.addEventListener("click", () => {
+    const raw = newUrlInput.value.trim();
+    if (!raw) return;
     const normalized = normalizeUrlInput(raw);
     if (isValidClockUrl(normalized)) {
-      clockUrlInput.classList.remove("is-invalid");
-      clockUrlInput.classList.add("is-valid");
-      saveClockUrlToCookie(normalized);
-      // Try reconnecting immediately only if valid
+      extraUrls.add(normalized);
+      saveExtraUrls();
+      newUrlInput.value = "";
+      newUrlInput.classList.remove("is-invalid");
+      renderUrlManagementList();
       tryReconnect();
     } else {
-      clockUrlInput.classList.remove("is-valid");
-      clockUrlInput.classList.add("is-invalid");
+      newUrlInput.classList.add("is-invalid");
     }
   });
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryClock = urlParams.get('clock');
+  if (queryClock) {
+    const normalized = normalizeUrlInput(queryClock);
+    if (isValidClockUrl(normalized)) {
+      extraUrls.add(normalized);
+      saveExtraUrls();
+    }
+  }
+
+  renderUrlManagementList();
 
 
 if (storedDay !== todayKey) {
@@ -437,10 +533,13 @@ function setPanelBlur(active) {
     statusText.textContent = "Comando enviado. El reloj se está actualizando y se reiniciará pronto...";
 
     sendCustomCommand("/button/ota_auto_update/press")
-      .catch((err) => {
-        console.error("Auto-update error:", err);
-        statusText.textContent = "Error al enviar el comando. Probá el método manual.";
-        autoUpdateBtn.disabled = false;
+      .then((success) => {
+        if (success) {
+          statusText.textContent = "Comando enviado. El reloj se está actualizando y se reiniciará pronto...";
+        } else {
+          statusText.textContent = "Error al enviar el comando. Probá el método manual.";
+          autoUpdateBtn.disabled = false;
+        }
       });
   });
 
@@ -670,8 +769,9 @@ function setPanelBlur(active) {
     `;
     btn.onclick = () => {
       const url = `http://${ip}`;
-      clockUrlInput.value = url;
-      saveClockUrlToCookie(url);
+      extraUrls.add(url);
+      saveExtraUrls();
+      renderUrlManagementList();
       bootstrap.Modal.getInstance(scanModalEl).hide();
       new bootstrap.Modal(document.getElementById("settingsModal")).show();
       // Apply and reconnect
@@ -701,6 +801,13 @@ function setPanelBlur(active) {
     const [color, icon, label] = iconMap[state] || iconMap.disconnected;
     el.className = `badge rounded-pill ${color}`;
     el.innerHTML = `<i class="bi ${icon} me-1"></i> ${label}`;
+
+    // Redirect modal target based on state
+    if (state === "connected") {
+      el.setAttribute("data-bs-target", "#connectionModal");
+    } else {
+      el.setAttribute("data-bs-target", "#reconnectModal");
+    }
 
     // Apply blinking and dark text for connecting
     el.classList.toggle("blinking", state === "connecting");
@@ -761,54 +868,107 @@ function setPanelBlur(active) {
   });
 
   // === Show Help Modal When Connection Fails ===
-  function showReconnectHelp() {
-    const settingsModal = bootstrap.Modal.getInstance(document.getElementById("settingsModal"));
-    if (settingsModal && document.getElementById("settingsModal").classList.contains("show")) return;
+  async function runDiagnostics(url) {
+    const results = {
+      reachable: false,
+      blockedByMixedContent: false,
+      isHttps: window.location.protocol === "https:",
+      duration: 0,
+      probableCause: "unknown" // "dns", "timeout", "mixed-content"
+    };
+
+    // Check if a security violation was recently recorded for this URL
+    if (lastSecurityViolation && 
+        (Date.now() - lastSecurityViolation.timestamp < 10000) && 
+        url.includes(new URL(lastSecurityViolation.uri).hostname)) {
+      results.blockedByMixedContent = true;
+      results.probableCause = "mixed-content";
+    }
+
+    const start = Date.now();
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      await fetch(url, { mode: 'no-cors', signal: controller.signal });
+      clearTimeout(timeoutId);
+      results.reachable = true;
+      results.duration = Date.now() - start;
+    } catch (err) {
+      results.duration = Date.now() - start;
+      
+      if (err.name === 'AbortError') {
+        results.reachable = false;
+        results.probableCause = "timeout";
+      } else if (results.blockedByMixedContent) {
+        results.probableCause = "mixed-content";
+      } else if (results.duration < 500) {
+        // Immediate failure (< 500ms) usually means DNS failure or immediate rejection
+        results.probableCause = "dns";
+      } else {
+        results.probableCause = "timeout";
+      }
+
+      if (results.isHttps && url.startsWith("http://") && results.probableCause === "unknown") {
+        results.blockedByMixedContent = true;
+        results.probableCause = "mixed-content";
+      }
+    }
+    return results;
+  }
+
+  async function showReconnectHelp() {
+    // List of modals that should not be interrupted by the reconnection help
+    const configModals = ["settingsModal", "updateConsentModal", "updateMethodModal", "scanModal"];
+    const isConfigOpen = () => configModals.some(id => document.getElementById(id)?.classList.contains("show"));
+
+    if (isConfigOpen()) return;
 
     const ua = navigator.userAgent;
-    const isHttps = window.location.protocol === "https:";
+    const currentUrl = getUrl();
+    const diag = await runDiagnostics(currentUrl);
 
-    const clockUrl = getClockUrlFromCookie();
-    const urls = Array.from(new Set([
-      "http://reloj.local",
-      "http://reloj.lan",
-      ...(clockUrl ? [clockUrl] : [])
-    ]));
+    // Re-check after diagnostic await in case user opened config in the meantime
+    if (isConfigOpen()) return;
 
-    // === Fill clockAddresses list ===
-    const addrList = document.getElementById("clockAddresses");
-    addrList.innerHTML = "";
-    urls.forEach(url => {
-      const li = document.createElement("li");
-      li.innerHTML = `<code>${url}</code>`;
-      addrList.appendChild(li);
-    });
-
-    // === Fill mixedContentInstructions list ===
-    const instList = document.getElementById("mixedContentInstructions");
-    instList.innerHTML = "";
-
-    if (isHttps) {
-      const warnLi = document.createElement("li");
-      warnLi.className = "text-warning fw-bold mb-2";
-      warnLi.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> Estás usando una conexión segura (HTTPS), pero el reloj usa una conexión normal (HTTP). Por seguridad, el navegador bloquea la conexión a menos que le des permiso.';
-      instList.appendChild(warnLi);
+    // === Diagnostic Alert ===
+    const diagContainer = document.getElementById("diagAlertContainer");
+    if (diagContainer) {
+      if (diag.probableCause === "mixed-content") {
+        diagContainer.innerHTML = `
+          <div class="alert alert-warning small py-2 mb-3">
+            <i class="bi bi-shield-lock-fill me-2"></i> <strong>Acceso bloqueado:</strong> El navegador impide la conexión por seguridad (HTTPS).
+          </div>`;
+      } else if (diag.probableCause === "dns") {
+        diagContainer.innerHTML = `
+          <div class="alert alert-danger small py-2 mb-3">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i> <strong>Error de dirección:</strong> No se pudo encontrar el destino <code>${currentUrl}</code>. Verificá si está bien escrito.
+          </div>`;
+      } else if (diag.probableCause === "timeout") {
+        diagContainer.innerHTML = `
+          <div class="alert alert-danger small py-2 mb-3">
+            <i class="bi bi-clock-history me-2"></i> <strong>Tiempo de espera agotado:</strong> El reloj no responde en <code>${currentUrl}</code>. ¿Está encendido?
+          </div>`;
+      } else {
+        diagContainer.innerHTML = "";
+      }
     }
 
-    let browserHelp = "";
-    if (/Chrome/.test(ua)) {
-      browserHelp = "1. Hacé clic en el icono a la izquierda de la barra de direcciones → 'Configuración del sitio' → 'Contenido no seguro' → 'Permitir'.<br>2. Asegurate de que ningún bloqueador de publicidad (uBlock, AdBlock, etc.) esté interfiriendo.<br>3. Asegurate de permitir el acceso a la red local en la configuración del sitio o cuando el navegador lo solicite.";
-    } else if (/Firefox/.test(ua)) {
-      browserHelp = "1. Hacé clic en el icono del escudo a la izquierda de la barra de direcciones y desactivá 'Protección contra el rastreo mejorada'.<br>2. Desactivá bloqueadores de publicidad para este sitio.";
-    } else if (/Safari/.test(ua)) {
-      browserHelp = "1. En el menú 'Desarrollo', desactivá 'Restricciones de contenido mixto'.<br>2. En iOS/iPadOS, asegurate de dar permiso para 'Red Local' en los Ajustes de Privacidad para tu navegador.";
-    } else {
-      browserHelp = "Permití 'Contenido mixto' o 'Contenido no seguro' y asegurate de que no haya bloqueadores de publicidad o restricciones de red local activas.";
+    // === Browser Specific Instructions ===
+    const instContainer = document.getElementById("browserSpecificInstructions");
+    if (instContainer) {
+      let browserHelp = "";
+      if (/Chrome/.test(ua)) {
+        browserHelp = "<strong>Chrome:</strong> Hacé clic en el icono a la izquierda de la URL → 'Configuración del sitio' → 'Contenido no seguro' → 'Permitir'. Asegurá también permitir 'Red local'.";
+      } else if (/Firefox/.test(ua)) {
+        browserHelp = "<strong>Firefox:</strong> Hacé clic en el escudo → Desactivá 'Protección contra el rastreo mejorada'.";
+      } else if (/Safari/.test(ua)) {
+        browserHelp = "<strong>Safari:</strong> Menú 'Desarrollo' → Desactivá 'Restricciones de contenido mixto'. En iOS, permití 'Red Local' en Ajustes → Privacidad.";
+      } else {
+        browserHelp = "Permití 'Contenido mixto' o 'Contenido no seguro' en los ajustes de privacidad de tu navegador.";
+      }
+      instContainer.innerHTML = browserHelp;
     }
-
-    const li = document.createElement("li");
-    li.innerHTML = browserHelp;
-    instList.appendChild(li);
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("reconnectModal"));
     modal.show();
@@ -879,7 +1039,12 @@ if (row) {
 
   // === Generic Command Sender ===
   function sendCustomCommand(endpoint) {
-    return fetch(`${getUrl()}${endpoint}`, { method: "POST" });
+    return fetch(`${getUrl()}${endpoint}`, { method: "POST" })
+      .then(res => res.ok)
+      .catch(err => {
+        console.warn(`Command failed: ${endpoint}`, err);
+        return false;
+      });
   }
 
   // === Settings Modal Save = Reload (URL saved via query param) ===
@@ -891,17 +1056,8 @@ if (row) {
   let reconnecting = false;
 
   function getUrlsToTry() {
-    const urls = new Set();
-    const inputUrl = document.getElementById("urlInput")?.value?.trim();
-    if (inputUrl) {
-      urls.add(normalizeUrlInput(inputUrl));
-    }
-    const savedUrl = getClockUrlFromCookie();
-    if (savedUrl) {
-      urls.add(savedUrl);
-    }
-    urls.add("http://reloj.local");
-    urls.add("http://reloj.lan");
+    const urls = new Set(hardcodedUrls);
+    extraUrls.forEach(u => urls.add(u));
     return Array.from(urls);
   }
 
@@ -928,6 +1084,8 @@ if (row) {
       currentBaseUrl = url;
       reconnecting = false;
       updateConnectionStatus("connected");
+      triedUrls.set(url, 'connected');
+      updateTriedUrlsUI();
       setBlur(false);
       const reconnectModal = bootstrap.Modal.getInstance(document.getElementById("reconnectModal"));
       if (reconnectModal) reconnectModal.hide?.();
@@ -975,20 +1133,27 @@ if (row) {
       }
 
       const url = urls[index++];
+      triedUrls.set(url, 'trying');
+      updateTriedUrlsUI();
+
       const tempEs = new EventSource(`${url}/events`);
       let success = false;
       
       const timeout = setTimeout(() => {
         if (!success) {
           tempEs.close();
+          triedUrls.set(url, 'failed');
+          updateTriedUrlsUI();
           attemptNext();
         }
-      }, 3000);
+      }, 5000);
 
       tempEs.onopen = () => {
         success = true;
         clearTimeout(timeout);
         tempEs.close();
+        triedUrls.set(url, 'connected');
+        updateTriedUrlsUI();
         connect(url);
       };
 
@@ -996,6 +1161,8 @@ if (row) {
         if (!success) {
           clearTimeout(timeout);
           tempEs.close();
+          triedUrls.set(url, 'failed');
+          updateTriedUrlsUI();
           attemptNext();
         }
       };
@@ -1126,10 +1293,13 @@ if (row) {
       case "text_sensor-ip":
         document.getElementById("infoIP").textContent = data.value;
         document.cookie = `clock_ip=${data.value}; path=/; max-age=31536000`;
-        // Also update clock_url if it was previously an IP or empty
-        const currentUrl = document.getElementById("urlInput")?.value;
-        if (!currentUrl || /^http:\/\/\d{1,3}(\.\d{1,3}){3}$/.test(currentUrl)) {
-          saveClockUrlToCookie(`http://${data.value}`);
+        
+        // Automatically add reported IP to the extra URLs if not already present
+        const reportedUrl = `http://${data.value}`;
+        if (!extraUrls.has(reportedUrl)) {
+          extraUrls.add(reportedUrl);
+          saveExtraUrls();
+          renderUrlManagementList();
         }
         break;
       case "text_sensor-ssid": document.getElementById("infoSSID").textContent = data.value; break;
