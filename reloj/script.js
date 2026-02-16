@@ -370,7 +370,8 @@ function setPanelBlur(active) {
 
     if (!deviceBuildDate || !serverFirmwareDate) return;
 
-    const isNewer = serverFirmwareDate.getTime() > (deviceBuildDate.getTime() + 60000);
+    // Buffer of 1 hour to avoid false positives due to build/commit delays
+    const isNewer = serverFirmwareDate.getTime() > (deviceBuildDate.getTime() + 3600000);
 
     if (isNewer) {
       if (alertEl) {
