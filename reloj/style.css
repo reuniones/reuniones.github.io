@@ -30,24 +30,47 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 /* ------------------------------------------
   Display Panel Styling
 ------------------------------------------- */
+.app-panel {
+  container-type: inline-size;
+}
+
 .pantalla-box {
-  width: 100%;
-  max-width: 80%;
+  width: 75%;
+  height: 1.3em; 
   background-color: black;
   color: red;
   font-variant-numeric: tabular-nums lining-nums;
   font-family: 'LED Calculator', monospace;
-  font-size: clamp(1.2rem, 5vw, 65px);
-  text-align: center;
+  /* Font size reduced by 10% (17.5 * 0.9 = 15.75) */
+  font-size: clamp(1.6rem, 15.75cqi, 100px); 
   margin: 5px auto 10px auto;
-  padding: 0.5rem 1rem;
+  padding: 0 0.5rem;
   border: 3px solid gray;
   border-radius: 0.5rem;
   text-shadow: 0 0 3px red, 0 0 15px rgba(255, 0, 0, 0.37);
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: hidden;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* For long text, we align to start so the padding-left: 100% pushes text to the right edge */
+.pantalla-box.is-scrolling {
+  justify-content: flex-start;
+}
+
+/* Ticker scrolling effect */
+.pantalla-scroll {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 15s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ticker {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
 }
 
 /* Special mode: Cartel/sign mode */
@@ -76,7 +99,7 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 .cronometro {
   font-variant-numeric: tabular-nums lining-nums;
   font-family: 'LED Calculator', monospace;
-  font-size: clamp(1.2rem, 5vw, 65px);
+   font-size: clamp(1.6rem, 15.75cqi, 100px); 
   text-align: center;
 }
 

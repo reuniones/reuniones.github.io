@@ -76,6 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let stopwatchState = "reset";
   let lastSecurityViolation = null;
   const triedUrls = new Map(); // url -> status ('trying', 'blocked', 'failed', 'connected')
+  let lastDisplayText = "";
 
   function updateTriedUrlsUI() {
     const container = document.getElementById("triedUrlsContainer");
@@ -1205,21 +1206,33 @@ if (row) {
   }
 
   function updateDisplayTextUI(value) {
+    if (value === lastDisplayText) return;
+    lastDisplayText = value;
+
+    // Trim trailing spaces for cleaner UI display (flexbox handles centering)
+    const trimmedValue = value.trimEnd();
+
     const displayElem = document.getElementById("displayText");
     const miniDisplayElem = document.getElementById("miniDisplayText");
-    if (miniDisplayElem) miniDisplayElem.textContent = value;
+    if (miniDisplayElem) miniDisplayElem.textContent = trimmedValue;
 
     if (displayElem) {
-      displayElem.classList.remove("pantalla-scroll");
-      if (value.length > 8) {
-        displayElem.innerHTML = `<span class="pantalla-scroll">${value}</span>`;
-      } else if (currentDisplayMode === 'clock' && value.length >= 3) {
-          const trimmed = value;
+      const parent = displayElem.parentElement;
+      parent.classList.remove("is-scrolling");
+
+      if (currentDisplayMode === 'custom_sign' && trimmedValue.length > 7) {
+        parent.classList.add("is-scrolling");
+        // Calculate speed: roughly 0.2s per character for a uniform feel
+        const duration = Math.max(5, trimmedValue.length * 0.2); 
+        // Wrap text in a scrolling span for the ticker effect
+        displayElem.innerHTML = `<span class="pantalla-scroll" style="animation-duration: ${duration}s">${trimmedValue} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>`;
+      } else if (currentDisplayMode === 'clock' && trimmedValue.length >= 3) {
+          const trimmed = trimmedValue;
           const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
           const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
           displayElem.innerHTML = smallerLastTwo;
       } else {
-        displayElem.textContent = value;
+        displayElem.textContent = trimmedValue;
       }
     }
   }
