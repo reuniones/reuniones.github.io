@@ -363,6 +363,11 @@ function setPanelBlur(active) {
     const alertEl = document.getElementById("updateAlert");
     const settingsBadge = document.getElementById("settingsUpdateBadge");
     const firmwareBadge = document.getElementById("firmwareUpdateBadge");
+    
+    // Always ensure the version info container is visible in the consent modal
+    const comparisonDiv = document.getElementById("firmwareComparison");
+    if (comparisonDiv) comparisonDiv.classList.remove("d-none");
+
     if (!deviceBuildDate || !serverFirmwareDate) return;
 
     const isNewer = serverFirmwareDate.getTime() > (deviceBuildDate.getTime() + 60000);
@@ -386,94 +391,110 @@ function setPanelBlur(active) {
     }
   }
 
-  document.getElementById("openUpdateBtn")?.addEventListener("click", () => {
-    // Hide settings and show update modal
+  const openUpdateBtn = document.getElementById("openUpdateBtn");
+  const consentModalEl = document.getElementById("updateConsentModal");
+  const consentCheck = document.getElementById("confirmUpdateConsentCheck");
+  const proceedBtn = document.getElementById("proceedWithUpdateButton");
+  const methodModalEl = document.getElementById("updateMethodModal");
+  const autoUpdateBtn = document.getElementById("autoUpdateBtn");
+
+  openUpdateBtn?.addEventListener("click", () => {
     bootstrap.Modal.getInstance(document.getElementById("settingsModal"))?.hide();
-    const updateModal = new bootstrap.Modal(document.getElementById("updateModal"));
+    
+    // Reset and show consent modal
+    if (consentCheck) consentCheck.checked = false;
+    if (proceedBtn) proceedBtn.disabled = true;
+    new bootstrap.Modal(consentModalEl).show();
+
+    // Fetch version info early for the consent screen
+    fetchFirmwareDate();
+  });
+
+  consentCheck?.addEventListener("change", () => {
+    if (proceedBtn) proceedBtn.disabled = !consentCheck.checked;
+  });
+
+  proceedBtn?.addEventListener("click", () => {
+    bootstrap.Modal.getInstance(consentModalEl)?.hide();
+    new bootstrap.Modal(methodModalEl).show();
     
     // Update the link to the clock
     const clockLink = document.getElementById("clockUpdateLink");
     if (clockLink) {
       clockLink.href = getUrl();
     }
-    
-    // Reset confirmation
-    const check = document.getElementById("confirmUpdateCheck");
-    if (check) {
-      check.checked = false;
-      clockLink?.classList.add("disabled");
-    }
-
-    fetchFirmwareDate();
-    updateModal.show();
   });
 
-  document.getElementById("confirmUpdateCheck")?.addEventListener("change", (e) => {
-    const clockLink = document.getElementById("clockUpdateLink");
-    const autoBtn = document.getElementById("autoUpdateBtn");
-    if (e.target.checked) {
-      clockLink?.classList.remove("disabled");
-      autoBtn?.classList.remove("disabled");
-    } else {
-      clockLink?.classList.add("disabled");
-      autoBtn?.classList.add("disabled");
-    }
+  autoUpdateBtn?.addEventListener("click", () => {
+    const statusDiv = document.getElementById("autoUpdateProgressDiv");
+    const statusText = document.getElementById("autoUpdateStatus");
+    
+    if (!confirm("Esto iniciará la actualización en el reloj. ¿Continuar?")) return;
+
+    autoUpdateBtn.disabled = true;
+    statusDiv.classList.remove("d-none");
+    statusText.textContent = "Comando enviado. El reloj se está actualizando y se reiniciará pronto...";
+
+    sendCustomCommand("/button/ota_auto_update/press")
+      .catch((err) => {
+        console.error("Auto-update error:", err);
+        statusText.textContent = "Error al enviar el comando. Probá el método manual.";
+        autoUpdateBtn.disabled = false;
+      });
   });
 
-  document.getElementById("autoUpdateBtn")?.addEventListener("click", startAutomaticUpdate);
+  const directUploadBtn = document.getElementById("directUploadBtn");
+  directUploadBtn?.addEventListener("click", async () => {
+    const statusDiv = document.getElementById("directUploadProgressDiv");
+    const progressBar = document.getElementById("directUploadProgressBar");
+    const statusText = document.getElementById("directUploadStatus");
 
-  async function startAutomaticUpdate() {
-    const btn = document.getElementById("autoUpdateBtn");
-    const status = document.getElementById("autoUpdateStatus");
-    const detail = document.getElementById("autoUpdateDetail");
-    const progressDiv = document.getElementById("autoUpdateProgressDiv");
-    const progressBar = document.getElementById("autoUpdateProgressBar");
-    
-    if (!confirm("¿Estás seguro de que quieres iniciar la actualización automática? No cierres la ventana hasta que termine.")) return;
+    if (!confirm("¿Querés subir el firmware directamente desde el navegador?")) return;
 
-    btn.disabled = true;
-    progressDiv.classList.remove("d-none");
-    
+    directUploadBtn.disabled = true;
+    statusDiv.classList.remove("d-none");
+    progressBar.style.width = "0%";
+    progressBar.className = "progress-bar progress-bar-striped progress-bar-animated";
+    statusText.textContent = "Descargando archivo...";
+
     try {
-      // Step 1: Download from GitHub
-      status.textContent = "Descargando...";
-      detail.textContent = "Obteniendo el archivo reloj.bin de GitHub...";
       const fwResponse = await fetch("reloj.bin");
-      if (!fwResponse.ok) throw new Error("No se pudo descargar el firmware de GitHub.");
+      if (!fwResponse.ok) throw new Error("No se pudo descargar el firmware.");
       const blob = await fwResponse.blob();
 
-      // Step 2: Upload to Clock
-      status.textContent = "Subiendo al reloj...";
-      detail.textContent = "Enviando firmware al dispositivo. No desconectes la alimentación.";
+      statusText.textContent = "Subiendo al reloj...";
       
       const xhr = new XMLHttpRequest();
-      const uploadUrl = `${getUrl()}/update`;
-      
-      xhr.open("POST", uploadUrl, true);
+      xhr.open("POST", `${getUrl()}/update`, true);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           const percent = Math.round((e.loaded / e.total) * 100);
           progressBar.style.width = `${percent}%`;
-          progressBar.textContent = `${percent}%`;
+          statusText.textContent = `Subiendo: ${percent}%`;
         }
       };
 
       xhr.onload = () => {
         if (xhr.status === 200) {
-          status.textContent = "¡Actualización exitosa!";
-          detail.textContent = "El reloj se está reiniciando. Esperá un minuto antes de volver a conectar.";
+          statusText.textContent = "¡Subida exitosa! El reloj se reiniciará.";
           progressBar.classList.remove("progress-bar-animated");
           progressBar.classList.add("bg-success");
         } else {
-          throw new Error(`Error del reloj: ${xhr.statusText}`);
+          statusText.textContent = "Error en el reloj: " + xhr.statusText;
+          progressBar.classList.add("bg-danger");
+          directUploadBtn.disabled = false;
         }
       };
 
       xhr.onerror = () => {
-        detail.textContent = "Error de conexión con el reloj. Asegurate de tener permitidos los 'Contenidos no seguros'.";
-        status.textContent = "Error de subida";
+        statusText.textContent = "Error de seguridad/CORS.";
+        const detail = document.createElement("p");
+        detail.className = "text-danger small mt-2";
+        detail.textContent = "El navegador bloqueó la subida directa. Esto es común por restricciones de seguridad (CORS/Private Network). Usá la 'Opción B' o la pestaña 'Automática'.";
+        statusDiv.appendChild(detail);
         progressBar.classList.add("bg-danger");
+        directUploadBtn.disabled = false;
       };
 
       const formData = new FormData();
@@ -481,17 +502,16 @@ function setPanelBlur(active) {
       xhr.send(formData);
 
     } catch (err) {
-      console.error("Auto-update error:", err);
-      status.textContent = "Error";
-      detail.textContent = err.message;
+      console.error("Direct upload error:", err);
+      statusText.textContent = "Error: " + err.message;
       progressBar.classList.add("bg-danger");
-      btn.disabled = false;
+      directUploadBtn.disabled = false;
     }
-  }
+  });
 
   document.getElementById("clockUpdateLink")?.addEventListener("click", () => {
-    const updateModal = bootstrap.Modal.getInstance(document.getElementById("updateModal"));
-    updateModal?.hide();
+    const methodModal = bootstrap.Modal.getInstance(methodModalEl);
+    methodModal?.hide();
   });
 
   // === Network Scanning Logic ===
@@ -858,7 +878,7 @@ if (row) {
 
   // === Generic Command Sender ===
   function sendCustomCommand(endpoint) {
-    fetch(`${getUrl()}${endpoint}`, { method: "POST" }).catch(console.error);
+    return fetch(`${getUrl()}${endpoint}`, { method: "POST" });
   }
 
   // === Settings Modal Save = Reload (URL saved via query param) ===
@@ -983,43 +1003,66 @@ if (row) {
     attemptNext();
   }
 
+  function updateTimeclockUI(value) {
+    document.getElementById("clockTime").textContent = value;
+  }
+
+  function updateStopwatchUI(value) {
+    const stopEl = document.getElementById("stopwatchTime");
+    let formatted = value;
+    if (stopwatchState === "running") {
+      formatted = formatted.replace(/:/g, '<span class="colon">:</span>');
+      stopEl.classList.add("stopwatch-running");
+    } else {
+      stopEl.classList.remove("stopwatch-running");
+    }
+
+    const match = value.match(/(\d+):(\d+)/);
+    if (match) {
+      stopwatchTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+      updateLiveMeasuredTime(stopwatchTime);
+    }
+    stopEl.innerHTML = formatted;
+  }
+
+  function updateDisplayTextUI(value) {
+    const displayElem = document.getElementById("displayText");
+    displayElem.classList.remove("pantalla-scroll");
+    if (value.length > 8) {
+      displayElem.innerHTML = `<span class="pantalla-scroll">${value}</span>`;
+    } else if (currentDisplayMode === 'clock' && value.length >= 3) {
+        const trimmed = value;
+        const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
+        const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
+        displayElem.innerHTML = smallerLastTwo;
+    } else {
+      displayElem.textContent = value;
+    }
+  }
+
   function handleStateEvent(data) {
     switch (data.id) {
+      case "text_sensor-status":
+        try {
+          const status = JSON.parse(data.value);
+          if (status.timeclock !== undefined) updateTimeclockUI(status.timeclock);
+          if (status.stopwatch !== undefined) updateStopwatchUI(status.stopwatch);
+          if (status.display_text !== undefined) updateDisplayTextUI(status.display_text);
+        } catch (e) {
+          console.error("Error parsing combined status:", e);
+        }
+        break;
+
       case "text_sensor-timeclock":
-        document.getElementById("clockTime").textContent = data.value;
+        updateTimeclockUI(data.value);
         break;
 
       case "text_sensor-stopwatch":
-        const stopEl = document.getElementById("stopwatchTime");
-        let formatted = data.value;
-        if (stopwatchState === "running") {
-          formatted = formatted.replace(/:/g, '<span class="colon">:</span>');
-          stopEl.classList.add("stopwatch-running");
-        } else {
-          stopEl.classList.remove("stopwatch-running");
-        }
-
-        const match = data.value.match(/(\d+):(\d+)/);
-        if (match) {
-          stopwatchTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
-          updateLiveMeasuredTime(stopwatchTime);
-        }
-        stopEl.innerHTML = formatted;
+        updateStopwatchUI(data.value);
         break;
 
       case "text_sensor-display_text":
-        const displayElem = document.getElementById("displayText");
-        displayElem.classList.remove("pantalla-scroll");
-        if (data.value.length > 8) {
-          displayElem.innerHTML = `<span class="pantalla-scroll">${data.value}</span>`;
-        } else if (currentDisplayMode === 'clock' && data.value.length >= 3) {
-            const trimmed = data.value;
-            const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
-            const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
-            displayElem.innerHTML = smallerLastTwo;
-        } else {
-          displayElem.textContent = data.value;
-        }
+        updateDisplayTextUI(data.value);
         break;
 
       case "text_sensor-txt_stopwatch_state":

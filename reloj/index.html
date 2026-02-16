@@ -338,14 +338,31 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
+          <div id="firmwareComparison" class="mb-3 border-bottom pb-2">
+            <p class="small text-secondary mb-0" id="deviceDate">Versión instalada: Cargando...</p>
+            <p class="small text-secondary mb-0" id="firmwareDate">Última versión: Cargando...</p>
+            <div id="updateAlert" class="mt-2 d-none"></div>
+          </div>
+
+          <div class="alert alert-info small py-2">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Importante:</strong> Solo realizá esta actualización si el desarrollador te lo ha indicado expresamente.
+          </div>
+
           <div class="alert alert-danger">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>
             <strong>¡Atención!</strong> Una actualización fallida puede dejar el reloj inoperativo. Asegurate de tener una conexión estable y <strong>no desconectar la alimentación</strong> durante el proceso.
           </div>
 
           <div class="alert alert-warning small">
-            <i class="bi bi-wifi-off me-2"></i>
-            <strong>Aviso:</strong> Los ajustes de WiFi se restablecerán y el reloj ya no será accesible desde esta página hasta que se conecte nuevamente a la misma red WiFi que tu computadora.
+            <h6 class="fw-bold mb-2"><i class="bi bi-wifi-off me-2"></i>Aviso de Reconexión WiFi</h6>
+            <p class="mb-2">Los ajustes de WiFi se restablecerán. Seguí estos pasos para volver a conectar:</p>
+            <ol class="ps-3 mb-0">
+              <li>Esperá a que aparezca una red WiFi llamada <strong>"Reloj"</strong>.</li>
+              <li>Conectate a ella desde un dispositivo móvil.</li>
+              <li>Navegá a la dirección <code>http://192.168.4.1</code>.</li>
+              <li>Ingresá los detalles de tu WiFi (asegurate de que sea la misma red que usa esta computadora).</li>
+            </ol>
           </div>
           
           <div class="form-check mt-3">
@@ -371,54 +388,29 @@
           <h5 class="modal-title" id="updateMethodModalLabel">Actualizar Firmware</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <div class="modal-body">
-          <div id="firmwareComparison" class="mb-3">
-            <p class="small text-secondary mb-0" id="deviceDate">Versión del dispositivo: Cargando...</p>
-            <p class="small text-secondary mb-0" id="firmwareDate">Última versión: Cargando...</p>
-            <div id="updateAlert" class="mt-2 d-none"></div>
+        <div class="modal-body text-center">
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle me-2"></i> Usá este método para subir el archivo manualmente.
           </div>
-
-          <!-- Tabs Navigation -->
-          <ul class="nav nav-tabs nav-fill mb-3" id="updateTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="auto-tab" data-bs-toggle="tab" data-bs-target="#auto-pane" type="button" role="tab" aria-controls="auto-pane" aria-selected="true">Automática</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual-pane" type="button" role="tab" aria-controls="manual-pane" aria-selected="false">Manual</button>
-            </li>
-          </ul>
-
-          <!-- Tabs Content -->
-          <div class="tab-content" id="updateTabsContent">
-            <!-- Automatic Update Tab -->
-            <div class="tab-pane fade show active" id="auto-pane" role="tabpanel" aria-labelledby="auto-tab">
-              <p class="small text-muted">El reloj descargará e instalará el firmware automáticamente. Este proceso tardará unos minutos.</p>
-              <button id="autoUpdateBtn" class="btn btn-danger w-100 mt-2">
-                <i class="bi bi-magic me-1"></i> Iniciar Actualización Automática
-              </button>
-              <div id="autoUpdateProgressDiv" class="d-none mt-3">
-                <h6 class="fw-bold" id="autoUpdateStatus">Iniciando...</h6>
-                <p class="small text-muted" id="autoUpdateDetail">Enviando comando al reloj...</p>
-              </div>
-            </div>
-
-            <!-- Manual Update Tab -->
-            <div class="tab-pane fade" id="manual-pane" role="tabpanel" aria-labelledby="manual-tab">
-              <div class="mb-4">
-                <h6 class="fw-bold">1. Descargar firmware</h6>
-                <p class="small text-muted mb-2">Descargá el archivo compilado más reciente.</p>
-                <a href="reloj.bin" download class="btn btn-outline-primary w-100">
-                  <i class="bi bi-download me-1"></i> Descargar reloj.bin
-                </a>
-              </div>
-              <div class="mb-3">
-                <h6 class="fw-bold">2. Subir al reloj</h6>
-                <p class="small text-muted mb-2">Abrí la interfaz web del dispositivo y seleccioná el archivo descargado.</p>
-                <a href="#" id="clockUpdateLink" target="_blank" class="btn btn-outline-danger w-100">
-                  <i class="bi bi-box-arrow-up-right me-1"></i> Ir a la página del reloj
-                </a>
-              </div>
-            </div>
+          <h6 class="fw-bold mb-3">Actualización Manual</h6>
+          <div class="d-grid gap-2 mb-3">
+            <a href="reloj.bin" download class="btn btn-outline-primary">
+              <i class="bi bi-download me-1"></i> 1. Descargar reloj.bin
+            </a>
+            <a href="#" id="clockUpdateLink" target="_blank" class="btn btn-outline-danger">
+              <i class="bi bi-box-arrow-up-right me-1"></i> 2. Ir a la página del reloj
+            </a>
+          </div>
+          
+          <div class="text-start small bg-body-tertiary p-3 rounded mt-3">
+            <h6 class="fw-bold d-block mb-2 small text-uppercase">Pasos en la página del reloj:</h6>
+            <ol class="ps-3 mb-0 text-muted" style="font-size: 0.85rem;">
+              <li>Buscá la sección llamada <strong>"OTA Update"</strong>.</li>
+              <li>Hacé clic en el botón para elegir archivo.</li>
+              <li>Seleccioná el archivo <code>reloj.bin</code> descargado.</li>
+              <li>Hacé clic en <strong>"Update"</strong> y esperá al 100%.</li>
+              <li>El reloj se reiniciará automáticamente.</li>
+            </ol>
           </div>
         </div>
       </div>

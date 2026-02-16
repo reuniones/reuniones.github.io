@@ -56,11 +56,23 @@ esp8266:
   board: nodemcuv2
  # restore_from_flash: true
 
-# logger:
-#   level: DEBUG 
+logger:
+  level: INFO 
 
 ota:
   - platform: esphome
+  - platform: web_server  
+      # on_progress:
+      #     then:
+      #       - logger.log:
+      #           format: "OTA progress %0.1f%%"
+      #           args: ["x"]
+  # - platform: http_request
+      # on_progress:
+      # then:
+      #   - logger.log:
+      #       format: "OTA progress %0.1f%%"
+      #       args: ["x"]
     
   # password: "1f7c1d34cc0682692b6cd50df1b74776"
 
@@ -71,21 +83,23 @@ wifi:
   #    password: "25201914"
   - ssid: !secret wifi_ssid
     password: !secret wifi_password
-  use_address: 192.168.1.187
+  use_address: 192.168.1.223
   # -  ssid: "JW"
   #    password: "19141914"
   # manual_ip:
-  #    static_ip: 192.168.1.187
+  #    static_ip: 192.168.1.33
   #    gateway: 192.168.1.1
   #    subnet: 255.255.255.0
   #    dns1: 192.168.1.1
   # #   dns2: 1.1.1.1
-
-  
+  min_auth_mode: WPA2 
+ 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Reloj"
 
+# http_request:
+#   esp8266_disable_ssl_support: True
 # mqtt:
 #   broker: '192.168.1.1' #'192.168.1.8'
 #   # on_message:
@@ -144,7 +158,7 @@ wifi:
 
 web_server:
   port: 80
-  version: 3
+  version: 2
 
 
 captive_portal:
@@ -371,17 +385,26 @@ number:
 
 text_sensor:
   - platform: template
+    id: status
+    name: status
+  - platform: template
     id: timeclock
     name: timeclock
+    internal: True
+    # on_value: 
+    #   then:
+        
     # update_interval: 1s
   - platform: template
     id: display_text
     name: display_text
+    internal: True
     # update_interval: 1s
     # lambda: |-    
   - platform: template
     id: stopwatch
     name: stopwatch
+    internal: True
     # lambda: |-
     #   return {"0:00"};
     # update_interval: 1s
@@ -448,10 +471,19 @@ text:
     min_length: 0
     max_length: 100
     mode: text
-    initial_value: "https://churruarin.github.io/reloj"
+    initial_value: "https://reuniones.github.io/reloj"
             
 
 button:
+  # - platform: template
+  #   id: auto_update
+  #   name: "ota auto update"
+  #   on_press: 
+  #     then:    
+  #       - ota.http_request.flash:
+  #           url: http://reuniones.github.io/reloj/reloj.bin
+  #           md5_url: http://reuniones.github.io/reloj/reloj.bin.md5
+        
   - platform: template
     id: stopwatch_start_pause
     name: stopwatch_start_pause
@@ -545,8 +577,7 @@ button:
     name: stopwatch_add_time
     on_press:
       - lambda: !lambda |-
-          id(stopwatch_time) + id(stopwatch_add_seconds).state < 0 ? id(stopwatch_time) = 0 : id(stopwatch_time) += id(stopwatch_add_seconds).state;
-          id(countdown_time_left) = id(countdown_time) - id(stopwatch_time);    
+          id(stopwatch_time) + id(stopwatch_add_seconds).state < 0 ? id(stopwatch_time) = 0 : id(stopwatch_time) += id(stopwatch_add_seconds).state;    
   - platform: restart
     id: reboot
     name: reboot  
@@ -672,90 +703,107 @@ interval:
   - interval: 1s
     id: int_heartbeat
     then: 
-      lambda: |-
-        id(display_mode) = id(sel_display_mode).state;
-        id(stopwatch_mode) =  id(sel_stopwatch_mode).state;
-        if (id(display_mode) == "clock") {
-          id(clock_hour_minute) = id(sntp_time).now().strftime("%H:%M");
-          id(clock_second) = id(sntp_time).now().strftime("%S");
-        };
-        
-        // RUNNING STOPWATCH
-        if (id(stopwatch_state) == "running") { 
-
-          if (id(stopwatch_mode) == "countdown") {
-            //COUNTDOWN MODE
-            id(countdown_abs_time_left) = abs(id(countdown_time_left));
-            id(countdown_seconds_left) = id(countdown_abs_time_left)%60;
-            id(countdown_minutes_left) = (id(countdown_abs_time_left) / 60)%200;
-            id(countdown_hours_left) = id(countdown_abs_time_left) / 3600;
-            id(countdown_seconds_left_string) = ((id(countdown_seconds_left) < 10) ? "0" : "") + to_string(id(countdown_seconds_left));
-            id(countdown_minutes_left_string) = ((id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) ? "0" : "") + to_string(id(countdown_minutes_left));
-            id(countdown_sign) = (id(countdown_time) > 0)? ((id(overtime))? "+" : "-") : "";
-            id(countdown_minutes_alignment) = (id(countdown_minutes_left) > 99) ? 2 : (id(countdown_minutes_left) > 9)? 7 : 12;
-            id(countdown_sign_alignment) = (id(countdown_minutes_left) > 99)? 0 : (id(countdown_minutes_left) < 10)? 8 : 3;
-            id(stopwatch).publish_state(id(countdown_sign) + id(countdown_minutes_left_string) + ":" + id(countdown_seconds_left_string));
-
-          } else {
-            //STOPWATCH MODE
-            id(stopwatch_seconds) = id(stopwatch_time)%60;
-            id(stopwatch_minutes) = (id(stopwatch_time) / 60)%60;
-            id(stopwatch_hours) = id(stopwatch_time) / 3600;
-            id(stopwatch_minutes_alignment) = (id(stopwatch_hours) > 0 || id(stopwatch_minutes) > 9) ? 7 : 12;
-            id(stopwatch_seconds_string) = ((id(stopwatch_seconds) < 10) ? ("0" + to_string(id(stopwatch_seconds))) : to_string(id(stopwatch_seconds)));
-            id(stopwatch_minutes_string) = ((id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) ? ("0" + to_string(id(stopwatch_minutes))) : (to_string(id(stopwatch_minutes))));
-            id(stopwatch_hours_string) = (id(stopwatch_hours) > 0) ? (to_string(id(stopwatch_hours))) : "";
-            id(stopwatch).publish_state(((id(stopwatch_hours) > 0) ? id(stopwatch_hours_string) + ":" : id(stopwatch_hours_string)) + id(stopwatch_minutes_string) + ":" + id(stopwatch_seconds_string));
-            //id(txttest).publish_state(to_string(id(stopwatch_time)) + "b" + to_string(id(stopwatch_seconds)));
-          };
-
-          //STOP AND RESET STOPWATCH AFTER 2 HOURS
-          if (id(stopwatch_time) > 7199) {
-            id(stopwatch_reset).press();
+      - lambda: |-
+          id(display_mode) = id(sel_display_mode).current_option();
+          id(stopwatch_mode) =  id(sel_stopwatch_mode).current_option();
+          if (id(display_mode) == "clock") {
+            id(clock_hour_minute) = id(sntp_time).now().strftime("%H:%M");
+            id(clock_second) = id(sntp_time).now().strftime("%S");
           };
           
-          //DETECT OVERTIME
-          id(overtime) = (id(countdown_time) > 0) ? ((id(countdown_time_left) < 0) ? true : false) : false;
-          //id(txttest).publish_state(to_string(id(countdown_time_left)));
+          // RUNNING STOPWATCH
+          if (id(stopwatch_state) == "running") { 
 
-          //BLINK BEFORE OVERTIME
-          if (id(stopwatch_blink_before_overtime).state && !id(overtime) && id(countdown_time) > 0 && id(countdown_time_left) == id(stopwatch_blink_before_overtime_second) && id(stopwatch_overtime_action_done) == 0) {
-            id(sw_blink).publish_state(true);
-            id(stopwatch_overtime_action_done) = 1;
-          };
-          
-          //OVERTIME MODE          
-          if (id(overtime) && (id(overtime_mode) == "blink") && (id(countdown_time) > 0) && id(stopwatch_overtime_action_done) < 2) { //overtime
-            id(sw_blink).publish_state(true); //blink
-            id(stopwatch_overtime_action_done) = 2;
-          } else if (id(overtime) && (id(overtime_mode) == "sign") && (id(countdown_time) > 0) && id(stopwatch_overtime_action_done) < 2) { //sign
-              auto call = id(sel_display_mode).make_call();
-              call.set_option("sign");
-              call.perform();
-              id(sw_blink).publish_state(false);
+            if (id(stopwatch_mode) == "countdown") {
+              //COUNTDOWN MODE
+              id(countdown_abs_time_left) = abs(id(countdown_time_left));
+              id(countdown_seconds_left) = id(countdown_abs_time_left)%60;
+              id(countdown_minutes_left) = (id(countdown_abs_time_left) / 60)%200;
+              id(countdown_hours_left) = id(countdown_abs_time_left) / 3600;
+              id(countdown_seconds_left_string) = ((id(countdown_seconds_left) < 10) ? "0" : "") + to_string(id(countdown_seconds_left));
+              id(countdown_minutes_left_string) = ((id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) ? "0" : "") + to_string(id(countdown_minutes_left));
+              id(countdown_sign) = (id(countdown_time) > 0)? ((id(overtime))? "+" : "-") : "";
+              id(countdown_minutes_alignment) = (id(countdown_minutes_left) > 99) ? 2 : (id(countdown_minutes_left) > 9)? 7 : 12;
+              id(countdown_sign_alignment) = (id(countdown_minutes_left) > 99)? 0 : (id(countdown_minutes_left) < 10)? 8 : 3;
+              id(stopwatch).publish_state(id(countdown_sign) + id(countdown_minutes_left_string) + ":" + id(countdown_seconds_left_string));
+
+            } else {
+              //STOPWATCH MODE
+              id(stopwatch_seconds) = id(stopwatch_time)%60;
+              id(stopwatch_minutes) = (id(stopwatch_time) / 60)%60;
+              id(stopwatch_hours) = id(stopwatch_time) / 3600;
+              id(stopwatch_minutes_alignment) = (id(stopwatch_hours) > 0 || id(stopwatch_minutes) > 9) ? 7 : 12;
+              id(stopwatch_seconds_string) = ((id(stopwatch_seconds) < 10) ? ("0" + to_string(id(stopwatch_seconds))) : to_string(id(stopwatch_seconds)));
+              id(stopwatch_minutes_string) = ((id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) ? ("0" + to_string(id(stopwatch_minutes))) : (to_string(id(stopwatch_minutes))));
+              id(stopwatch_hours_string) = (id(stopwatch_hours) > 0) ? (to_string(id(stopwatch_hours))) : "";
+              id(stopwatch).publish_state(((id(stopwatch_hours) > 0) ? id(stopwatch_hours_string) + ":" : id(stopwatch_hours_string)) + id(stopwatch_minutes_string) + ":" + id(stopwatch_seconds_string));
+              //id(txttest).publish_state(to_string(id(stopwatch_time)) + "b" + to_string(id(stopwatch_seconds)));
+            };
+
+            //STOP AND RESET STOPWATCH AFTER 2 HOURS
+            if (id(stopwatch_time) > 7199) {
+              id(stopwatch_reset).press();
+            };
+            
+            //DETECT OVERTIME
+            id(overtime) = (id(countdown_time) > 0) ? ((id(countdown_time_left) < 0) ? true : false) : false;
+            //id(txttest).publish_state(to_string(id(countdown_time_left)));
+
+            //BLINK BEFORE OVERTIME
+            if (id(stopwatch_blink_before_overtime).state && !id(overtime) && id(countdown_time) > 0 && id(countdown_time_left) == id(stopwatch_blink_before_overtime_second) && id(stopwatch_overtime_action_done) == 0) {
+              id(sw_blink).publish_state(true);
+              id(stopwatch_overtime_action_done) = 1;
+            };
+            
+            //OVERTIME MODE          
+            if (id(overtime) && (id(overtime_mode) == "blink") && (id(countdown_time) > 0) && id(stopwatch_overtime_action_done) < 2) { //overtime
+              id(sw_blink).publish_state(true); //blink
               id(stopwatch_overtime_action_done) = 2;
+            } else if (id(overtime) && (id(overtime_mode) == "sign") && (id(countdown_time) > 0) && id(stopwatch_overtime_action_done) < 2) { //sign
+                auto call = id(sel_display_mode).make_call();
+                call.set_option("sign");
+                call.perform();
+                id(sw_blink).publish_state(false);
+                id(stopwatch_overtime_action_done) = 2;
+            };
+
+            id(stopwatch_time) += 1;
+            id(countdown_time_left) =  id(countdown_time) - id(stopwatch_time);
+            id(ms_count) = 0;
+          };
+          id(timeclock).publish_state(id(sntp_time).now().strftime("%H:%M:%S"));
+
+          //PUBLISH STATE
+          if (id(display_mode) == "clock") {
+            id(display_text).publish_state(id(timeclock).state);
+          } else if (id(display_mode) == "stopwatch") {
+            id(display_text).publish_state(id(stopwatch).state);
+          } else if (id(display_mode) == "sign") {
+            id(display_text).publish_state("TIEMPO");
+          } else if (id(display_mode) == "custom_sign") {
+            id(display_text).publish_state(id(custom_sign).state.c_str());
           };
 
-          id(stopwatch_time) += 1;
-          id(countdown_time_left) =  id(countdown_time) - id(stopwatch_time);
-          id(ms_count) = 0;
-        };
-        id(timeclock).publish_state(id(sntp_time).now().strftime("%H:%M:%S"));
-
-        //PUBLISH STATE
-        if (id(display_mode) == "clock") {
-          id(display_text).publish_state(id(timeclock).state);
-        } else if (id(display_mode) == "stopwatch") {
-          id(display_text).publish_state(id(stopwatch).state);
-        } else if (id(display_mode) == "sign") {
-          id(display_text).publish_state("TIEMPO");
-        } else if (id(display_mode) == "custom_sign") {
-          id(display_text).publish_state(id(custom_sign).state.c_str());
-        };
 
 
+          //id(txttest).publish_state(to_string(id(stopwatch_time)) + "c");
+      - text_sensor.template.publish:
+          id: status
+          state: !lambda |-
+            char json_buffer[256];
 
-        //id(txttest).publish_state(to_string(id(stopwatch_time)) + "c");
+            // 2. Get your values (Assuming these are the string states you mentioned)
+            const char* display_val = id(display_text).state.c_str();
+            const char* time_val = id(timeclock).state.c_str();
+            const char* stop_val = id(stopwatch).state.c_str();
+
+            // 3. Format the JSON string
+            // Note: \" is used to put a literal double-quote into the string
+            snprintf(json_buffer, sizeof(json_buffer),
+                    "{\"display_text\": \"%s\", \"timeclock\": \"%s\", \"stopwatch\": \"%s\"}",
+                    display_val, time_val, stop_val);
+
+            return json_buffer;
 
 
   - interval: 500ms
