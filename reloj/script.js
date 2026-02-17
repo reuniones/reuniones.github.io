@@ -77,6 +77,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastSecurityViolation = null;
   const triedUrls = new Map(); // url -> status ('trying', 'blocked', 'failed', 'connected')
   let lastDisplayText = "";
+  let pendingCommands = []; // Array of { el, expectedId, timestamp }
+
+  function getExpectedId(endpoint) {
+    // Extract sensor ID from endpoint: /select/sel_display_mode/set -> select-sel_display_mode
+    let path = endpoint.split('?')[0];
+    path = path.replace(/\/(press|turn_on|turn_off|set)$/, "");
+    const parts = path.split('/').filter(p => p);
+    return parts.length >= 2 ? `${parts[0]}-${parts[1]}` : null;
+  }
 
   function updateTriedUrlsUI() {
     const container = document.getElementById("triedUrlsContainer");
@@ -331,6 +340,8 @@ function highlightCurrentItem() {
   if (!document.getElementById("enableProgramSwitch")?.checked) return;
   const item = currentProgram.items[currentItemIndex];
   if (item.duration) {
+    // Feedback on the 'next' or 'prev' button depending on context is harder, 
+    // so we just send the command.
     sendCustomCommand(`/number/countdown_minutes/set?value=${item.duration}`);
   }
 }
@@ -854,7 +865,7 @@ function setPanelBlur(active) {
   document.querySelectorAll("input[name='displayMode']").forEach(input => {
   input.addEventListener("change", (e) => {
     if (suppressChange) return;
-    sendCustomCommand(`/select/sel_display_mode/set?option=${e.target.value}`);
+    sendCustomCommand(`/select/sel_display_mode/set?option=${e.target.value}`, e.target);
   });
 });
 
@@ -1006,10 +1017,11 @@ function setPanelBlur(active) {
   });
 
   // === Stopwatch Buttons ===
-  document.getElementById("startPauseBtn").onclick = () =>
-    sendCustomCommand("/button/stopwatch_start_pause/press");
+  document.getElementById("startPauseBtn").onclick = (e) =>
+    sendCustomCommand("/button/stopwatch_start_pause/press", e.currentTarget);
 
-  document.getElementById("resetBtn").onclick = () => {
+  document.getElementById("resetBtn").onclick = (e) => {
+    const btn = e.currentTarget;
     if (stopwatchState === "running" && currentProgram) {
       const currentItem = currentProgram.items[currentItemIndex];
       if (currentItem) {
@@ -1030,27 +1042,56 @@ if (row) {
       }
     }
 
-    sendCustomCommand("/button/stopwatch_reset/press");
+    sendCustomCommand("/button/stopwatch_reset/press", btn);
   };
 
 
 
 
   // === +/- Time Buttons ===
-  document.getElementById("decreaseBtn").onclick = () => {
-    sendCustomCommand("/number/stopwatch_add_seconds/set?value=-60");
-    sendCustomCommand("/button/stopwatch_add_time/press");
+  document.getElementById("decreaseBtn").onclick = (e) => {
+    const btn = e.currentTarget;
+    sendCustomCommand("/number/stopwatch_add_seconds/set?value=-60", btn);
+    sendCustomCommand("/button/stopwatch_add_time/press", btn);
   };
-  document.getElementById("increaseBtn").onclick = () => {
-    sendCustomCommand("/number/stopwatch_add_seconds/set?value=60");
-    sendCustomCommand("/button/stopwatch_add_time/press");
+  document.getElementById("increaseBtn").onclick = (e) => {
+    const btn = e.currentTarget;
+    sendCustomCommand("/number/stopwatch_add_seconds/set?value=60", btn);
+    sendCustomCommand("/button/stopwatch_add_time/press", btn);
   };
 
   // === Generic Command Sender ===
-  function sendCustomCommand(endpoint) {
+  function sendCustomCommand(endpoint, el = null) {
+    // TX LED ON
+    const txLed = document.getElementById("txLed");
+    if (txLed) {
+      txLed.classList.add("active", "led-flicker");
+    }
+
+    let feedbackEl = el;
+    // If it's a hidden radio, apply feedback to its label
+    if (el && el.tagName === 'INPUT' && el.type === 'radio') {
+      feedbackEl = document.querySelector(`label[for='${el.id}']`);
+    }
+    // If it's a switch, apply to its parent or container
+    if (el && el.classList.contains('form-check-input')) {
+      feedbackEl = el.parentElement;
+    }
+
+    const expectedId = getExpectedId(endpoint);
+
+    if (feedbackEl) {
+      feedbackEl.classList.add("btn-command-sent");
+      pendingCommands.push({ el: feedbackEl, expectedId, timestamp: Date.now() });
+    }
+
     return fetch(`${getUrl()}${endpoint}`, { method: "POST" })
       .then(res => res.ok)
       .catch(err => {
+        if (feedbackEl) {
+          feedbackEl.classList.remove("btn-command-sent");
+          pendingCommands = pendingCommands.filter(c => c.el !== feedbackEl);
+        }
         console.warn(`Command failed: ${endpoint}`, err);
         return false;
       });
@@ -1240,6 +1281,34 @@ if (row) {
   }
 
   function handleStateEvent(data) {
+    const now = Date.now();
+    
+    // Selectively clear pending commands
+    pendingCommands = pendingCommands.filter(cmd => {
+      const isMatch = (cmd.expectedId === data.id) || 
+                      (data.id === "text_sensor-status" && now - cmd.timestamp > 300) ||
+                      (cmd.expectedId === null && now - cmd.timestamp > 100);
+      
+      if (isMatch) {
+        cmd.el.classList.remove("btn-command-sent");
+        return false; // Remove from array
+      }
+      return true; // Keep in array
+    });
+    
+    // TX LED OFF only if no more pending commands
+    const txLed = document.getElementById("txLed");
+    if (txLed && pendingCommands.length === 0) {
+      txLed.classList.remove("active", "led-flicker");
+    }
+
+    // RX LED Flash (Green)
+    const rxLed = document.getElementById("rxLed");
+    if (rxLed) {
+      rxLed.classList.add("active");
+      setTimeout(() => rxLed.classList.remove("active"), 100);
+    }
+
     switch (data.id) {
       case "text_sensor-status":
         try {
@@ -1374,7 +1443,7 @@ if (row) {
   document.getElementById("blinkSwitch").onchange = (e) => {
     if (suppressChange) return;
     const endpoint = e.target.checked ? "/switch/sw_blink/turn_on" : "/switch/sw_blink/turn_off";
-    sendCustomCommand(endpoint);
+    sendCustomCommand(endpoint, e.target);
   };
 
   const countdownInput = document.getElementById("countdownInput");
@@ -1409,7 +1478,7 @@ if (row) {
     if (suppressChange) return;
     const value = parseInt(e.target.value, 10);
     if (!isNaN(value)) {
-      sendCustomCommand(`/number/countdown_minutes/set?value=${value}`);
+      sendCustomCommand(`/number/countdown_minutes/set?value=${value}`, e.target);
     }
   };
 
@@ -1418,32 +1487,32 @@ if (row) {
     if (!isNaN(val)) {
       countdownInput.value = val;
       updateCountdownOutput(val);
-      sendCustomCommand(`/number/countdown_minutes/set?value=${val}`);
+      sendCustomCommand(`/number/countdown_minutes/set?value=${val}`, e.target);
     }
   };
 
   document.getElementById("countdownModeSwitch").onchange = (e) => {
     if (suppressChange) return;
     const mode = e.target.checked ? "countdown" : "normal";
-    sendCustomCommand(`/select/sel_stopwatch_mode/set?option=${mode}`);
+    sendCustomCommand(`/select/sel_stopwatch_mode/set?option=${mode}`, e.target);
   };
 
   document.getElementById("autoShowSwitch").onchange = (e) => {
     if (suppressChange) return;
     const cmd = e.target.checked ? "turn_on" : "turn_off";
-    sendCustomCommand(`/switch/stopwatch_auto_show/${cmd}`);
+    sendCustomCommand(`/switch/stopwatch_auto_show/${cmd}`, e.target);
   };
 
   document.getElementById("blinkBeforeOvertimeSwitch").onchange = (e) => {
     if (suppressChange) return;
     const cmd = e.target.checked ? "turn_on" : "turn_off";
-    sendCustomCommand(`/switch/stopwatch_blink_before_overtime/${cmd}`);
+    sendCustomCommand(`/switch/stopwatch_blink_before_overtime/${cmd}`, e.target);
   };
 
   document.getElementById("overtimeModeSelect").onchange = (e) => {
     if (suppressChange) return;
     const value = e.target.value;
-    sendCustomCommand(`/select/sel_overtime_mode/set?option=${value}`);
+    sendCustomCommand(`/select/sel_overtime_mode/set?option=${value}`, e.target);
   };
 
   document.getElementById("customSignOption").addEventListener("click", () => {

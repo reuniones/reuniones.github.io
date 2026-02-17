@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v1.0">
 
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -61,7 +61,7 @@
         </a>
       </div>
 
-      <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2">
         <div class="d-flex align-items-center gap-2 panel-blurable clock-container">
           <i class="bi bi-clock"></i>
           <span id="clockTime"></span>
@@ -69,6 +69,10 @@
         <span id="connectionStatus" class="badge rounded-pill bg-success" role="button" data-bs-toggle="modal" data-bs-target="#connectionModal">
           <i class="bi bi-check-circle-fill me-1"></i> <span class="status-text">Conectado</span>
         </span>
+        <div class="d-flex flex-column gap-1">
+          <span id="txLed" class="status-led led-tx" title="Transmitiendo"></span>
+          <span id="rxLed" class="status-led led-rx" title="Recibiendo"></span>
+        </div>
         <div class="btn-group" role="group">
           <button class="btn btn-sm" id="shareBtn" title="Compartir">
             <i class="bi bi-share"></i>
@@ -623,7 +627,7 @@
 
   <!-- 📦 Bootstrap & app logic -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="script.js"></script>
+  <script src="script.js?v1.0"></script>
   <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')

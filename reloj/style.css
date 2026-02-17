@@ -255,6 +255,29 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
   animation: blink 1s linear infinite;
 }
 
+.btn-command-sent {
+  position: relative;
+  overflow: hidden;
+  pointer-events: none; /* Prevent double clicks */
+  filter: brightness(1.1);
+}
+
+.btn-command-sent::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: wave-sweep 1.2s infinite;
+}
+
+@keyframes wave-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 /* Darker text for warning pill */
 .connection-warning {
   color: #212529 !important; /* Bootstrap's text-dark */
@@ -276,6 +299,43 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 
 .mini-displays i {
   font-size: 1rem; /* Match standard clock icon size */
+}
+
+/* ------------------------------------------
+  Status LEDs (RX/TX)
+------------------------------------------- */
+.status-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: background-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+.led-rx {
+  background-color: #06200b; /* Very dark green when OFF */
+}
+
+.led-tx {
+  background-color: #2b1d00; /* Very dark amber when OFF */
+}
+
+.led-rx.active {
+  background-color: #28a745;
+  box-shadow: 0 0 6px #28a745;
+}
+
+.led-tx.active {
+  background-color: #aa7700; /* Semi-bright amber */
+  box-shadow: 0 0 4px #aa7700;
+}
+
+.led-flicker {
+  animation: led-flicker 0.1s infinite alternate;
+}
+
+@keyframes led-flicker {
+  from { opacity: 1; }
+  to { opacity: 0.4; }
 }
 
 .program-item {
