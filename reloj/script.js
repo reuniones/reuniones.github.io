@@ -77,9 +77,48 @@ document.addEventListener("DOMContentLoaded", () => {
   const triedUrls = new Map(); // url -> status ('trying', 'blocked', 'failed', 'connected')
   let lastDisplayText = "";
   let pendingCommands = []; // Array of { el, expectedId, timestamp }
+  let lastStopwatchValue = "0:00";
+  let lastTimeclockValue = "0:00:00";
+  let stopwatchTenths = 0;
 
   updateConnectionStatus("connecting"); // ✅ force initial connecting status
   setPanelBlur(true); // ✅ blur panels initially
+
+  function renderMiniSecondary() {
+    const miniSecondaryLink = document.getElementById("miniSecondaryLink");
+    const miniSecondaryIcon = document.getElementById("miniSecondaryIcon");
+    const miniSecondaryText = document.getElementById("miniSecondaryText");
+    if (!miniSecondaryLink || !miniSecondaryIcon || !miniSecondaryText) return;
+
+    let role = "crono";
+    if (currentDisplayMode === "clock") {
+      role = "crono";
+    } else if (currentDisplayMode === "stopwatch") {
+      role = "hora";
+    } else {
+      // Sign mode
+      role = (stopwatchState === "running") ? "crono" : "hora";
+    }
+
+    if (role === "hora") {
+      miniSecondaryIcon.className = "bi bi-clock";
+      miniSecondaryLink.title = "Hora";
+      miniSecondaryLink.href = "#panel-pantalla";
+      
+      if (lastTimeclockValue && lastTimeclockValue.length >= 3) {
+        const miniBase = lastTimeclockValue.slice(0, -3);
+        const miniSeconds = lastTimeclockValue.slice(-2);
+        miniSecondaryText.innerHTML = `${miniBase}<span style="font-size: 80%; margin-left: 0.3em;">${miniSeconds}</span>`;
+      }
+    } else {
+      miniSecondaryIcon.className = "bi bi-stopwatch";
+      miniSecondaryLink.title = "Cronómetro";
+      miniSecondaryLink.href = "#panel-crono";
+      
+      const miniTenthsHtml = `<span class="small-seconds" style="font-size: 80%; margin-left: 0.3em;">${stopwatchTenths}</span>`;
+      miniSecondaryText.innerHTML = `<span>${lastStopwatchValue}</span>${miniTenthsHtml}`;
+    }
+  }
 
   function getExpectedId(endpoint) {
     // Extract sensor ID from endpoint: /select/sel_display_mode/set -> select-sel_display_mode
@@ -1246,15 +1285,48 @@ if (row) {
   }
 
   function updateTimeclockUI(value) {
-    document.getElementById("clockTime").textContent = value;
+    lastTimeclockValue = value;
+    const el = document.getElementById("clockTime");
+    if (el) {
+      if (value.length >= 3) {
+        const base = value.slice(0, -3);
+        const seconds = value.slice(-2);
+        el.innerHTML = `${base}<span style="font-size: 80%; margin-left: 0.3em;">${seconds}</span>`;
+      } else {
+        el.textContent = value;
+      }
+    }
+    renderMiniSecondary();
+  }
+
+  function renderStopwatchTenths() {
+    const stopEl = document.getElementById("stopwatchTime");
+    const displayElem = document.getElementById("displayText");
+    const miniDisplayElem = document.getElementById("miniDisplayText");
+    
+    let base = lastStopwatchValue;
+    if (stopwatchState === "running") {
+      base = base.replace(/:/g, '<span class="colon">:</span>');
+    }
+
+    const tenthsHtml = `<span class="small-seconds" style="font-size: 70%; margin-left: 0.3em;">${stopwatchTenths}</span>`;
+    const miniTenthsHtml = `<span class="small-seconds" style="font-size: 80%; margin-left: 0.3em;">${stopwatchTenths}</span>`;
+    
+    if (stopEl) stopEl.innerHTML = `<span>${base}</span>${tenthsHtml}`;
+
+    if (currentDisplayMode === "stopwatch") {
+      if (displayElem) displayElem.innerHTML = `<span>${base}</span>${tenthsHtml}`;
+      if (miniDisplayElem) miniDisplayElem.innerHTML = `<span>${lastStopwatchValue}</span>${miniTenthsHtml}`;
+    }
+    renderMiniSecondary();
   }
 
   function updateStopwatchUI(value) {
+    lastStopwatchValue = value;
+    stopwatchTenths = 0; // Sync with the new second mark
+
     const stopEl = document.getElementById("stopwatchTime");
-    const miniStopEl = document.getElementById("miniStopwatchText");
-    let formatted = value;
     if (stopwatchState === "running") {
-      formatted = formatted.replace(/:/g, '<span class="colon">:</span>');
       stopEl?.classList.add("stopwatch-running");
     } else {
       stopEl?.classList.remove("stopwatch-running");
@@ -1265,8 +1337,8 @@ if (row) {
       stopwatchTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
       updateLiveMeasuredTime(stopwatchTime);
     }
-    if (stopEl) stopEl.innerHTML = formatted;
-    if (miniStopEl) miniStopEl.textContent = value;
+    
+    renderStopwatchTenths();
   }
 
   function updateDisplayTextUI(value) {
@@ -1281,7 +1353,6 @@ if (row) {
 
     const displayElem = document.getElementById("displayText");
     const miniDisplayElem = document.getElementById("miniDisplayText");
-    if (miniDisplayElem) miniDisplayElem.textContent = trimmedValue;
 
     if (displayElem) {
       const parent = displayElem.parentElement;
@@ -1293,13 +1364,23 @@ if (row) {
         const duration = Math.max(5, trimmedValue.length * 0.2); 
         // Wrap text in a scrolling span for the ticker effect
         displayElem.innerHTML = `<span class="pantalla-scroll" style="animation-duration: ${duration}s">${trimmedValue} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>`;
+        if (miniDisplayElem) miniDisplayElem.textContent = trimmedValue;
       } else if (currentDisplayMode === 'clock' && trimmedValue.length >= 3) {
           const trimmed = trimmedValue;
           const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
           const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
           displayElem.innerHTML = smallerLastTwo;
+          
+          if (miniDisplayElem) {
+            const miniBase = trimmed.slice(0, -3);
+            const miniSeconds = trimmed.slice(-2);
+            miniDisplayElem.innerHTML = `${miniBase}<span style="font-size: 80%; margin-left: 0.3em;">${miniSeconds}</span>`;
+          }
+      } else if (currentDisplayMode === 'stopwatch') {
+          renderStopwatchTenths();
       } else {
         displayElem.textContent = trimmedValue;
+        if (miniDisplayElem) miniDisplayElem.textContent = trimmedValue;
       }
     }
   }
@@ -1365,6 +1446,10 @@ if (row) {
 
       case "text_sensor-txt_stopwatch_state":
         stopwatchState = data.value;
+        if (stopwatchState === "reset") {
+          stopwatchTenths = 0;
+          renderStopwatchTenths();
+        }
         const labelMap = { running: "Pausa", paused: "Inicio", reset: "Inicio" };
         const iconMap = { running: "bi-pause-fill", paused: "bi-play-fill", reset: "bi-play-fill" };
         document.getElementById("startPauseLabel").textContent = labelMap[data.value] || "Inicio";
@@ -1464,6 +1549,22 @@ if (row) {
       tryReconnect();
     }
   }, 1000);
+
+  // === Stopwatch Tenths Simulation ===
+  setInterval(() => {
+    if (stopwatchState !== "running" || connectionStatus !== "connected") return;
+    
+    // Determine direction from the sign in the string
+    const isCountingDown = lastStopwatchValue.startsWith("-");
+    
+    if (isCountingDown) {
+      stopwatchTenths = (stopwatchTenths <= 0) ? 9 : stopwatchTenths - 1;
+    } else {
+      stopwatchTenths = (stopwatchTenths >= 9) ? 0 : stopwatchTenths + 1;
+    }
+    
+    renderStopwatchTenths();
+  }, 100);
 
   tryReconnect();
 
