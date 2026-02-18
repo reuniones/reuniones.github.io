@@ -66,8 +66,6 @@ const defaultType = (day === 0 || day === 6) ? "fin_de_semana" : "entre_semana";
 
 
 document.addEventListener("DOMContentLoaded", () => {
-  updateConnectionStatus("connecting"); // ✅ force initial connecting status
-  setPanelBlur(true); // ✅ blur panels initially
   // === State Variables ===
   let suppressChange = false;
   let eventSource;
@@ -75,9 +73,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let blinkEnabled = false;
   let stopwatchState = "reset";
   let lastSecurityViolation = null;
+  let collapseTimeout = null;
   const triedUrls = new Map(); // url -> status ('trying', 'blocked', 'failed', 'connected')
   let lastDisplayText = "";
   let pendingCommands = []; // Array of { el, expectedId, timestamp }
+
+  updateConnectionStatus("connecting"); // ✅ force initial connecting status
+  setPanelBlur(true); // ✅ blur panels initially
 
   function getExpectedId(endpoint) {
     // Extract sensor ID from endpoint: /select/sel_display_mode/set -> select-sel_display_mode
@@ -85,6 +87,16 @@ document.addEventListener("DOMContentLoaded", () => {
     path = path.replace(/\/(press|turn_on|turn_off|set)$/, "");
     const parts = path.split('/').filter(p => p);
     return parts.length >= 2 ? `${parts[0]}-${parts[1]}` : null;
+  }
+
+  function getExpectedValue(endpoint) {
+    const url = new URL(endpoint, "http://localhost");
+    if (endpoint.includes("turn_on")) return true;
+    if (endpoint.includes("turn_off")) return false;
+    // Extract 'option' or 'value' from query params
+    const val = url.searchParams.get("option") || url.searchParams.get("value");
+    // Normalize numeric strings
+    return (val !== null && !isNaN(val)) ? Number(val) : val;
   }
 
   function updateTriedUrlsUI() {
@@ -820,8 +832,19 @@ function setPanelBlur(active) {
     };
 
     const [color, icon, label] = iconMap[state] || iconMap.disconnected;
-    el.className = `badge rounded-pill ${color}`;
+    el.className = `badge rounded-pill status-pill ${color}`;
     el.innerHTML = `<i class="bi ${icon} me-1"></i> <span class="status-text">${label}</span>`;
+
+    // Reset collapse state and timer
+    clearTimeout(collapseTimeout);
+    el.classList.remove("collapsed");
+
+    if (state === "connected") {
+      // Auto-collapse after 5 seconds on wide screens (CSS handles mobile)
+      collapseTimeout = setTimeout(() => {
+        el.classList.add("collapsed");
+      }, 5000);
+    }
 
     // Redirect modal target based on state
     if (state === "connected") {
@@ -1079,10 +1102,11 @@ if (row) {
     }
 
     const expectedId = getExpectedId(endpoint);
+    const expectedValue = getExpectedValue(endpoint);
 
     if (feedbackEl) {
       feedbackEl.classList.add("btn-command-sent");
-      pendingCommands.push({ el: feedbackEl, expectedId, timestamp: Date.now() });
+      pendingCommands.push({ el: feedbackEl, expectedId, expectedValue, timestamp: Date.now() });
     }
 
     return fetch(`${getUrl()}${endpoint}`, { method: "POST" })
@@ -1285,9 +1309,15 @@ if (row) {
     
     // Selectively clear pending commands
     pendingCommands = pendingCommands.filter(cmd => {
-      const isMatch = (cmd.expectedId === data.id) || 
-                      (data.id === "text_sensor-status" && now - cmd.timestamp > 300) ||
-                      (cmd.expectedId === null && now - cmd.timestamp > 100);
+      // Must wait at least 1300ms before clearing, or wait for matching ID AND matching VALUE
+      const elapsed = now - cmd.timestamp;
+      
+      const idMatches = (cmd.expectedId === data.id);
+      const valueMatches = (cmd.expectedValue === undefined || cmd.expectedValue === null || cmd.expectedValue === data.value);
+      
+      const isMatch = (idMatches && valueMatches) || 
+                      (data.id === "text_sensor-status" && elapsed > 1300) ||
+                      (cmd.expectedId === null && elapsed > 1300);
       
       if (isMatch) {
         cmd.el.classList.remove("btn-command-sent");

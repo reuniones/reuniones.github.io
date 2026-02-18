@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v1.0">
+  <link rel="stylesheet" href="style.css?v1.1">
 
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -46,47 +46,54 @@
 </head>
 <body>
       <!-- 🕒 Top bar: Clock, connection status, share/settings -->
-    <div class="topbar d-flex justify-content-between align-items-center mb-3 sticky-top px-4 py-1">
-      <div class="fw-semibold text-white fs-5 page-title">RELOJ | CRONÓMETRO</div>
-      
-      <!-- Mini Displays for Mobile -->
-      <div class="mini-displays d-none gap-3 me-auto">
-        <a href="#panel-pantalla" class="text-decoration-none d-flex align-items-center gap-1 text-white">
-          <i class="bi bi-tv"></i>
-          <span id="miniDisplayText" class="mini-led">---</span>
-        </a>
-        <a href="#panel-crono" class="text-decoration-none d-flex align-items-center gap-1 text-white">
-          <i class="bi bi-stopwatch"></i>
-          <span id="miniStopwatchText" class="mini-led">0:00</span>
-        </a>
-      </div>
-
-      <div class="d-flex align-items-center gap-2">
-        <div class="d-flex align-items-center gap-2 panel-blurable clock-container">
-          <i class="bi bi-clock"></i>
-          <span id="clockTime"></span>
-        </div>
-        <span id="connectionStatus" class="badge rounded-pill bg-success" role="button" data-bs-toggle="modal" data-bs-target="#connectionModal">
-          <i class="bi bi-check-circle-fill me-1"></i> <span class="status-text">Conectado</span>
-        </span>
-        <div class="d-flex flex-column gap-1">
-          <span id="txLed" class="status-led led-tx" title="Transmitiendo"></span>
-          <span id="rxLed" class="status-led led-rx" title="Recibiendo"></span>
-        </div>
-        <div class="btn-group" role="group">
-          <button class="btn btn-sm" id="shareBtn" title="Compartir">
-            <i class="bi bi-share"></i>
-          </button>
-          <button class="btn btn-sm position-relative" id="settingsBtn" title="Configuración" data-bs-toggle="modal" data-bs-target="#settingsModal">
-            <i class="bi bi-gear"></i>
-            <span id="settingsUpdateBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
-              <span class="visually-hidden">Actualización disponible</span>
-            </span>
-          </button>
+    <div class="topbar mb-3 sticky-top">
+      <div class="container d-flex justify-content-between align-items-center px-4 py-1">
+              <div class="fw-semibold text-white fs-5 page-title">RELOJ <span class="opacity-25">CRONÓMETRO</span></div>
+              
+              <!-- Mini Displays for Mobile -->
+              <div class="mini-displays d-none gap-3 me-auto">
+                <a href="#panel-pantalla" class="text-decoration-none d-flex align-items-center gap-1 text-white" title="Pantalla">
+                  <i class="bi bi-tv"></i>
+                  <span id="miniDisplayText" class="mini-led">---</span>
+                </a>
+                <a href="#panel-crono" class="text-decoration-none d-flex align-items-center gap-1 text-white" title="Cronómetro">
+                  <i class="bi bi-stopwatch"></i>
+                  <span id="miniStopwatchText" class="mini-led">0:00</span>
+                </a>
+              </div>
+        
+              <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 panel-blurable clock-container" title="Hora actual">
+                  <i class="bi bi-clock"></i>
+                  <span id="clockTime"></span>
+                </div>
+                <span id="connectionStatus" class="badge rounded-pill bg-success status-pill" role="button" data-bs-toggle="modal" data-bs-target="#connectionModal" title="Estado de conexión">
+                  <i class="bi bi-check-circle-fill me-1"></i> <span class="status-text">Conectado</span>
+                </span>          <div class="d-flex flex-column justify-content-center" style="gap: 2px;">
+            <div class="d-flex align-items-center gap-1" style="line-height: 1;">
+              <span class="led-label" title="Transmitiendo">TX</span>
+              <span id="txLed" class="status-led led-tx" title="Transmitiendo"></span>
+            </div>
+            <div class="d-flex align-items-center gap-1" style="line-height: 1;">
+              <span class="led-label" title="Recibiendo">RX</span>
+              <span id="rxLed" class="status-led led-rx" title="Recibiendo"></span>
+            </div>
+          </div>
+          <div class="btn-group" role="group">
+            <button class="btn btn-sm" id="shareBtn" title="Compartir o instalar" data-bs-toggle="modal" data-bs-target="#shareModal">
+              <i class="bi bi-share"></i>
+            </button>
+            <button class="btn btn-sm position-relative" id="settingsBtn" title="Configuración" data-bs-toggle="modal" data-bs-target="#settingsModal">
+              <i class="bi bi-gear"></i>
+              <span id="settingsUpdateBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
+                <span class="visually-hidden">Actualización disponible</span>
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  <div class="container-fluid">
+  <div class="container">
     <!-- 📐 Two-column responsive layout -->
     <div class="row g-2">
 
@@ -100,7 +107,7 @@
 
           <!-- Display box with blink toggle -->
           <div class="position-relative mb-3">
-            <div class="pantalla-box"><span id="displayText" style="padding: .25em 1em;">&nbsp;</span></div>
+            <div class="pantalla-box" title="Pantalla actual"><span id="displayText" style="padding: .25em 1em;">&nbsp;</span></div>
             <div class="position-absolute top-50 end-0 translate-middle-y me-1">
               <input type="checkbox" class="btn-check" id="blinkSwitch" autocomplete="off">
               <label class="btn btn-outline-danger btn-sm" for="blinkSwitch" title="Parpadear">
@@ -113,19 +120,19 @@
           <!-- Mode selection buttons: clock / stopwatch / sign -->
           <div class="btn-group btn-group-lg w-100 mb-3 text-uppercase" role="group" aria-label="Mostrar">
             <input type="radio" class="btn-check" name="displayMode" id="displayClock" value="clock" autocomplete="off">
-            <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displayClock">
+            <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displayClock" title="Mostrar hora">
               <i class="bi bi-clock me-1"></i> <span class="btn-label">Hora</span>
             </label>
 
             <input type="radio" class="btn-check" name="displayMode" id="displayStopwatch" value="stopwatch" autocomplete="off">
-            <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displayStopwatch">
+            <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displayStopwatch" title="Mostrar cronómetro">
               <i class="bi bi-stopwatch me-1"></i> <span class="btn-label">Crono</span>
             </label>
 
             <div class="btn-group w-100" role="group">
               <!-- Main Cartel Toggle -->
               <input type="radio" class="btn-check" name="displayMode" id="displaySign" value="sign" autocomplete="off">
-              <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displaySign">
+              <label class="btn btn-outline-danger btn-display w-100 icon-label-btn" for="displaySign" title="Mostrar cartel TIEMPO">
                 <i class="bi bi-exclamation-octagon me-1"></i> <span class="btn-label">Cartel</span>
               </label>
 
@@ -154,9 +161,9 @@
 
           <!-- Stopwatch display with +1 / -1 buttons -->
           <div class="mb-3 position-relative text-center">
-            <button id="decreaseBtn" class="btn btn-outline-danger position-absolute start-0 top-50 translate-middle-y">-1</button>
+            <button id="decreaseBtn" class="btn btn-outline-danger position-absolute start-0 top-50 translate-middle-y" title="Restar 1 minuto">-1</button>
             <div id="stopwatchTime" class="cronometro d-inline-block px-2">&nbsp;</div>
-            <button id="increaseBtn" class="btn btn-outline-success position-absolute end-0 top-50 translate-middle-y">+1</button>
+            <button id="increaseBtn" class="btn btn-outline-success position-absolute end-0 top-50 translate-middle-y" title="Sumar 1 minuto">+1</button>
           </div>
 
           <!-- Stopwatch state (hidden unless needed) -->
@@ -166,12 +173,12 @@
 
           <!-- Start / Reset controls -->
           <div class="btn-group btn-group-lg w-100 mb-3 text-uppercase" role="group">
-            <button id="startPauseBtn" class="btn btn-outline-success w-100 text-uppercase icon-label-btn">
+            <button id="startPauseBtn" class="btn btn-outline-success w-100 text-uppercase icon-label-btn" title="Iniciar/Pausar">
               <i class="bi" id="startPauseIcon"></i>
               <span id="startPauseLabel" class="btn-label"></span>
             </button>
 
-            <button id="resetBtn" class="btn btn-outline-info w-100 text-uppercase icon-label-btn">
+            <button id="resetBtn" class="btn btn-outline-info w-100 text-uppercase icon-label-btn" title="Reiniciar">
               <i class="bi bi-arrow-counterclockwise"></i> <span class="btn-label">Reset</span>
             </button>
           </div>
@@ -181,10 +188,10 @@
             <label for="countdownInput" class="form-label">Duración de la parte</label>
 
             <!-- Slider -->
-            <input type="range" class="form-range" id="countdownInput" min="0" max="60" step="1">
+            <input type="range" class="form-range"  title="Duración en minutos" id="countdownInput" min="0" max="60" step="1">
 
             <!-- Presets left, minutes right -->
-            <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="d-flex justify-content-between align-items-center mt-2"  title="Duraciones comunes">
               <select id="presetDuration" class="form-select form-select-sm w-auto">
                 <option value="">Presets</option>
                 <option value="1">1</option>
@@ -627,7 +634,7 @@
 
   <!-- 📦 Bootstrap & app logic -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="script.js?v1.0"></script>
+  <script src="script.js?v1.1"></script>
   <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
