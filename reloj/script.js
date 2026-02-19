@@ -66,6 +66,60 @@ const defaultType = (day === 0 || day === 6) ? "fin_de_semana" : "entre_semana";
 
 
 document.addEventListener("DOMContentLoaded", () => {
+  // === DOM Element Caching ===
+  const elements = {
+    displayText: document.getElementById("displayText"),
+    stopwatchTime: document.getElementById("stopwatchTime"),
+    miniDisplayText: document.getElementById("miniDisplayText"),
+    miniSecondaryText: document.getElementById("miniSecondaryText"),
+    miniSecondaryLink: document.getElementById("miniSecondaryLink"),
+    miniSecondaryIcon: document.getElementById("miniSecondaryIcon"),
+    clockTime: document.getElementById("clockTime"),
+    txLed: document.getElementById("txLed"),
+    rxLed: document.getElementById("rxLed"),
+    connectionStatus: document.getElementById("connectionStatus"),
+    startPauseLabel: document.getElementById("startPauseLabel"),
+    startPauseIcon: document.getElementById("startPauseIcon"),
+    blinkSwitch: document.getElementById("blinkSwitch"),
+    countdownInput: document.getElementById("countdownInput"),
+    countdownOutput: document.getElementById("countdownOutput"),
+    presetDuration: document.getElementById("presetDuration"),
+    countdownModeSwitch: document.getElementById("countdownModeSwitch"),
+    autoShowSwitch: document.getElementById("autoShowSwitch"),
+    blinkBeforeOvertimeSwitch: document.getElementById("blinkBeforeOvertimeSwitch"),
+    overtimeModeSelect: document.getElementById("overtimeModeSelect"),
+    customSignInput: document.getElementById("customSignInput"),
+    infoIP: document.getElementById("infoIP"),
+    infoSSID: document.getElementById("infoSSID"),
+    infoBSSID: document.getElementById("infoBSSID"),
+    infoMAC: document.getElementById("infoMAC"),
+    infoDNS: document.getElementById("infoDNS"),
+    infoVersion: document.getElementById("infoVersion"),
+    infoBuildTime: document.getElementById("infoBuildTime"),
+    infoReset: document.getElementById("infoReset"),
+    infoChip: document.getElementById("infoChip"),
+    infoCpuFreq: document.getElementById("infoCpuFreq"),
+    infoFlash: document.getElementById("infoFlash"),
+    infoSDK: document.getElementById("infoSDK"),
+    infoHeapFree: document.getElementById("infoHeapFree"),
+    infoHeapMax: document.getElementById("infoHeapMax"),
+    infoHeapFrag: document.getElementById("infoHeapFrag"),
+    infoLoopTime: document.getElementById("infoLoopTime"),
+    infoUptime: document.getElementById("infoUptime"),
+    infoUptimeDuration: document.getElementById("infoUptimeDuration"),
+    infoRSSI: document.getElementById("infoRSSI"),
+    infoWifiPct: document.getElementById("infoWifiPct"),
+    wifiSignalIcon: document.getElementById("wifiSignalIcon"),
+    infoMsgCount: document.getElementById("infoMsgCount"),
+    infoAppUptime: document.getElementById("infoAppUptime"),
+    infoLatency: document.getElementById("infoLatency"),
+    deviceDate: document.getElementById("deviceDate"),
+    triedUrlsContainer: document.getElementById("triedUrlsContainer"),
+    triedUrlsList: document.getElementById("triedUrlsList"),
+    diagAlertContainer: document.getElementById("diagAlertContainer"),
+    browserSpecificInstructions: document.getElementById("browserSpecificInstructions")
+  };
+
   // === State Variables ===
   let suppressChange = false;
   let eventSource;
@@ -79,15 +133,17 @@ document.addEventListener("DOMContentLoaded", () => {
   let pendingCommands = []; // Array of { el, expectedId, timestamp }
   let lastStopwatchValue = "0:00";
   let lastTimeclockValue = "0:00:00";
+  let lastMiniSecondaryRole = "";
   let stopwatchTenths = 0;
+  let bootTimestamp = null;
+  let messageCount = 0;
+  const sessionStartTime = Date.now();
 
   updateConnectionStatus("connecting"); // ✅ force initial connecting status
   setPanelBlur(true); // ✅ blur panels initially
 
   function renderMiniSecondary() {
-    const miniSecondaryLink = document.getElementById("miniSecondaryLink");
-    const miniSecondaryIcon = document.getElementById("miniSecondaryIcon");
-    const miniSecondaryText = document.getElementById("miniSecondaryText");
+    const { miniSecondaryLink, miniSecondaryIcon, miniSecondaryText } = elements;
     if (!miniSecondaryLink || !miniSecondaryIcon || !miniSecondaryText) return;
 
     let role = "crono";
@@ -99,6 +155,10 @@ document.addEventListener("DOMContentLoaded", () => {
       // Sign mode
       role = (stopwatchState === "running") ? "crono" : "hora";
     }
+
+    // Only update if role changed or if it's a high-frequency update (crono always updates because of tenths)
+    if (role === lastMiniSecondaryRole && role !== "crono") return;
+    lastMiniSecondaryRole = role;
 
     if (role === "hora") {
       miniSecondaryIcon.className = "bi bi-clock";
@@ -119,6 +179,47 @@ document.addEventListener("DOMContentLoaded", () => {
       miniSecondaryText.innerHTML = `<span>${lastStopwatchValue}</span>${miniTenthsHtml}`;
     }
   }
+
+  function updateAppStatsUI() {
+    if (elements.infoMsgCount) elements.infoMsgCount.textContent = messageCount;
+    
+    if (elements.infoAppUptime) {
+      const diffMs = Date.now() - sessionStartTime;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffSecs = Math.floor((diffMs % 60000) / 1000);
+      elements.infoAppUptime.textContent = diffMins > 0 ? `${diffMins}m ${diffSecs}s` : `${diffSecs}s`;
+    }
+
+    if (elements.infoLatency) {
+      const latency = Date.now() - lastEventTime;
+      elements.infoLatency.textContent = `${latency}ms`;
+      
+      // Color based on latency
+      if (latency < 1500) elements.infoLatency.className = "fw-bold small text-success";
+      else if (latency < 3000) elements.infoLatency.className = "fw-bold small text-warning";
+      else elements.infoLatency.className = "fw-bold small text-danger";
+    }
+  }
+
+  function updateUptimeDurationUI() {
+    updateAppStatsUI();
+    if (bootTimestamp && elements.infoUptimeDuration) {
+      const diffMs = Date.now() - bootTimestamp;
+      const diffSecs = Math.floor(diffMs / 1000);
+      const days = Math.floor(diffSecs / 86400);
+      const hours = Math.floor((diffSecs % 86400) / 3600);
+      const mins = Math.floor((diffSecs % 3600) / 60);
+
+      let durationStr = "";
+      if (days > 0) durationStr += `${days} d, `;
+      if (hours > 0 || days > 0) durationStr += `${hours} h, `;
+      durationStr += `${mins} m`;
+      elements.infoUptimeDuration.textContent = durationStr;
+    }
+  }
+
+  // Update duration when connection modal is shown
+  document.getElementById("connectionModal")?.addEventListener("show.bs.modal", updateUptimeDurationUI);
 
   function getExpectedId(endpoint) {
     // Extract sensor ID from endpoint: /select/sel_display_mode/set -> select-sel_display_mode
@@ -241,16 +342,6 @@ document.addEventListener("DOMContentLoaded", () => {
         </button>`;
       urlManagementList.appendChild(item);
     });
-
-    // Add event listeners to remove buttons
-    document.querySelectorAll(".remove-url-btn").forEach(btn => {
-      btn.onclick = () => {
-        extraUrls.delete(btn.dataset.url);
-        saveExtraUrls();
-        renderUrlManagementList();
-        tryReconnect();
-      };
-    });
   }
 
   addUrlBtn?.addEventListener("click", () => {
@@ -281,6 +372,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderUrlManagementList();
 
+  // === Delegated Listeners ===
+  urlManagementList?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".remove-url-btn");
+    if (btn) {
+      extraUrls.delete(btn.dataset.url);
+      saveExtraUrls();
+      renderUrlManagementList();
+      tryReconnect();
+    }
+  });
+
+  // Display Mode Delegation
+  document.querySelector("[aria-label='Mostrar']")?.addEventListener("change", (e) => {
+    if (e.target.name === "displayMode") {
+      if (suppressChange) return;
+      sendCustomCommand(`/select/sel_display_mode/set?option=${e.target.value}`, e.target);
+    }
+  });
 
 if (storedDay !== todayKey) {
   // New day detected — clear all saved measurements
@@ -499,6 +608,13 @@ function setPanelBlur(active) {
     const reconnectModal = bootstrap.Modal.getInstance(document.getElementById("reconnectModal"));
     reconnectModal?.hide();
     new bootstrap.Modal(document.getElementById("settingsModal")).show();
+  });
+
+  document.getElementById("modalRebootBtn")?.addEventListener("click", () => {
+    if (confirm("¿Estás seguro de que querés reiniciar el reloj?\n\n- Se perderá la conexión por unos segundos.\n- El cronómetro se reseteará a cero.")) {
+      sendCustomCommand("/button/reboot/press");
+      bootstrap.Modal.getInstance(document.getElementById("connectionModal"))?.hide();
+    }
   });
 
   // === Firmware Update Logic ===
@@ -898,6 +1014,15 @@ function setPanelBlur(active) {
 
     // Blur panels unless fully connected
     setPanelBlur(state !== "connected");
+
+    // Auto-close reconnect modal if we just connected
+    if (state === "connected") {
+      const modalEl = document.getElementById("reconnectModal");
+      if (modalEl && modalEl.classList.contains("show")) {
+        const reconnectModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        reconnectModal.hide();
+      }
+    }
   }
 
 
@@ -923,13 +1048,6 @@ function setPanelBlur(active) {
       suppressChange = false;
     }
   };
-
-  document.querySelectorAll("input[name='displayMode']").forEach(input => {
-  input.addEventListener("change", (e) => {
-    if (suppressChange) return;
-    sendCustomCommand(`/select/sel_display_mode/set?option=${e.target.value}`, e.target);
-  });
-});
 
   // === Install PWA Button Logic ===
   let deferredPrompt;
@@ -1010,8 +1128,8 @@ function setPanelBlur(active) {
     const currentUrl = getUrl();
     const diag = await runDiagnostics(currentUrl);
 
-    // Re-check after diagnostic await in case user opened config in the meantime
-    if (isConfigOpen()) return;
+    // Re-check after diagnostic await in case we connected or user opened config in the meantime
+    if (isConfigOpen() || connectionStatus === "connected") return;
 
     // === Diagnostic Alert ===
     const diagContainer = document.getElementById("diagAlertContainer");
@@ -1200,11 +1318,10 @@ if (row) {
       triedUrls.set(url, 'connected');
       updateTriedUrlsUI();
       setBlur(false);
-      const reconnectModal = bootstrap.Modal.getInstance(document.getElementById("reconnectModal"));
-      if (reconnectModal) reconnectModal.hide?.();
     };
 
     eventSource.addEventListener("state", (e) => {
+      messageCount++;
       lastEventTime = Date.now();
       if (connectionStatus !== "connected") {
         updateConnectionStatus("connected");
@@ -1235,58 +1352,87 @@ if (row) {
     setPanelBlur(true);
 
     const urls = getUrlsToTry();
-    let index = 0;
+    let completed = 0;
+    let foundWinner = false;
+    const tempSources = [];
 
-    function attemptNext() {
-      if (index >= urls.length) {
+    function cleanup() {
+      tempSources.forEach(ts => {
+        ts.es.close();
+        clearTimeout(ts.timeout);
+      });
+      reconnecting = false;
+    }
+
+    function checkAllFailed() {
+      completed++;
+      if (completed >= urls.length && !foundWinner) {
         updateConnectionStatus("disconnected");
         showReconnectHelp();
         reconnecting = false;
-        return;
       }
+    }
 
-      const url = urls[index++];
+    if (urls.length === 0) {
+      updateConnectionStatus("disconnected");
+      showReconnectHelp();
+      reconnecting = false;
+      return;
+    }
+
+    urls.forEach(url => {
       triedUrls.set(url, 'trying');
-      updateTriedUrlsUI();
-
-      const tempEs = new EventSource(`${url}/events`);
-      let success = false;
+      const es = new EventSource(`${url}/events`);
       
       const timeout = setTimeout(() => {
-        if (!success) {
-          tempEs.close();
+        if (!foundWinner) {
+          es.close();
           triedUrls.set(url, 'failed');
           updateTriedUrlsUI();
-          attemptNext();
+          checkAllFailed();
         }
       }, 5000);
 
-      tempEs.onopen = () => {
-        success = true;
-        clearTimeout(timeout);
-        tempEs.close();
+      tempSources.push({ es, timeout, url });
+
+      es.onopen = () => {
+        if (foundWinner) {
+          es.close();
+          clearTimeout(timeout);
+          return;
+        }
+        foundWinner = true;
         triedUrls.set(url, 'connected');
         updateTriedUrlsUI();
+        cleanup();
+
+        // Pre-flight for future commands
+        const preconnect = document.createElement('link');
+        preconnect.rel = 'preconnect';
+        preconnect.href = url;
+        document.head.appendChild(preconnect);
+
         connect(url);
       };
 
-      tempEs.onerror = () => {
-        if (!success) {
+      es.onerror = () => {
+        if (!foundWinner) {
+          es.close();
           clearTimeout(timeout);
-          tempEs.close();
           triedUrls.set(url, 'failed');
           updateTriedUrlsUI();
-          attemptNext();
+          checkAllFailed();
         }
       };
-    }
+    });
 
-    attemptNext();
+    updateTriedUrlsUI();
   }
 
   function updateTimeclockUI(value) {
+    if (value === lastTimeclockValue && lastMiniSecondaryRole !== "hora") return;
     lastTimeclockValue = value;
-    const el = document.getElementById("clockTime");
+    const { clockTime: el } = elements;
     if (el) {
       if (value.length >= 3) {
         const base = value.slice(0, -3);
@@ -1300,9 +1446,7 @@ if (row) {
   }
 
   function renderStopwatchTenths() {
-    const stopEl = document.getElementById("stopwatchTime");
-    const displayElem = document.getElementById("displayText");
-    const miniDisplayElem = document.getElementById("miniDisplayText");
+    const { stopwatchTime: stopEl, displayText: displayElem, miniDisplayText: miniDisplayElem } = elements;
     
     let base = lastStopwatchValue;
     if (stopwatchState === "running") {
@@ -1325,13 +1469,9 @@ if (row) {
     lastStopwatchValue = value;
     stopwatchTenths = 0; // Sync with the new second mark
 
-    const stopEl = document.getElementById("stopwatchTime");
-    if (stopwatchState === "running") {
-      stopEl?.classList.add("stopwatch-running");
-    } else {
-      stopEl?.classList.remove("stopwatch-running");
-    }
+    document.body.dataset.stopwatchState = stopwatchState;
 
+    const { stopwatchTime: stopEl } = elements;
     const match = value.match(/(\d+):(\d+)/);
     if (match) {
       stopwatchTime = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
@@ -1351,8 +1491,7 @@ if (row) {
     // Update browser page title
     document.title = trimmedValue ? `Reloj - ${trimmedValue}` : "Reloj";
 
-    const displayElem = document.getElementById("displayText");
-    const miniDisplayElem = document.getElementById("miniDisplayText");
+    const { displayText: displayElem, miniDisplayText: miniDisplayElem } = elements;
 
     if (displayElem) {
       const parent = displayElem.parentElement;
@@ -1408,13 +1547,12 @@ if (row) {
     });
     
     // TX LED OFF only if no more pending commands
-    const txLed = document.getElementById("txLed");
+    const { txLed, rxLed } = elements;
     if (txLed && pendingCommands.length === 0) {
       txLed.classList.remove("active", "led-flicker");
     }
 
     // RX LED Flash (Green)
-    const rxLed = document.getElementById("rxLed");
     if (rxLed) {
       rxLed.classList.add("active");
       setTimeout(() => rxLed.classList.remove("active"), 100);
@@ -1452,8 +1590,8 @@ if (row) {
         }
         const labelMap = { running: "Pausa", paused: "Inicio", reset: "Inicio" };
         const iconMap = { running: "bi-pause-fill", paused: "bi-play-fill", reset: "bi-play-fill" };
-        document.getElementById("startPauseLabel").textContent = labelMap[data.value] || "Inicio";
-        document.getElementById("startPauseIcon").className = `bi ${iconMap[data.value]}`;
+        if (elements.startPauseLabel) elements.startPauseLabel.textContent = labelMap[data.value] || "Inicio";
+        if (elements.startPauseIcon) elements.startPauseIcon.className = `bi ${iconMap[data.value]}`;
         updateStopwatchClass();
         break;
 
@@ -1465,48 +1603,48 @@ if (row) {
       case "switch-sw_blink":
         suppressChange = true;
         blinkEnabled = data.value === true;
-        document.getElementById("blinkSwitch").checked = blinkEnabled;
+        if (elements.blinkSwitch) elements.blinkSwitch.checked = blinkEnabled;
         updatePantallaClass();
         suppressChange = false;
         break;
 
       case "number-countdown_minutes":
         suppressChange = true;
-        document.getElementById("countdownInput").value = data.value;
+        if (elements.countdownInput) elements.countdownInput.value = data.value;
         updateCountdownOutput(data.value);
         suppressChange = false;
         break;
 
       case "select-sel_stopwatch_mode":
         suppressChange = true;
-        document.getElementById("countdownModeSwitch").checked = data.value === "countdown";
+        if (elements.countdownModeSwitch) elements.countdownModeSwitch.checked = data.value === "countdown";
         suppressChange = false;
         break;
 
       case "switch-stopwatch_auto_show":
         suppressChange = true;
-        document.getElementById("autoShowSwitch").checked = data.value === true;
+        if (elements.autoShowSwitch) elements.autoShowSwitch.checked = data.value === true;
         suppressChange = false;
         break;
 
       case "switch-stopwatch_blink_before_overtime":
         suppressChange = true;
-        document.getElementById("blinkBeforeOvertimeSwitch").checked = data.value === true;
+        if (elements.blinkBeforeOvertimeSwitch) elements.blinkBeforeOvertimeSwitch.checked = data.value === true;
         suppressChange = false;
         break;
 
       case "select-sel_overtime_mode":
         suppressChange = true;
-        document.getElementById("overtimeModeSelect").value = data.value;
+        if (elements.overtimeModeSelect) elements.overtimeModeSelect.value = data.value;
         suppressChange = false;
         break;
 
       case "text-custom_sign":
-        document.getElementById("customSignInput").value = data.value;
+        if (elements.customSignInput) elements.customSignInput.value = data.value;
         break;
 
       case "text_sensor-ip":
-        document.getElementById("infoIP").textContent = data.value;
+        if (elements.infoIP) elements.infoIP.textContent = data.value;
         document.cookie = `clock_ip=${data.value}; path=/; max-age=31536000`;
         
         // Automatically add reported IP to the extra URLs if not already present
@@ -1517,26 +1655,104 @@ if (row) {
           renderUrlManagementList();
         }
         break;
-      case "text_sensor-ssid": document.getElementById("infoSSID").textContent = data.value; break;
-      case "text_sensor-bssid": document.getElementById("infoBSSID").textContent = data.value; break;
-      case "text_sensor-mac": document.getElementById("infoMAC").textContent = data.value; break;
-      case "text_sensor-dns": document.getElementById("infoDNS").textContent = data.value; break;
-      case "text_sensor-esphome_version": 
-        document.getElementById("infoVersion").textContent = data.value; 
-        
-        // Parse build date from format: 2026.1.5 (config hash 0x66291bcd, built 2026-02-15 11:18:09 +0000)
-        const dateMatch = data.value.match(/built ([\d-]+ [\d:]+)/);
-        if (dateMatch) {
-          deviceBuildDate = new Date(dateMatch[1] + " UTC");
-          const deviceDateEl = document.getElementById("deviceDate");
-          if (deviceDateEl) {
-            const formatted = deviceBuildDate.toLocaleString('es-ES', { 
-              day: '2-digit', month: '2-digit', year: 'numeric', 
-              hour: '2-digit', minute: '2-digit' 
-            });
-            deviceDateEl.textContent = `Versión instalada: ${formatted}`;
+      case "text_sensor-device_info":
+        if (data.value) {
+          const parts = data.value.split('|');
+          if (elements.infoReset) elements.infoReset.textContent = parts[9] ? parts[9].replace('Reset: ', '') : "-";
+          
+          if (elements.infoChip) {
+            const chipId = parts[2] ? parts[2].replace('Chip: ', '') : "";
+            const cpu = parts[7] ? parts[7].replace('CPU: ', '') : "";
+            elements.infoChip.textContent = `${chipId} @ ${cpu}MHz`;
           }
-          compareFirmwareVersions();
+
+          if (elements.infoFlash) {
+            const flashDetails = parts[1] ? parts[1].replace('Flash: ', '') : "";
+            const flashId = parts[8] ? parts[8].replace('Flash: ', '') : "";
+            elements.infoFlash.textContent = `${flashId} (${flashDetails})`;
+          }
+
+          if (elements.infoSDK) {
+            const sdk = parts[3] ? parts[3].replace('SDK: ', '') : "";
+            const core = parts[4] ? parts[4].replace('Core: ', '') : "";
+            const boot = parts[5] ? parts[5].replace('Boot: ', '') : "";
+            elements.infoSDK.textContent = `SDK:${sdk} Core:${core} Boot:${boot}`;
+          }
+        }
+        break;
+      case "text_sensor-ssid": if (elements.infoSSID) elements.infoSSID.textContent = data.value; break;
+      case "text_sensor-bssid": if (elements.infoBSSID) elements.infoBSSID.textContent = data.value; break;
+      case "text_sensor-mac": if (elements.infoMAC) elements.infoMAC.textContent = data.value; break;
+      case "text_sensor-dns": if (elements.infoDNS) elements.infoDNS.textContent = data.value; break;
+      case "sensor-heap_free": if (elements.infoHeapFree) elements.infoHeapFree.textContent = data.state; break;
+      case "sensor-heap_max_block": if (elements.infoHeapMax) elements.infoHeapMax.textContent = data.state; break;
+      case "sensor-heap_fragmentation": if (elements.infoHeapFrag) elements.infoHeapFrag.textContent = data.state; break;
+      case "sensor-loop_time": if (elements.infoLoopTime) elements.infoLoopTime.textContent = data.state; break;
+      case "sensor-cpu_frequency": 
+        if (elements.infoCpuFreq) {
+          const mhz = Math.round(Number(data.value) / 1000000);
+          elements.infoCpuFreq.textContent = `${mhz}MHz`;
+        }
+        break;
+      case "sensor-uptime":
+        if (elements.infoUptime) {
+          bootTimestamp = Number(data.value) * 1000;
+          if (!isNaN(bootTimestamp) && bootTimestamp > 0) {
+            const bootDate = new Date(bootTimestamp);
+            elements.infoUptime.textContent = bootDate.toLocaleString('es-ES', {
+              day: '2-digit', month: '2-digit', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            });
+          } else {
+            elements.infoUptime.textContent = data.state || "-";
+            bootTimestamp = null;
+            if (elements.infoUptimeDuration) elements.infoUptimeDuration.textContent = "-";
+          }
+        }
+        break;
+      case "sensor-wifi_signal":
+        if (elements.infoRSSI) elements.infoRSSI.textContent = data.state;
+        if (elements.wifiSignalIcon) {
+          const rssi = parseInt(data.value);
+          let icon = "bi-wifi-off";
+          if (rssi > -50) icon = "bi-wifi";
+          else if (rssi > -60) icon = "bi-wifi";
+          else if (rssi > -70) icon = "bi-wifi-2";
+          else if (rssi > -80) icon = "bi-wifi-1";
+          else icon = "bi-wifi-1"; // weak but connected
+          elements.wifiSignalIcon.className = `bi ${icon} text-secondary me-3 fs-5`;
+          // Reset style override (we had it colored before)
+          elements.wifiSignalIcon.style.color = "";
+
+          // Percentage calculation (Quality approximation: -100 dBm = 0%, -50 dBm = 100%)
+          if (elements.infoWifiPct) {
+            let pct = 0;
+            if (rssi >= -50) pct = 100;
+            else if (rssi <= -100) pct = 0;
+            else pct = Math.round(2 * (rssi + 100));
+            elements.infoWifiPct.textContent = pct;
+          }
+        }
+        break;
+      case "text_sensor-esphome_version": 
+        if (elements.infoVersion) {
+          // Parse: 2026.1.5 (config hash 0x66291bcd, built 2026-02-15 11:18:09 +0000)
+          const raw = data.value;
+          const version = raw.split(' ')[0];
+          elements.infoVersion.textContent = version;
+
+          const dateMatch = raw.match(/built ([\d-]+ [\d:]+)/);
+          if (dateMatch) {
+            const date = new Date(dateMatch[1] + " UTC");
+            deviceBuildDate = date; // for firmware update comparison
+            if (elements.infoBuildTime) {
+              elements.infoBuildTime.textContent = date.toLocaleString('es-ES', { 
+                day: '2-digit', month: '2-digit', year: '2-digit', 
+                hour: '2-digit', minute: '2-digit' 
+              });
+            }
+            compareFirmwareVersions();
+          }
         }
         break;
     }
@@ -1551,20 +1767,32 @@ if (row) {
   }, 1000);
 
   // === Stopwatch Tenths Simulation ===
-  setInterval(() => {
-    if (stopwatchState !== "running" || connectionStatus !== "connected") return;
-    
-    // Determine direction from the sign in the string
-    const isCountingDown = lastStopwatchValue.startsWith("-");
-    
-    if (isCountingDown) {
-      stopwatchTenths = (stopwatchTenths <= 0) ? 9 : stopwatchTenths - 1;
+  let lastTenthsUpdate = 0;
+  function animateTenths(timestamp) {
+    if (stopwatchState === "running" && connectionStatus === "connected") {
+      if (!lastTenthsUpdate) lastTenthsUpdate = timestamp;
+      const delta = timestamp - lastTenthsUpdate;
+
+      if (delta >= 100) {
+        lastTenthsUpdate = timestamp - (delta % 100);
+        
+        // Determine direction from the sign in the string
+        const isCountingDown = lastStopwatchValue.startsWith("-");
+        
+        if (isCountingDown) {
+          stopwatchTenths = (stopwatchTenths <= 0) ? 9 : stopwatchTenths - 1;
+        } else {
+          stopwatchTenths = (stopwatchTenths >= 9) ? 0 : stopwatchTenths + 1;
+        }
+        
+        renderStopwatchTenths();
+      }
     } else {
-      stopwatchTenths = (stopwatchTenths >= 9) ? 0 : stopwatchTenths + 1;
+      lastTenthsUpdate = 0;
     }
-    
-    renderStopwatchTenths();
-  }, 100);
+    requestAnimationFrame(animateTenths);
+  }
+  requestAnimationFrame(animateTenths);
 
   tryReconnect();
 
@@ -1680,5 +1908,10 @@ if (row) {
     bootstrap.Modal.getInstance(document.getElementById("customSignModal")).hide();
   });
 
+  // Initialize all tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
 
 });

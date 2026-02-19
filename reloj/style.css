@@ -1,4 +1,25 @@
 /* ------------------------------------------
+  Variables & Theme
+------------------------------------------- */
+:root {
+  --led-red: #ff0000;
+  --led-red-glow: rgba(255, 0, 0, 0.37);
+  --led-green: #28a745;
+  --led-amber: #ffaa00;
+  --led-rx-off: #06200b;
+  --led-tx-off: #2b1d00;
+  
+  --display-bg: #000000;
+  --display-border: #808080;
+  
+  --topbar-bg: rgba(25, 67, 75, 0.5);
+  --topbar-blur: 8px;
+  
+  --transition-speed: 0.3s;
+  --transition-func: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ------------------------------------------
   Base Layout
 ------------------------------------------- */
 .btn-group > label {
@@ -41,19 +62,20 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 }
 
 .pantalla-box {
+  contain: layout paint;
   width: 75%;
   height: 1.3em; 
-  background-color: black;
-  color: red;
+  background-color: var(--display-bg);
+  color: var(--led-red);
   font-variant-numeric: tabular-nums lining-nums;
   font-family: 'LED Calculator', monospace;
   /* Font size reduced by 10% (17.5 * 0.9 = 15.75) */
   font-size: clamp(1.6rem, 15.75cqi, 100px); 
   margin: 5px auto 10px auto;
   padding: 0 0.5rem;
-  border: 3px solid gray;
+  border: 3px solid var(--display-border);
   border-radius: 0.5rem;
-  text-shadow: 0 0 3px red, 0 0 15px rgba(255, 0, 0, 0.37);
+  text-shadow: 0 0 3px var(--led-red), 0 0 15px var(--led-red-glow);
   overflow: hidden;
   position: relative;
   display: flex;
@@ -81,21 +103,20 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 
 /* Special mode: Blinking display */
 .pantalla-blink {
-  animation: blinker 1s linear infinite;
+  animation: blink-soft 1s linear infinite;
 }
 
-/* Blinking animation for pantalla */
-@keyframes blinker {
-  10%   { opacity: 1; }
-  50%   { opacity: 1; }
-  60%   { opacity: 0.5;  }
-  100%  { opacity: 0.5;  }
+/* Consolidated soft blink animation */
+@keyframes blink-soft {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0.5; }
 }
 
 /* ------------------------------------------
   Stopwatch Display
 ------------------------------------------- */
 .cronometro {
+  contain: layout paint;
   font-variant-numeric: tabular-nums lining-nums;
   font-family: 'LED Calculator', monospace;
    font-size: clamp(1.6rem, 15.75cqi, 100px); 
@@ -106,18 +127,13 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 }
 
 /* Colon blink effect while stopwatch is running */
-.stopwatch-running span.colon {
-  animation: colon-blink 1s steps(1, start) infinite;
+body[data-stopwatch-state="running"] .cronometro span.colon {
+  animation: blink-soft 1s steps(1, start) infinite;
 }
 
 /* Whole stopwatch blinks when paused */
 .stopwatch-blink {
-  animation: colon-blink 1s steps(1, start) infinite;
-}
-
-@keyframes colon-blink {
-  0%, 49%   { opacity: 1; }
-  50%, 100% { opacity: 0.5; }
+  animation: blink-soft 1s steps(1, start) infinite;
 }
 
 /* ------------------------------------------
@@ -260,7 +276,7 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 }
 
 .blinking {
-  animation: blink 1s linear infinite;
+  animation: blink-soft 1s linear infinite;
 }
 
 .btn-command-sent {
@@ -292,17 +308,42 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 }
 
 .page-title, .clock-container, .mini-displays {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-speed) var(--transition-func);
   overflow: hidden;
   white-space: nowrap;
 }
 
 .topbar {
-  background-color: rgba(25, 67, 75, 0.5); /* dark with translucency */
-  backdrop-filter: blur(8px);              /* blur behind */
-  -webkit-backdrop-filter: blur(8px);      /* Safari support */
+  background-color: var(--topbar-bg);
+  backdrop-filter: blur(var(--topbar-blur));
+  -webkit-backdrop-filter: blur(var(--topbar-blur));
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   z-index: 1020;                            /* above content */
+}
+
+.topbar-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+}
+
+.mini-displays {
+  margin-left: 1rem;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .mini-led {
@@ -330,21 +371,21 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 }
 
 .led-rx {
-  background-color: #06200b; /* Very dark green when OFF */
+  background-color: var(--led-rx-off);
 }
 
 .led-tx {
-  background-color: #2b1d00; /* Very dark amber when OFF */
+  background-color: var(--led-tx-off);
 }
 
 .led-rx.active {
-  background-color: #28a745;
-  box-shadow: 0 0 6px #28a745;
+  background-color: var(--led-green);
+  box-shadow: 0 0 6px var(--led-green);
 }
 
 .led-tx.active {
-  background-color: #aa7700; /* Semi-bright amber */
-  box-shadow: 0 0 4px #aa7700;
+  background-color: var(--led-amber);
+  box-shadow: 0 0 4px var(--led-amber);
 }
 
 .led-flicker {
@@ -369,7 +410,7 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
   Collapsible Status Pill
 ------------------------------------------- */
 .status-pill {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s var(--transition-func);
   overflow: hidden;
   white-space: nowrap;
   max-width: 200px; /* Large enough for full text */
@@ -378,7 +419,7 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 }
 
 .status-pill .status-text {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-speed) ease;
   opacity: 1;
 }
 
@@ -400,9 +441,9 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 }
 
 /* Color icons when collapsed and background is gone */
-.status-pill.collapsed.bg-success i { color: #28a745 !important; }
-.status-pill.collapsed.bg-warning i { color: #ffaa00 !important; }
-.status-pill.collapsed.bg-danger i { color: #dc3545 !important; }
+.status-pill.collapsed.bg-success i { color: var(--led-green) !important; }
+.status-pill.collapsed.bg-warning i { color: var(--led-amber) !important; }
+.status-pill.collapsed.bg-danger i { color: var(--bs-danger) !important; }
 
 .program-item {
   display: flex;
@@ -453,6 +494,12 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
     display: none !important;
   }
 
+  /* Force topbar layout on mobile */
+  .topbar-grid {
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+  }
+
   .page-title {
     max-width: 0 !important;
     opacity: 0 !important;
@@ -462,7 +509,6 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 
   .mini-displays {
     display: flex !important;
-    max-width: 500px !important;
     opacity: 1 !important;
   }
 
@@ -475,10 +521,6 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
 
   #connectionStatus i {
     margin-right: 0 !important;
-  }
-
-  .topbar {
-    justify-content: flex-end !important;
   }
 
   .led-label {
@@ -499,9 +541,9 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
   .status-pill i {
     margin-right: 0 !important;
   }
-  .status-pill.bg-success i { color: #28a745 !important; }
-  .status-pill.bg-warning i { color: #ffaa00 !important; }
-  .status-pill.bg-danger i { color: #dc3545 !important; }
+  .status-pill.bg-success i { color: var(--led-green) !important; }
+  .status-pill.bg-warning i { color: var(--led-amber) !important; }
+  .status-pill.bg-danger i { color: var(--bs-danger) !important; }
 
   .icon-label-btn {
     height: 3.5em !important;
