@@ -137,10 +137,17 @@ document.addEventListener("DOMContentLoaded", () => {
   let stopwatchTenths = 0;
   let bootTimestamp = null;
   let messageCount = 0;
+  let globalBlinkStart = Date.now();
   const sessionStartTime = Date.now();
 
   updateConnectionStatus("connecting"); // ✅ force initial connecting status
   setPanelBlur(true); // ✅ blur panels initially
+
+  function updateBlinkSync() {
+    const elapsed = Date.now() - globalBlinkStart;
+    const isBlinkOn = (elapsed % 1000) < 500;
+    document.documentElement.style.setProperty('--blink-opacity', isBlinkOn ? '1' : '0.5');
+  }
 
   function renderMiniSecondary() {
     const { miniSecondaryLink, miniSecondaryIcon, miniSecondaryText } = elements;
@@ -1249,8 +1256,8 @@ if (row) {
     }
 
     let feedbackEl = el;
-    // If it's a hidden radio, apply feedback to its label
-    if (el && el.tagName === 'INPUT' && el.type === 'radio') {
+    // If it's a hidden radio or a btn-check, apply feedback to its label
+    if (el && el.tagName === 'INPUT' && (el.type === 'radio' || el.classList.contains('btn-check'))) {
       feedbackEl = document.querySelector(`label[for='${el.id}']`);
     }
     // If it's a switch, apply to its parent or container
@@ -1432,6 +1439,7 @@ if (row) {
   function updateTimeclockUI(value) {
     if (value === lastTimeclockValue && lastMiniSecondaryRole !== "hora") return;
     lastTimeclockValue = value;
+    globalBlinkStart = Date.now(); // Sync blink phase
     const { clockTime: el } = elements;
     if (el) {
       if (value.length >= 3) {
@@ -1468,6 +1476,7 @@ if (row) {
   function updateStopwatchUI(value) {
     lastStopwatchValue = value;
     stopwatchTenths = 0; // Sync with the new second mark
+    globalBlinkStart = Date.now(); // Sync blink phase
 
     document.body.dataset.stopwatchState = stopwatchState;
 
@@ -1766,9 +1775,11 @@ if (row) {
     }
   }, 1000);
 
-  // === Stopwatch Tenths Simulation ===
+  // === UI Animation Loop (Tenths + Blink Sync) ===
   let lastTenthsUpdate = 0;
-  function animateTenths(timestamp) {
+  function uiLoop(timestamp) {
+    updateBlinkSync();
+
     if (stopwatchState === "running" && connectionStatus === "connected") {
       if (!lastTenthsUpdate) lastTenthsUpdate = timestamp;
       const delta = timestamp - lastTenthsUpdate;
@@ -1790,9 +1801,9 @@ if (row) {
     } else {
       lastTenthsUpdate = 0;
     }
-    requestAnimationFrame(animateTenths);
+    requestAnimationFrame(uiLoop);
   }
-  requestAnimationFrame(animateTenths);
+  requestAnimationFrame(uiLoop);
 
   tryReconnect();
 
