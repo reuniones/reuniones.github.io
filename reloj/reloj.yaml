@@ -59,6 +59,10 @@ esp8266:
 logger:
   level: INFO 
 
+# Example configuration entry
+debug:
+  update_interval: 1h
+
 ota:
   - platform: esphome
   - platform: web_server  
@@ -98,6 +102,24 @@ wifi:
   ap:
     ssid: "Reloj"
 
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+  - platform: uptime
+    type: timestamp
+    name: Uptime
+  - platform: debug
+    free:
+      name: "Heap Free"
+    block:
+      name: "Heap Max Block"
+    fragmentation:
+      name: "Heap Fragmentation"
+    loop_time:
+      name: "Loop Time"
+    cpu_frequency:
+      name: "CPU Frequency"
 # http_request:
 #   esp8266_disable_ssl_support: True
 # mqtt:
@@ -387,6 +409,7 @@ text_sensor:
   - platform: template
     id: status
     name: status
+    # internal: True
   - platform: template
     id: timeclock
     name: timeclock
@@ -440,6 +463,9 @@ text_sensor:
       name: DNS
   - platform: version
     name: ESPHome_Version
+  - platform: debug
+    device:
+      name: "Device Info"
 
 text:
   - platform: template
@@ -770,7 +796,9 @@ interval:
             id(stopwatch_time) += 1;
             id(countdown_time_left) =  id(countdown_time) - id(stopwatch_time);
             id(ms_count) = 0;
-          };
+          }
+          
+          ;
           id(timeclock).publish_state(id(sntp_time).now().strftime("%H:%M:%S"));
 
           //PUBLISH STATE
@@ -790,12 +818,14 @@ interval:
       - text_sensor.template.publish:
           id: status
           state: !lambda |-
-            char json_buffer[256];
+            char json_buffer[512];
 
             // 2. Get your values (Assuming these are the string states you mentioned)
             const char* display_val = id(display_text).state.c_str();
             const char* time_val = id(timeclock).state.c_str();
             const char* stop_val = id(stopwatch).state.c_str();
+            //const char* hourminute_val = id(clock_hour_minute).c_str();
+            //const char* second_val = id(clock_second).c_str();
 
             // 3. Format the JSON string
             // Note: \" is used to put a literal double-quote into the string
