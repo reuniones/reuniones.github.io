@@ -591,9 +591,12 @@
   <div class="modal fade" id="reconnectModal" tabindex="-1" aria-labelledby="reconnectModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header text-bg-danger">
-          <h5 class="modal-title" id="reconnectModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Error de conexión</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <div class="modal-header">
+          <h5 class="modal-title" id="reconnectModalLabel">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Buscando conexión con el reloj
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
           <p class="mb-4">No se puede establecer una conexión con el reloj. Esto puede deberse a problemas de red, configuración o restricciones de seguridad del navegador. La siguiente información puede ayudarte a diagnosticar el problema:</p>

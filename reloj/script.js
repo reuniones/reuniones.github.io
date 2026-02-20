@@ -139,6 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let messageCount = 0;
   let globalBlinkStart = Date.now();
   const sessionStartTime = Date.now();
+  let avgLatency = 0;
 
   updateConnectionStatus("connecting"); // ✅ force initial connecting status
   setPanelBlur(true); // ✅ blur panels initially
@@ -192,18 +193,32 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (elements.infoAppUptime) {
       const diffMs = Date.now() - sessionStartTime;
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffSecs = Math.floor((diffMs % 60000) / 1000);
-      elements.infoAppUptime.textContent = diffMins > 0 ? `${diffMins}m ${diffSecs}s` : `${diffSecs}s`;
+      const diffSecs = Math.floor(diffMs / 1000);
+      const days = Math.floor(diffSecs / 86400);
+      const hours = Math.floor((diffSecs % 86400) / 3600);
+      const mins = Math.floor((diffSecs % 3600) / 60);
+      const secs = diffSecs % 60;
+
+      let durationStr = "";
+      if (days > 0) durationStr += `${days} d, `;
+      if (hours > 0 || days > 0) durationStr += `${hours} h, `;
+      if (mins > 0 || hours > 0 || days > 0) durationStr += `${mins} m, `;
+      durationStr += `${secs} s`;
+      elements.infoAppUptime.textContent = durationStr;
     }
 
     if (elements.infoLatency) {
-      const latency = Date.now() - lastEventTime;
-      elements.infoLatency.textContent = `${latency}ms`;
+      const currentLatency = Date.now() - lastEventTime;
+      // Exponential Moving Average (alpha = 0.2)
+      if (avgLatency === 0) avgLatency = currentLatency;
+      else avgLatency = (0.2 * currentLatency) + (0.8 * avgLatency);
+
+      const displayLatency = Math.round(avgLatency);
+      elements.infoLatency.textContent = `${displayLatency}ms`;
       
       // Color based on latency
-      if (latency < 1500) elements.infoLatency.className = "fw-bold small text-success";
-      else if (latency < 3000) elements.infoLatency.className = "fw-bold small text-warning";
+      if (displayLatency < 1500) elements.infoLatency.className = "fw-bold small text-success";
+      else if (displayLatency < 3000) elements.infoLatency.className = "fw-bold small text-warning";
       else elements.infoLatency.className = "fw-bold small text-danger";
     }
   }
