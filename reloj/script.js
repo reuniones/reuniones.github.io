@@ -188,23 +188,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function formatDuration(diffMs) {
+    const diffSecs = Math.floor(diffMs / 1000);
+    const days = Math.floor(diffSecs / 86400);
+    const hours = Math.floor((diffSecs % 86400) / 3600);
+    const mins = Math.floor((diffSecs % 3600) / 60);
+    const secs = diffSecs % 60;
+
+    const s = secs.toString().padStart(2, '0');
+    const m = mins.toString().padStart(2, '0');
+    const h = hours.toString().padStart(2, '0');
+
+    if (days > 0 || hours > 0) {
+      return `${days}:${h}:${m}:${s}`;
+    }
+    if (mins > 0) {
+      return `${hours}:${m}:${s}`;
+    }
+    return `${mins}:${s}`;
+  }
+
   function updateAppStatsUI() {
     if (elements.infoMsgCount) elements.infoMsgCount.textContent = messageCount;
     
     if (elements.infoAppUptime) {
-      const diffMs = Date.now() - sessionStartTime;
-      const diffSecs = Math.floor(diffMs / 1000);
-      const days = Math.floor(diffSecs / 86400);
-      const hours = Math.floor((diffSecs % 86400) / 3600);
-      const mins = Math.floor((diffSecs % 3600) / 60);
-      const secs = diffSecs % 60;
-
-      let durationStr = "";
-      if (days > 0) durationStr += `${days} d, `;
-      if (hours > 0 || days > 0) durationStr += `${hours} h, `;
-      if (mins > 0 || hours > 0 || days > 0) durationStr += `${mins} m, `;
-      durationStr += `${secs} s`;
-      elements.infoAppUptime.textContent = durationStr;
+      elements.infoAppUptime.textContent = formatDuration(Date.now() - sessionStartTime);
     }
 
     if (elements.infoLatency) {
@@ -226,17 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateUptimeDurationUI() {
     updateAppStatsUI();
     if (bootTimestamp && elements.infoUptimeDuration) {
-      const diffMs = Date.now() - bootTimestamp;
-      const diffSecs = Math.floor(diffMs / 1000);
-      const days = Math.floor(diffSecs / 86400);
-      const hours = Math.floor((diffSecs % 86400) / 3600);
-      const mins = Math.floor((diffSecs % 3600) / 60);
-
-      let durationStr = "";
-      if (days > 0) durationStr += `${days} d, `;
-      if (hours > 0 || days > 0) durationStr += `${hours} h, `;
-      durationStr += `${mins} m`;
-      elements.infoUptimeDuration.textContent = durationStr;
+      elements.infoUptimeDuration.textContent = formatDuration(Date.now() - bootTimestamp);
     }
   }
 
@@ -652,7 +650,7 @@ function setPanelBlur(active) {
           const formatted = serverFirmwareDate.toLocaleString('es-ES', { 
             day: '2-digit', month: '2-digit', year: 'numeric', 
             hour: '2-digit', minute: '2-digit' 
-          });
+          }).replace(',', '');
           el.textContent = `Última versión: ${formatted}`;
           compareFirmwareVersions();
           return;
@@ -1726,7 +1724,7 @@ if (row) {
             elements.infoUptime.textContent = bootDate.toLocaleString('es-ES', {
               day: '2-digit', month: '2-digit', year: 'numeric',
               hour: '2-digit', minute: '2-digit'
-            });
+            }).replace(',', '');
           } else {
             elements.infoUptime.textContent = data.state || "-";
             bootTimestamp = null;
@@ -1773,7 +1771,7 @@ if (row) {
               elements.infoBuildTime.textContent = date.toLocaleString('es-ES', { 
                 day: '2-digit', month: '2-digit', year: '2-digit', 
                 hour: '2-digit', minute: '2-digit' 
-              });
+              }).replace(',', '');
             }
             compareFirmwareVersions();
           }

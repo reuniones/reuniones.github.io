@@ -493,35 +493,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body p-0">
-          <!-- Network Section -->
-          <div class="p-3 border-bottom">
-            <h6 class="fw-bold small text-muted text-uppercase mb-3" style="font-size: 0.7rem; letter-spacing: 0.05em;">Red</h6>
-            <div class="d-flex align-items-center mb-3" data-bs-toggle="tooltip" data-bs-placement="right" title="Dirección única del dispositivo en la red local. Permite la comunicación directa entre el navegador y el reloj.">
-              <i class="bi bi-globe2 text-secondary me-3 fs-5"></i>
-              <div class="flex-grow-1">
-                <div class="small text-muted mb-0" style="font-size: 0.75rem;">Dirección IP</div>
-                <div id="infoIP" class="fw-semibold">---</div>
-              </div>
-            </div>
-            <div class="d-flex align-items-start">
-              <i id="wifiSignalIcon" class="bi bi-wifi text-secondary me-3 fs-5"></i>
-              <div class="flex-grow-1">
-                <div class="small text-muted mb-0" style="font-size: 0.75rem;">WiFi</div>
-                <div class="d-flex justify-content-between align-items-baseline">
-                  <span id="infoSSID" class="fw-semibold" data-bs-toggle="tooltip" title="Nombre de la red Wi-Fi (SSID). El reloj debe estar en la misma red que este dispositivo.">---</span>
-                  <span class="small text-muted" style="font-size: 0.7rem;" data-bs-toggle="tooltip" title="Calidad relativa de la señal (0-100%). Valores bajos pueden causar retrasos en las actualizaciones."><span id="infoWifiPct">0</span>%</span>
-                </div>
-                <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
-                  <div data-bs-toggle="tooltip" title="Intensidad de señal (RSSI). Excelente: -30 a -60, Aceptable: -70, Pobre: < -80.">Señal: <span id="infoRSSI">---</span></div>
-                  <div data-bs-toggle="tooltip" title="Dirección física (MAC) del punto de acceso actual. Útil en redes con múltiples repetidores.">BSSID: <span id="infoBSSID">--:--:--:--:--:--</span></div>
-                  <div data-bs-toggle="tooltip" title="Identificador único permanente de la placa Wi-Fi del reloj.">MAC: <span id="infoMAC">--:--:--:--:--:--</span></div>
-                  <div data-bs-toggle="tooltip" title="Servidor encargado de traducir nombres de dominio. Vital para sincronizar la hora (NTP).">DNS: <span id="infoDNS">---</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Device Section (Merged Software & Hardware) -->
+          <!-- Device Section (Merged Software, Hardware & Network) -->
           <div class="p-3 border-bottom bg-body-tertiary position-relative">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h6 class="fw-bold small text-muted text-uppercase mb-0" style="font-size: 0.7rem; letter-spacing: 0.05em;">Dispositivo</h6>
@@ -529,35 +501,67 @@
                 <i class="bi bi-power me-1"></i>REINICIAR
               </button>
             </div>
-            
-            <div class="d-flex align-items-start mb-3">
-              <i class="bi bi-cpu text-secondary me-3 fs-5"></i>
-              <div class="flex-grow-1">
-                <div class="small text-muted mb-0" style="font-size: 0.75rem;">Versión de ESPHome</div>
-                <div class="fw-semibold" id="infoVersion" data-bs-toggle="tooltip" title="Versión del framework ESPHome con el que se compiló el software actual.">---</div>
-                <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
-                  <div data-bs-toggle="tooltip" title="Fecha y hora de generación del firmware. Permite confirmar si una actualización fue aplicada.">Compilado: <span id="infoBuildTime">--/--/--</span></div>
-                  <div data-bs-toggle="tooltip" title="Modelo del microcontrolador y su frecuencia de operación real medida.">Chip: <span id="infoChip">---</span> (<span id="infoCpuFreq">--</span>)</div>
-                  <div data-bs-toggle="tooltip" title="Especificaciones de la memoria flash donde reside el programa y la configuración.">Flash: <span id="infoFlash">---</span></div>
-                  <div data-bs-toggle="tooltip" title="Versiones de las librerías base (SDK), el núcleo de Arduino y el cargador de arranque.">Software: <span id="infoSDK">---</span></div>
-                  <div class="mt-1 border-top pt-1 opacity-75">
-                    <div data-bs-toggle="tooltip" title="Memoria RAM dinámica disponible (Heap). Si baja demasiado (< 5kB), el dispositivo puede ser inestable.">Heap Libre: <span id="infoHeapFree">---</span></div>
-                    <div data-bs-toggle="tooltip" title="El bloque contiguo de memoria más grande disponible. Determina si se pueden realizar asignaciones grandes.">Bloque Máx: <span id="infoHeapMax">---</span></div>
-                    <div data-bs-toggle="tooltip" title="Nivel de fragmentación de la memoria RAM (0-100%). Valores bajos indican una memoria más saludable.">Fragmentación: <span id="infoHeapFrag">---</span></div>
-                    <div data-bs-toggle="tooltip" title="Tiempo que tarda el procesador en completar un ciclo del bucle principal. Menos es mejor.">Loop: <span id="infoLoopTime">---</span></div>
+
+            <!-- Network Info -->
+            <div class="mb-4">
+              <h6 class="fw-bold small text-muted text-uppercase mb-2" style="font-size: 0.65rem; opacity: 0.7;">Red</h6>
+              <div class="d-flex align-items-center mb-3" data-bs-toggle="tooltip" data-bs-placement="right" title="Dirección única del dispositivo en la red local. Permite la comunicación directa entre el navegador y el reloj.">
+                <i class="bi bi-globe2 text-secondary me-3 fs-5"></i>
+                <div class="flex-grow-1">
+                  <div class="small text-muted mb-0" style="font-size: 0.75rem;">Dirección IP</div>
+                  <div id="infoIP" class="fw-semibold">---</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-start">
+                <i id="wifiSignalIcon" class="bi bi-wifi text-secondary me-3 fs-5"></i>
+                <div class="flex-grow-1">
+                  <div class="small text-muted mb-0" style="font-size: 0.75rem;">WiFi</div>
+                  <div class="d-flex justify-content-between align-items-baseline">
+                    <span id="infoSSID" class="fw-semibold" data-bs-toggle="tooltip" title="Nombre de la red Wi-Fi (SSID). El reloj debe estar en la misma red que este dispositivo.">---</span>
+                    <span class="small text-muted" style="font-size: 0.7rem;" data-bs-toggle="tooltip" title="Calidad relativa de la señal (0-100%). Valores bajos pueden causar retrasos en las actualizaciones."><span id="infoWifiPct">0</span>%</span>
+                  </div>
+                  <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
+                    <div data-bs-toggle="tooltip" title="Intensidad de señal (RSSI). Excelente: -30 a -60, Aceptable: -70, Pobre: < -80.">Señal: <span id="infoRSSI">---</span></div>
+                    <div data-bs-toggle="tooltip" title="Dirección física (MAC) del punto de acceso actual. Útil en redes con múltiples repetidores.">BSSID: <span id="infoBSSID">--:--:--:--:--:--</span></div>
+                    <div data-bs-toggle="tooltip" title="Identificador único permanente de la placa Wi-Fi del reloj.">MAC: <span id="infoMAC">--:--:--:--:--:--</span></div>
+                    <div data-bs-toggle="tooltip" title="Servidor encargado de traducir nombres de dominio. Vital para sincronizar la hora (NTP).">DNS: <span id="infoDNS">---</span></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="d-flex align-items-start">
-              <i class="bi bi-clock-history text-secondary me-3 fs-5"></i>
-              <div class="flex-grow-1">
-                <div class="small text-muted mb-0" style="font-size: 0.75rem;">Funcionando desde</div>
-                <div id="infoUptime" class="fw-semibold" data-bs-toggle="tooltip" title="Fecha y hora del último inicio. Útil para detectar cortes de energía o reinicios inesperados.">--/--/-- --:--</div>
-                <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
-                  <div data-bs-toggle="tooltip" title="Tiempo total de operación continua desde el último inicio.">Tiempo: <span id="infoUptimeDuration">- d, - h, - m</span></div>
-                  <div data-bs-toggle="tooltip" title="Razón técnica del último arranque. Ayuda a distinguir entre un encendido normal, un reinicio por software o un fallo (Crash).">Motivo: <span id="infoReset" class="text-wrap">---</span></div>
+            <!-- Software/Hardware Info -->
+            <div class="mb-4">
+              <h6 class="fw-bold small text-muted text-uppercase mb-2" style="font-size: 0.65rem; opacity: 0.7;">Sistema</h6>
+              <div class="d-flex align-items-start mb-3">
+                <i class="bi bi-cpu text-secondary me-3 fs-5"></i>
+                <div class="flex-grow-1">
+                  <div class="small text-muted mb-0" style="font-size: 0.75rem;">Versión de ESPHome</div>
+                  <div class="fw-semibold" id="infoVersion" data-bs-toggle="tooltip" title="Versión del framework ESPHome con el que se compiló el software actual.">---</div>
+                  <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
+                    <div data-bs-toggle="tooltip" title="Fecha y hora de generación del firmware. Permite confirmar si una actualización fue aplicada.">Compilado: <span id="infoBuildTime">--/--/--</span></div>
+                    <div data-bs-toggle="tooltip" title="Modelo del microcontrolador y su frecuencia de operación real medida.">Chip: <span id="infoChip">---</span> (<span id="infoCpuFreq">--</span>)</div>
+                    <div data-bs-toggle="tooltip" title="Especificaciones de la memoria flash donde reside el programa y la configuración.">Flash: <span id="infoFlash">---</span></div>
+                    <div data-bs-toggle="tooltip" title="Versiones de las librerías base (SDK), el núcleo de Arduino y el cargador de arranque.">Software: <span id="infoSDK">---</span></div>
+                    <div class="mt-1 border-top pt-1 opacity-75">
+                      <div data-bs-toggle="tooltip" title="Memoria RAM dinámica disponible (Heap). Si baja demasiado (< 5kB), el dispositivo puede ser inestable.">Heap Libre: <span id="infoHeapFree">---</span></div>
+                      <div data-bs-toggle="tooltip" title="El bloque contiguo de memoria más grande disponible. Determina si se pueden realizar asignaciones grandes.">Bloque Máx: <span id="infoHeapMax">---</span></div>
+                      <div data-bs-toggle="tooltip" title="Nivel de fragmentación de la memoria RAM (0-100%). Valores bajos indican una memoria más saludable.">Fragmentación: <span id="infoHeapFrag">---</span></div>
+                      <div data-bs-toggle="tooltip" title="Tiempo que tarda el procesador en completar un ciclo del bucle principal. Menos es mejor.">Loop: <span id="infoLoopTime">---</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-start">
+                <i class="bi bi-clock-history text-secondary me-3 fs-5"></i>
+                <div class="flex-grow-1">
+                  <div class="small text-muted mb-0" style="font-size: 0.75rem;">Funcionando desde</div>
+                  <div id="infoUptime" class="fw-semibold" data-bs-toggle="tooltip" title="Fecha y hora del último inicio. Útil para detectar cortes de energía o reinicios inesperados.">--/--/-- --:--</div>
+                  <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
+                    <div data-bs-toggle="tooltip" title="Tiempo total de operación continua desde el último inicio.">Tiempo: <span id="infoUptimeDuration">- d, - h, - m</span></div>
+                    <div data-bs-toggle="tooltip" title="Razón técnica del último arranque. Ayuda a distinguir entre un encendido normal, un reinicio por software o un fallo (Crash).">Motivo: <span id="infoReset" class="text-wrap">---</span></div>
+                  </div>
                 </div>
               </div>
             </div>
