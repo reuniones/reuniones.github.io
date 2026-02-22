@@ -1323,6 +1323,13 @@ if (row) {
     return Array.from(urls);
   }
 
+  function syncTime() {
+    if (connectionStatus !== "connected") return;
+    const nowTimestamp = Math.floor(Date.now() / 1000);
+    // Send browser time to the clock as a manual timestamp
+    sendCustomCommand(`/number/manual_timestamp/set?value=${nowTimestamp}`);
+  }
+
   function connect(url) {
     if (eventSource) {
       eventSource.close();
@@ -1349,6 +1356,9 @@ if (row) {
       triedUrls.set(url, 'connected');
       updateTriedUrlsUI();
       setBlur(false);
+      
+      // Synchronize browser time upon initial connection
+      syncTime();
     };
 
     eventSource.addEventListener("state", (e) => {

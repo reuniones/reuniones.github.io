@@ -23,8 +23,6 @@ esphome:
           id(countdown_seconds_left) = 0;
           id(countdown_minutes_left) = 0;
           id(countdown_hours_left) = 0;
-          id(countdown_seconds_left_string) = "00";
-          id(countdown_minutes_left_string) = "0";
           id(countdown_sign) = "";
           id(countdown_minutes_alignment) = 12;
           id(countdown_sign_alignment) = 8;
@@ -32,9 +30,6 @@ esphome:
           id(stopwatch_minutes) = 0;
           id(stopwatch_hours) = 0;
           id(stopwatch_minutes_alignment) = 12;
-          id(stopwatch_seconds_string) = "00";
-          id(stopwatch_minutes_string) = "0";
-          id(stopwatch_hours_string) = "";
       # - light.turn_on:
       #     id: statusled
       #     effect: "strobe"
@@ -306,6 +301,24 @@ number:
     step: 1
     initial_value: 60
     restore_value: true  
+  - platform: template
+    id: manual_timestamp
+    name: "Manual Timestamp"
+    min_value: 0
+    max_value: 2147483647
+    step: 1
+    optimistic: true
+    on_value:
+      then:
+        - lambda: |-
+            if (x > 0) {
+              struct timeval tv;
+              tv.tv_sec = (time_t)x;
+              tv.tv_usec = 0;
+              settimeofday(&tv, NULL);
+              id(time_synched) = true;
+              ESP_LOGI("main", "Time set manually to %llu", (uint64_t)x);
+            }
   # - platform: template
   #   id: custom_sign_timeout
   #   name: custom_sign_timeout
@@ -463,8 +476,6 @@ button:
           id(countdown_seconds_left) = 0;
           id(countdown_minutes_left) = 0;
           id(countdown_hours_left) = 0;
-          id(countdown_seconds_left_string) = "00";
-          id(countdown_minutes_left_string) = "0";
           id(countdown_sign) = "";
           id(countdown_minutes_alignment) = 12;
           id(countdown_sign_alignment) = 8;
@@ -472,9 +483,6 @@ button:
           id(stopwatch_minutes) = 0;
           id(stopwatch_hours) = 0;
           id(stopwatch_minutes_alignment) = 12;
-          id(stopwatch_seconds_string) = "00";
-          id(stopwatch_minutes_string) = "0";
-          id(stopwatch_hours_string) = "";
           id(stopwatch_overtime_action_done) = 0;
       - globals.set:
           id: stopwatch_time
@@ -647,7 +655,7 @@ interval:
           char stopwatch_str[32] = "0:00";
           char timeclock_str[16];
           char display_text_str[128] = "";
-          char m_str[8], s_str[8], h_str[8];
+          char m_str[16], s_str[16], h_str[16];
 
           // Format timeclock
           snprintf(timeclock_str, sizeof(timeclock_str), "%s", now.strftime("%H:%M:%S").c_str());
