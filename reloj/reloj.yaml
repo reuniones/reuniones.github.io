@@ -105,7 +105,9 @@ sensor:
   - platform: uptime
     type: timestamp
     name: Uptime
+    update_interval: 60s
   - platform: debug
+    update_interval: 60s
     free:
       name: "Heap Free"
     block:
@@ -116,68 +118,10 @@ sensor:
       name: "Loop Time"
     cpu_frequency:
       name: "CPU Frequency"
-# http_request:
-#   esp8266_disable_ssl_support: True
-# mqtt:
-#   broker: '192.168.1.1' #'192.168.1.8'
-#   # on_message:
-#   #   topic: reloj/+/+/command
-#   #   then:
-#   #     - light.turn_on:
-#   #         id: statusled
-#   #     - light.turn_on:
-#   #         id: statusled
-#   #         effect: "strobe"
-#   reboot_timeout: 0s
-
-
-# external_components:
-#   - source: github://dentra/esphome-components
-
-# backup:
-#   # auth:
-#   #   username: !secret web_username
-#   #   password: !secret web_password
-#  # force_update: false
-#   # http://yourdevice.local/config.yaml
-
-# light:
-#   - platform: status_led
-#     id: statusled
-#     internal: true
-#     restore_mode: RESTORE_DEFAULT_ON
-#     pin: 
-#       number: D4
-#       inverted: true
-#     effects:
-#       - strobe:
-#           name: "strobe"
-#           colors:
-#             - state: false
-#               duration: 1990ms
-#             - state: true
-#               duration: 10ms
-#       - strobe:
-#           name: "command"
-#           colors:
-#             - state: true
-#               duration: 100ms
-#             - state: false
-#               duration: 100ms
-#             - state: true
-#               duration: 100ms
-#             - state: false
-#               duration: 100ms       
-    # on_turn_on:
-    #   then:
-    #     - light.control:
-    #         id: statusled
-    #         effect: "strobe"
 
 web_server:
   port: 80
   version: 2
-
 
 captive_portal:
 
@@ -188,15 +132,7 @@ time:
     servers: 
     - '129.6.15.28'
     - '192.168.1.8'
-    # - '129.6.15.28'
     - '0.ar.pool.ntp.org'
-  # - platform: sntp
-  #   id: sntp_time2
-  #   timezone: 'America/Argentina/Buenos_Aires'
-  #   servers: 
-  #   - '192.168.1.8'
-  #   - '129.6.15.28'
-  #   - '0.ar.pool.ntp.org' 
     on_time_sync:
       then:
         - lambda: |-
