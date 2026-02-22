@@ -85,8 +85,8 @@ wifi:
   networks:
   # -  ssid: "Congregacion SUR"
   #    password: "25201914"
-  - ssid: !secret wifi_ssid
-    password: !secret wifi_password
+  # - ssid: !secret wifi_ssid
+  #   password: !secret wifi_password
   use_address: 192.168.1.223
   # -  ssid: "JW"
   #    password: "19141914"
@@ -498,6 +498,20 @@ text:
     max_length: 100
     mode: text
     initial_value: "https://reuniones.github.io/reloj"
+  - platform: template
+    name: "Wifi SSID"
+    id: Wifi_SSID
+    optimistic: true
+    min_length: 2
+    max_length: 100
+    mode: text
+  - platform: template
+    name: "Wifi password"
+    id: Wifi_pwd
+    optimistic: true
+    min_length: 6
+    max_length: 100
+    mode: text
             
 
 button:
@@ -607,7 +621,21 @@ button:
   - platform: restart
     id: reboot
     name: reboot  
-
+  - platform: template
+    name: "Connect to wifi"
+    on_press:
+      then:
+        - wifi.configure:
+            ssid: !lambda |-
+              return id(Wifi_SSID).state.c_str();
+            password: !lambda |-
+              return id(Wifi_pwd).state.c_str();
+            save: true
+            timeout: 30000ms
+            on_connect:
+              - logger.log: "Connected to WiFi!"
+            on_error:
+              - logger.log: "Failed to connect to WiFi!"
 
 select:
   - platform: template
