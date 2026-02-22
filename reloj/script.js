@@ -117,7 +117,11 @@ document.addEventListener("DOMContentLoaded", () => {
     triedUrlsContainer: document.getElementById("triedUrlsContainer"),
     triedUrlsList: document.getElementById("triedUrlsList"),
     diagAlertContainer: document.getElementById("diagAlertContainer"),
-    browserSpecificInstructions: document.getElementById("browserSpecificInstructions")
+    browserSpecificInstructions: document.getElementById("browserSpecificInstructions"),
+    wifiSsidInput: document.getElementById("wifiSsidInput"),
+    wifiPasswordInput: document.getElementById("wifiPasswordInput"),
+    connectWifiBtn: document.getElementById("connectWifiBtn"),
+    toggleWifiPassword: document.getElementById("toggleWifiPassword")
   };
 
   // === State Variables ===
@@ -164,8 +168,8 @@ document.addEventListener("DOMContentLoaded", () => {
       role = (stopwatchState === "running") ? "crono" : "hora";
     }
 
-    // Only update if role changed or if it's a high-frequency update (crono always updates because of tenths)
-    if (role === lastMiniSecondaryRole && role !== "crono") return;
+    // Only update if role changed or if it's a high-frequency update (crono and hora can change over time)
+    if (role === lastMiniSecondaryRole && role !== "crono" && role !== "hora") return;
     lastMiniSecondaryRole = role;
 
     if (role === "hora") {
@@ -652,14 +656,13 @@ function setPanelBlur(active) {
             hour: '2-digit', minute: '2-digit' 
           }).replace(',', '');
           el.textContent = `Última versión: ${formatted}`;
-          compareFirmwareVersions();
-          return;
         }
       }
-      el.textContent = ""; // Hide if not found
     } catch (e) {
       console.error("Error fetching firmware date:", e);
       el.textContent = "Fecha no disponible";
+    } finally {
+      compareFirmwareVersions();
     }
   }
 
@@ -671,6 +674,14 @@ function setPanelBlur(active) {
     // Always ensure the version info container is visible in the consent modal
     const comparisonDiv = document.getElementById("firmwareComparison");
     if (comparisonDiv) comparisonDiv.classList.remove("d-none");
+
+    if (deviceBuildDate && elements.deviceDate) {
+      const formatted = deviceBuildDate.toLocaleString('es-ES', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit' 
+      }).replace(',', '');
+      elements.deviceDate.textContent = `Versión instalada: ${formatted}`;
+    }
 
     if (!deviceBuildDate || !serverFirmwareDate) return;
 
@@ -1705,6 +1716,8 @@ if (row) {
       case "text_sensor-ssid": if (elements.infoSSID) elements.infoSSID.textContent = data.value; break;
       case "text_sensor-bssid": if (elements.infoBSSID) elements.infoBSSID.textContent = data.value; break;
       case "text_sensor-mac": if (elements.infoMAC) elements.infoMAC.textContent = data.value; break;
+      case "text-wifi_ssid": if (elements.wifiSsidInput) elements.wifiSsidInput.value = data.value; break;
+      case "text-wifi_password": if (elements.wifiPasswordInput) elements.wifiPasswordInput.value = data.value; break;
       case "text_sensor-dns": if (elements.infoDNS) elements.infoDNS.textContent = data.value; break;
       case "sensor-heap_free": if (elements.infoHeapFree) elements.infoHeapFree.textContent = data.state; break;
       case "sensor-heap_max_block": if (elements.infoHeapMax) elements.infoHeapMax.textContent = data.state; break;
@@ -1823,6 +1836,52 @@ if (row) {
 
 
   // === Inputs and Toggles ===
+  elements.toggleWifiPassword?.addEventListener("click", () => {
+    const input = elements.wifiPasswordInput;
+    const icon = elements.toggleWifiPassword.querySelector("i");
+    if (input.type === "password") {
+      input.type = "text";
+      icon.className = "bi bi-eye-slash";
+    } else {
+      input.type = "password";
+      icon.className = "bi bi-eye";
+    }
+  });
+
+  elements.connectWifiBtn?.addEventListener("click", async () => {
+    const ssid = elements.wifiSsidInput.value.trim();
+    const password = elements.wifiPasswordInput.value;
+
+    if (!ssid) {
+      alert("Por favor, ingresá el nombre de la red (SSID).");
+      return;
+    }
+
+    if (!confirm(`¿Querés conectar el reloj a la red "${ssid}"?`)) return;
+
+    elements.connectWifiBtn.disabled = true;
+    const originalText = elements.connectWifiBtn.textContent;
+    elements.connectWifiBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Conectando...';
+
+    try {
+      // 1. Set SSID
+      await sendCustomCommand(`/text/wifi_ssid/set?value=${encodeURIComponent(ssid)}`);
+      // 2. Set Password
+      await sendCustomCommand(`/text/wifi_password/set?value=${encodeURIComponent(password)}`);
+      // 3. Press Connect Button
+      await sendCustomCommand("/button/connect_to_wifi/press");
+
+      alert("Comando enviado. El reloj intentará conectarse a la nueva red.\n\nSi tiene éxito, deberás actualizar la dirección IP en esta aplicación. Si falla, volverá a la red actual.");
+      bootstrap.Modal.getInstance(document.getElementById("wifiConfigModal"))?.hide();
+    } catch (err) {
+      console.error("Error setting WiFi config:", err);
+      alert("Error al enviar la configuración de WiFi.");
+    } finally {
+      elements.connectWifiBtn.disabled = false;
+      elements.connectWifiBtn.textContent = originalText;
+    }
+  });
+
   document.getElementById("blinkSwitch").onchange = (e) => {
     if (suppressChange) return;
     const endpoint = e.target.checked ? "/switch/sw_blink/turn_on" : "/switch/sw_blink/turn_off";

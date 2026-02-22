@@ -516,12 +516,14 @@
                 <i id="wifiSignalIcon" class="bi bi-wifi text-secondary me-3 fs-5"></i>
                 <div class="flex-grow-1">
                   <div class="small text-muted mb-0" style="font-size: 0.75rem;">WiFi</div>
-                  <div class="d-flex justify-content-between align-items-baseline">
-                    <span id="infoSSID" class="fw-semibold" data-bs-toggle="tooltip" title="Nombre de la red Wi-Fi (SSID). El reloj debe estar en la misma red que este dispositivo.">---</span>
-                    <span class="small text-muted" style="font-size: 0.7rem;" data-bs-toggle="tooltip" title="Calidad relativa de la señal (0-100%). Valores bajos pueden causar retrasos en las actualizaciones."><span id="infoWifiPct">0</span>%</span>
-                  </div>
-                  <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
-                    <div data-bs-toggle="tooltip" title="Intensidad de señal (RSSI). Excelente: -30 a -60, Aceptable: -70, Pobre: < -80.">Señal: <span id="infoRSSI">---</span></div>
+                                  <div class="d-flex justify-content-between align-items-baseline">
+                                    <span id="infoSSID" class="fw-semibold" data-bs-toggle="tooltip" title="Nombre de la red Wi-Fi (SSID). El reloj debe estar en la misma red que este dispositivo.">---</span>
+                                    <span class="small text-muted" style="font-size: 0.7rem;" data-bs-toggle="tooltip" title="Calidad relativa de la señal (0-100%). Valores bajos pueden causar retrasos en las actualizaciones."><span id="infoWifiPct">0</span>%</span>
+                                  </div>
+                                  <button class="btn btn-sm btn-outline-primary py-0 px-2 mt-1" style="font-size: 0.65rem;" data-bs-toggle="modal" data-bs-target="#wifiConfigModal">
+                                    <i class="bi bi-wifi me-1"></i>Cambiar Red
+                                  </button>
+                                  <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">                    <div data-bs-toggle="tooltip" title="Intensidad de señal (RSSI). Excelente: -30 a -60, Aceptable: -70, Pobre: < -80.">Señal: <span id="infoRSSI">---</span></div>
                     <div data-bs-toggle="tooltip" title="Dirección física (MAC) del punto de acceso actual. Útil en redes con múltiples repetidores.">BSSID: <span id="infoBSSID">--:--:--:--:--:--</span></div>
                     <div data-bs-toggle="tooltip" title="Identificador único permanente de la placa Wi-Fi del reloj.">MAC: <span id="infoMAC">--:--:--:--:--:--</span></div>
                     <div data-bs-toggle="tooltip" title="Servidor encargado de traducir nombres de dominio. Vital para sincronizar la hora (NTP).">DNS: <span id="infoDNS">---</span></div>
@@ -724,6 +726,41 @@
     </div>
   </div>
 </div>
+
+  <!-- 📶 WiFi Config Modal -->
+  <div class="modal fade" id="wifiConfigModal" tabindex="-1" aria-labelledby="wifiConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="wifiConfigModalLabel">Conectar a nueva red WiFi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info small py-2">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            El dispositivo intentará conectarse a la nueva red. Si falla, volverá automáticamente a la red actual.
+          </div>
+          <div class="mb-3">
+            <label for="wifiSsidInput" class="form-label small">Nombre de la red (SSID)</label>
+            <input type="text" id="wifiSsidInput" class="form-control" placeholder="Nombre de la red">
+          </div>
+          <div class="mb-3">
+            <label for="wifiPasswordInput" class="form-label small">Contraseña</label>
+            <div class="input-group">
+              <input type="password" id="wifiPasswordInput" class="form-control" placeholder="Contraseña">
+              <button class="btn btn-outline-secondary" type="button" id="toggleWifiPassword">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="connectWifiBtn">Conectar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 
   <!-- 📦 Bootstrap & app logic -->
