@@ -1997,4 +1997,25 @@ if (row) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
 
+  // Scale content for very narrow screens
+  function handleScaling() {
+    const width = window.innerWidth;
+    const minWidth = 400;
+    if (width < minWidth) {
+      const scale = width / minWidth;
+      document.body.style.transform = `scale(${scale})`;
+      document.body.style.transformOrigin = "top left";
+      document.body.style.width = `${(1 / scale) * 100}%`;
+      document.body.style.height = `${(1 / scale) * 100}%`;
+    } else {
+      document.body.style.transform = "";
+      document.body.style.transformOrigin = "";
+      document.body.style.width = "";
+      document.body.style.height = "";
+    }
+  }
+
+  window.addEventListener("resize", handleScaling);
+  handleScaling();
+
 });
