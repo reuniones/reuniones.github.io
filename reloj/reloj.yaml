@@ -865,6 +865,7 @@ display:
     scroll_enable: false
     update_interval: 100ms
     lambda: |-
+      auto now_time = id(sntp_time).now();
       if (id(display_mode) == "clock") {
    
         //CLOCK
@@ -872,17 +873,17 @@ display:
           //show time
             it.scroll(false);
             it.printf(1, 0, id(alpha_font), "%s",  id(clock_hour_minute).c_str());
-            it.printf(24, -2, id(number_font), "%s", id(clock_second).c_str());
+            it.printf(24, -2, id(number_font), "%d", now_time.second % 100);
           } else {
             //show wait animation
             if (id(connection).is_connected()) {
-              it.printf(6+(id(sntp_time).now().second%5)*4, -3, id(number_font), "%s", "1");
+              it.printf(6+(now_time.second%5)*4, -3, id(number_font), "%d", 1);
             } else {
               if (id(one_minute_from_boot)) {
                 it.scroll(true, max7219digit::CONTINUOUS, 50, 0, 3000);
                 it.printf(0, 0, id(alpha_font), "%s", "  Conectar Wi-Fi  >  Red: Reloj  >  Direccion: http://192.168.4.1  ****");
               } else {
-                it.printf(6+(id(sntp_time).now().second%5)*4, -3, id(number_font), "%s", "0");
+                it.printf(6+(now_time.second%5)*4, -3, id(number_font), "%d", 0);
               }
 
             }
@@ -903,14 +904,14 @@ display:
           if (id(stopwatch_state) == "running") {
             id(ms_count) = (id(overtime)) ? ((id(ms_count) == 10) ? 0 : id(ms_count) + 1) : ((id(ms_count) == 0) ? 9 : id(ms_count) - 1);
             it.printf(17, 0, id(alpha_font), "%s", id(blink_state) ? ":" : "");  //blinking colon
-            it.printf(29, -2, id(number_font), "%s", to_string(id(ms_count)).c_str());
+            it.printf(29, -2, id(number_font), "%d", id(ms_count));
           } else if (id(stopwatch_state) == "paused") {
-            it.printf(29, -2, id(number_font), "%s", to_string(id(ms_count)).c_str());
+            it.printf(29, -2, id(number_font), "%d", id(ms_count));
             it.printf(17, 0, id(alpha_font), "%s", ":");  
           } else {
             //id(ms_count) = 0;
             it.printf(17, 0, id(alpha_font), "%s", ":"); 
-            it.printf(29, -2, id(number_font), "%s", to_string(id(ms_count)).c_str());
+            it.printf(29, -2, id(number_font), "%d", id(ms_count));
           };
 
         } else {
@@ -925,14 +926,14 @@ display:
             id(ms_count) = (id(ms_count) == 10) ? 0 : id(ms_count) + 1;
             it.printf(17, 0, id(alpha_font), "%s", (id(blink_state)) ? ":" : "");  //blinking colon
             if (id(stopwatch_hours) > 0) {it.printf(4, 0, id(alpha_font), "%s", id(blink_state) ? ":" : "");}; 
-            it.printf(29, -2, id(number_font), "%s", to_string(id(ms_count)).c_str());
+            it.printf(29, -2, id(number_font), "%d", id(ms_count));
           } else if (id(stopwatch_state) == "paused") {
-            it.printf(29, -2, id(number_font), "%s", to_string(id(ms_count)).c_str());
+            it.printf(29, -2, id(number_font), "%d", id(ms_count));
             it.printf(17, 0, id(alpha_font), "%s", ":");  
           } else {
             //id(ms_count) = 0;
             it.printf(17, 0, id(alpha_font), "%s", ":"); 
-            it.printf(29, -2, id(number_font), "%s", to_string(id(ms_count)).c_str());
+            it.printf(29, -2, id(number_font), "%d", id(ms_count));
            };
         };
        
