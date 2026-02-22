@@ -407,40 +407,6 @@ text_sensor:
     name: status
     # internal: True
   - platform: template
-    id: timeclock
-    name: timeclock
-    internal: True
-    # on_value: 
-    #   then:
-        
-    # update_interval: 1s
-  - platform: template
-    id: display_text
-    name: display_text
-    internal: True
-    # update_interval: 1s
-    # lambda: |-    
-  - platform: template
-    id: stopwatch
-    name: stopwatch
-    internal: True
-    # lambda: |-
-    #   return {"0:00"};
-    # update_interval: 1s
-  # - platform: template
-  #   id: countdown
-  #   name: countdown
-    # update_interval: 1s
-  # - platform: template
-  #   name: "Estado cuenta regresiva"
-  #   id: txtestado
-  #   lambda: |-
-  #     return id(cd_status);
-  #   update_interval: 1s
-  # - platform: template
-  #   id: text
-  #   update_interval: 1s
-  - platform: template
     id: txt_stopwatch_state
     name: txt_stopwatch_state
   - platform: template
@@ -593,7 +559,6 @@ button:
           id(stopwatch_seconds_string) = "00";
           id(stopwatch_minutes_string) = "0";
           id(stopwatch_hours_string) = "";
-          id(stopwatch).publish_state(id(stopwatch_minutes_string) + ":" + id(stopwatch_seconds_string));    
           id(stopwatch_overtime_action_done) = 0;
       - globals.set:
           id: stopwatch_time
