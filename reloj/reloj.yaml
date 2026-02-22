@@ -55,9 +55,9 @@ esp8266:
 logger:
   level: INFO 
 
-# Example configuration entry
+# Global debug component - controls how often diagnostic data is collected
 debug:
-  update_interval: 1h
+  update_interval: 60s
 
 ota:
   - platform: esphome
@@ -105,9 +105,7 @@ sensor:
   - platform: uptime
     type: timestamp
     name: Uptime
-    update_interval: 60s
   - platform: debug
-    update_interval: 60s
     free:
       name: "Heap Free"
     block:
@@ -170,15 +168,6 @@ globals:
    - id: ms_count
      type: int
      initial_value: '0'
-   - id: stopwatch_hours_string
-     type: std::string
-     initial_value: '"0"'
-   - id: stopwatch_minutes_string
-     type: std::string
-     initial_value: '"00"' 
-   - id: stopwatch_seconds_string
-     type: std::string
-     initial_value: '"00"'
    - id: time_synched
      type: bool
      initial_value: 'false'
@@ -227,15 +216,6 @@ globals:
    - id: countdown_hours_left
      type: int
      initial_value: '0'                          
-   - id: countdown_seconds_left_string
-     type: std::string
-     initial_value: '""'
-   - id: countdown_minutes_left_string
-     type: std::string
-     initial_value: '""'
-   - id: countdown_hours_left_string
-     type: std::string
-     initial_value: '""'      
    - id: countdown_sign
      type: std::string
      initial_value: '"-"'
@@ -667,7 +647,7 @@ interval:
           char stopwatch_str[32] = "0:00";
           char timeclock_str[16];
           char display_text_str[128] = "";
-          char buffer[32];
+          char m_str[8], s_str[8], h_str[8];
 
           // Format timeclock
           snprintf(timeclock_str, sizeof(timeclock_str), "%s", now.strftime("%H:%M:%S").c_str());
@@ -682,17 +662,14 @@ interval:
               id(countdown_minutes_left) = (id(countdown_abs_time_left) / 60)%200;
               id(countdown_hours_left) = id(countdown_abs_time_left) / 3600;
               
-              snprintf(buffer, sizeof(buffer), "%02d", id(countdown_seconds_left));
-              id(countdown_seconds_left_string) = buffer;
-              
-              snprintf(buffer, sizeof(buffer), "%s%d", (id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) ? "0" : "", id(countdown_minutes_left));
-              id(countdown_minutes_left_string) = buffer;
+              snprintf(s_str, sizeof(s_str), "%02d", id(countdown_seconds_left));
+              snprintf(m_str, sizeof(m_str), "%s%d", (id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) ? "0" : "", id(countdown_minutes_left));
               
               id(countdown_sign) = (id(countdown_time) > 0)? ((id(overtime))? "+" : "-") : "";
               id(countdown_minutes_alignment) = (id(countdown_minutes_left) > 99) ? 2 : (id(countdown_minutes_left) > 9)? 7 : 12;
               id(countdown_sign_alignment) = (id(countdown_minutes_left) > 99)? 0 : (id(countdown_minutes_left) < 10)? 8 : 3;
               
-              snprintf(stopwatch_str, sizeof(stopwatch_str), "%s%s:%s", id(countdown_sign).c_str(), id(countdown_minutes_left_string).c_str(), id(countdown_seconds_left_string).c_str());
+              snprintf(stopwatch_str, sizeof(stopwatch_str), "%s%s:%s", id(countdown_sign).c_str(), m_str, s_str);
 
             } else {
               //STOPWATCH MODE
@@ -701,19 +678,14 @@ interval:
               id(stopwatch_hours) = id(stopwatch_time) / 3600;
               id(stopwatch_minutes_alignment) = (id(stopwatch_hours) > 0 || id(stopwatch_minutes) > 9) ? 7 : 12;
               
-              snprintf(buffer, sizeof(buffer), "%02d", id(stopwatch_seconds));
-              id(stopwatch_seconds_string) = buffer;
-              
-              snprintf(buffer, sizeof(buffer), "%s%d", (id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) ? "0" : "", id(stopwatch_minutes));
-              id(stopwatch_minutes_string) = buffer;
+              snprintf(s_str, sizeof(s_str), "%02d", id(stopwatch_seconds));
+              snprintf(m_str, sizeof(m_str), "%s%d", (id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) ? "0" : "", id(stopwatch_minutes));
               
               if (id(stopwatch_hours) > 0) {
-                snprintf(buffer, sizeof(buffer), "%d", id(stopwatch_hours));
-                id(stopwatch_hours_string) = buffer;
-                snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s:%s", id(stopwatch_hours_string).c_str(), id(stopwatch_minutes_string).c_str(), id(stopwatch_seconds_string).c_str());
+                snprintf(h_str, sizeof(h_str), "%d", id(stopwatch_hours));
+                snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s:%s", h_str, m_str, s_str);
               } else {
-                id(stopwatch_hours_string) = "";
-                snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s", id(stopwatch_minutes_string).c_str(), id(stopwatch_seconds_string).c_str());
+                snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s", m_str, s_str);
               }
             };
 
@@ -749,12 +721,16 @@ interval:
           } else {
               // Format stopwatch string even when not running for status updates
               if (id(stopwatch_mode) == "countdown") {
-                  snprintf(stopwatch_str, sizeof(stopwatch_str), "%s%s:%s", id(countdown_sign).c_str(), id(countdown_minutes_left_string).c_str(), id(countdown_seconds_left_string).c_str());
+                  snprintf(s_str, sizeof(s_str), "%02d", id(countdown_seconds_left));
+                  snprintf(m_str, sizeof(m_str), "%s%d", (id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) ? "0" : "", id(countdown_minutes_left));
+                  snprintf(stopwatch_str, sizeof(stopwatch_str), "%s%s:%s", id(countdown_sign).c_str(), m_str, s_str);
               } else {
+                  snprintf(s_str, sizeof(s_str), "%02d", id(stopwatch_seconds));
+                  snprintf(m_str, sizeof(m_str), "%s%d", (id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) ? "0" : "", id(stopwatch_minutes));
                   if (id(stopwatch_hours) > 0) {
-                      snprintf(stopwatch_str, sizeof(stopwatch_str), "%d:%s:%s", id(stopwatch_hours), id(stopwatch_minutes_string).c_str(), id(stopwatch_seconds_string).c_str());
+                      snprintf(stopwatch_str, sizeof(stopwatch_str), "%d:%s:%s", id(stopwatch_hours), m_str, s_str);
                   } else {
-                      snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s", id(stopwatch_minutes_string).c_str(), id(stopwatch_seconds_string).c_str());
+                      snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s", m_str, s_str);
                   }
               }
           }
@@ -833,8 +809,15 @@ display:
         
            //COUNTDOWN MODE
           it.printf(id(countdown_sign_alignment), 0, id(alpha_font),  "%s", id(countdown_sign).c_str()); //show + or - sign
-          it.printf(id(countdown_minutes_alignment), 0, id(alpha_font), "%s", id(countdown_minutes_left_string).c_str()); // minutes left
-          it.printf(19, 0, id(alpha_font), "%s", id(countdown_seconds_left_string).c_str());  //seconds left
+          
+          // minutes left
+          if (id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) {
+            it.printf(id(countdown_minutes_alignment), 0, id(alpha_font), "%02d", id(countdown_minutes_left));
+          } else {
+            it.printf(id(countdown_minutes_alignment), 0, id(alpha_font), "%d", id(countdown_minutes_left));
+          }
+          
+          it.printf(19, 0, id(alpha_font), "%02d", id(countdown_seconds_left));  //seconds left
                       
           //milliseconds
           if (id(stopwatch_state) == "running") {
@@ -845,7 +828,6 @@ display:
             it.printf(29, -2, id(number_font), "%d", id(ms_count));
             it.printf(17, 0, id(alpha_font), "%s", ":");  
           } else {
-            //id(ms_count) = 0;
             it.printf(17, 0, id(alpha_font), "%s", ":"); 
             it.printf(29, -2, id(number_font), "%d", id(ms_count));
           };
@@ -853,9 +835,18 @@ display:
         } else {
            
             //STOPWATCH MODE
-          it.printf(0, 0, id(alpha_font), "%s", id(stopwatch_hours_string).c_str()); //hours
-          it.printf(id(stopwatch_minutes_alignment), 0, id(alpha_font), "%s", id(stopwatch_minutes_string).c_str()); //minutes
-          it.printf(19, 0, id(alpha_font), "%s", id(stopwatch_seconds_string).c_str()); //seconds
+          if (id(stopwatch_hours) > 0) {
+            it.printf(0, 0, id(alpha_font), "%d", id(stopwatch_hours)); //hours
+          }
+          
+          //minutes
+          if (id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) {
+            it.printf(id(stopwatch_minutes_alignment), 0, id(alpha_font), "%02d", id(stopwatch_minutes));
+          } else {
+            it.printf(id(stopwatch_minutes_alignment), 0, id(alpha_font), "%d", id(stopwatch_minutes));
+          }
+          
+          it.printf(19, 0, id(alpha_font), "%02d", id(stopwatch_seconds)); //seconds
           
           //milliseconds
           if (id(stopwatch_state) == "running") {
@@ -867,7 +858,6 @@ display:
             it.printf(29, -2, id(number_font), "%d", id(ms_count));
             it.printf(17, 0, id(alpha_font), "%s", ":");  
           } else {
-            //id(ms_count) = 0;
             it.printf(17, 0, id(alpha_font), "%s", ":"); 
             it.printf(29, -2, id(number_font), "%d", id(ms_count));
            };
