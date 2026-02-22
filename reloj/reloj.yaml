@@ -652,7 +652,7 @@ interval:
             id(clock_second) = now.strftime("%S");
           };
           
-          char stopwatch_str[32] = "0:00";
+          char stopwatch_str[64] = "0:00";
           char timeclock_str[16];
           char display_text_str[128] = "";
           char m_str[16], s_str[16], h_str[16];
@@ -755,7 +755,7 @@ interval:
           };
 
           // PUBLISH JSON STATUS
-          static char json_buffer[256];
+          static char json_buffer[512];
           snprintf(json_buffer, sizeof(json_buffer),
                   "{\"display_text\": \"%s\", \"timeclock\": \"%s\", \"stopwatch\": \"%s\"}",
                   display_text_str, timeclock_str, stopwatch_str);
