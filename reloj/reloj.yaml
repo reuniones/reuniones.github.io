@@ -547,26 +547,26 @@ select:
         - if:
             condition: 
               lambda: 'return x != "custom_sign";'
-        then:
-          - globals.set:
-              id: last_display_mode
-              value: !lambda 'return x;'
-          - text.set: 
-              id: custom_sign
-              value: ""
-        else:
-          - delay:
-              seconds: 60 #!lambda 'return (float) id(custom_sign_timeout).state;'
-          - if:
-              condition: 
-                lambda: 'return x == "custom_sign";'
-              then:
-                - select.set:
-                    id: sel_display_mode
-                    option: !lambda "return id(last_display_mode);"
-                - text.set: 
-                    id: custom_sign
-                    value: ""
+            then:
+              - globals.set:
+                  id: last_display_mode
+                  value: !lambda 'return x;'
+              - text.set: 
+                  id: custom_sign
+                  value: ""
+            else:
+              - delay:
+                  seconds: 60 #!lambda 'return (float) id(custom_sign_timeout).state;'
+              - if:
+                  condition: 
+                    lambda: 'return x == "custom_sign";'
+                  then:
+                    - select.set:
+                        id: sel_display_mode
+                        option: !lambda "return id(last_display_mode);"
+                    - text.set: 
+                        id: custom_sign
+                        value: ""
     # on_value:
     #   then:
     #     lambda: |-
@@ -669,6 +669,23 @@ interval:
             id(clock_hour_minute) = now.strftime("%H:%M");
             id(clock_second) = now.strftime("%S");
           };
+
+          // ALWAYS CALCULATE STOPWATCH/COUNTDOWN VARIABLES
+          id(countdown_time_left) = id(countdown_time) - id(stopwatch_time);
+          id(countdown_abs_time_left) = abs(id(countdown_time_left));
+          id(countdown_seconds_left) = id(countdown_abs_time_left)%60;
+          id(countdown_minutes_left) = (id(countdown_abs_time_left) / 60)%200;
+          id(countdown_hours_left) = id(countdown_abs_time_left) / 3600;
+          
+          id(stopwatch_seconds) = id(stopwatch_time)%60;
+          id(stopwatch_minutes) = (id(stopwatch_time) / 60)%60;
+          id(stopwatch_hours) = id(stopwatch_time) / 3600;
+
+          // Update alignments
+          id(countdown_minutes_alignment) = (id(countdown_minutes_left) > 99) ? 2 : (id(countdown_minutes_left) > 9)? 7 : 12;
+          id(countdown_sign_alignment) = (id(countdown_minutes_left) > 99)? 0 : (id(countdown_minutes_left) < 10)? 8 : 3;
+          id(stopwatch_minutes_alignment) = (id(stopwatch_hours) > 0 || id(stopwatch_minutes) > 9) ? 7 : 12;
+          id(countdown_sign) = (id(countdown_time) > 0)? ((id(countdown_time_left) < 0)? "+" : "-") : "";
           
           char stopwatch_str[64] = "0:00";
           char timeclock_str[16];
@@ -678,43 +695,8 @@ interval:
           // Format timeclock
           snprintf(timeclock_str, sizeof(timeclock_str), "%s", now.strftime("%H:%M:%S").c_str());
 
-          // RUNNING STOPWATCH
+          // RUNNING STOPWATCH LOGIC (Increments and Auto-Actions)
           if (id(stopwatch_state) == "running") { 
-
-            if (id(stopwatch_mode) == "countdown") {
-              //COUNTDOWN MODE
-              id(countdown_abs_time_left) = abs(id(countdown_time_left));
-              id(countdown_seconds_left) = id(countdown_abs_time_left)%60;
-              id(countdown_minutes_left) = (id(countdown_abs_time_left) / 60)%200;
-              id(countdown_hours_left) = id(countdown_abs_time_left) / 3600;
-              
-              snprintf(s_str, sizeof(s_str), "%02d", id(countdown_seconds_left));
-              snprintf(m_str, sizeof(m_str), "%s%d", (id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) ? "0" : "", id(countdown_minutes_left));
-              
-              id(countdown_sign) = (id(countdown_time) > 0)? ((id(overtime))? "+" : "-") : "";
-              id(countdown_minutes_alignment) = (id(countdown_minutes_left) > 99) ? 2 : (id(countdown_minutes_left) > 9)? 7 : 12;
-              id(countdown_sign_alignment) = (id(countdown_minutes_left) > 99)? 0 : (id(countdown_minutes_left) < 10)? 8 : 3;
-              
-              snprintf(stopwatch_str, sizeof(stopwatch_str), "%s%s:%s", id(countdown_sign).c_str(), m_str, s_str);
-
-            } else {
-              //STOPWATCH MODE
-              id(stopwatch_seconds) = id(stopwatch_time)%60;
-              id(stopwatch_minutes) = (id(stopwatch_time) / 60)%60;
-              id(stopwatch_hours) = id(stopwatch_time) / 3600;
-              id(stopwatch_minutes_alignment) = (id(stopwatch_hours) > 0 || id(stopwatch_minutes) > 9) ? 7 : 12;
-              
-              snprintf(s_str, sizeof(s_str), "%02d", id(stopwatch_seconds));
-              snprintf(m_str, sizeof(m_str), "%s%d", (id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) ? "0" : "", id(stopwatch_minutes));
-              
-              if (id(stopwatch_hours) > 0) {
-                snprintf(h_str, sizeof(h_str), "%d", id(stopwatch_hours));
-                snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s:%s", h_str, m_str, s_str);
-              } else {
-                snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s", m_str, s_str);
-              }
-            };
-
             //STOP AND RESET STOPWATCH AFTER 2 HOURS
             if (id(stopwatch_time) > 7199) {
               id(stopwatch_reset).press();
@@ -745,22 +727,21 @@ interval:
             };
 
             id(stopwatch_time) += 1;
-            id(countdown_time_left) =  id(countdown_time) - id(stopwatch_time);
             id(ms_count) = 0;
+          }
+
+          // ALWAYS FORMAT STRINGS FOR STATUS
+          if (id(stopwatch_mode) == "countdown") {
+              snprintf(s_str, sizeof(s_str), "%02d", id(countdown_seconds_left));
+              snprintf(m_str, sizeof(m_str), "%s%d", (id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) ? "0" : "", id(countdown_minutes_left));
+              snprintf(stopwatch_str, sizeof(stopwatch_str), "%s%s:%s", id(countdown_sign).c_str(), m_str, s_str);
           } else {
-              // Format stopwatch string even when not running for status updates
-              if (id(stopwatch_mode) == "countdown") {
-                  snprintf(s_str, sizeof(s_str), "%02d", id(countdown_seconds_left));
-                  snprintf(m_str, sizeof(m_str), "%s%d", (id(countdown_hours_left) > 0 && id(countdown_minutes_left) < 10) ? "0" : "", id(countdown_minutes_left));
-                  snprintf(stopwatch_str, sizeof(stopwatch_str), "%s%s:%s", id(countdown_sign).c_str(), m_str, s_str);
+              snprintf(s_str, sizeof(s_str), "%02d", id(stopwatch_seconds));
+              snprintf(m_str, sizeof(m_str), "%s%d", (id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) ? "0" : "", id(stopwatch_minutes));
+              if (id(stopwatch_hours) > 0) {
+                  snprintf(stopwatch_str, sizeof(stopwatch_str), "%d:%s:%s", id(stopwatch_hours), m_str, s_str);
               } else {
-                  snprintf(s_str, sizeof(s_str), "%02d", id(stopwatch_seconds));
-                  snprintf(m_str, sizeof(m_str), "%s%d", (id(stopwatch_hours) > 0 && id(stopwatch_minutes) < 10) ? "0" : "", id(stopwatch_minutes));
-                  if (id(stopwatch_hours) > 0) {
-                      snprintf(stopwatch_str, sizeof(stopwatch_str), "%d:%s:%s", id(stopwatch_hours), m_str, s_str);
-                  } else {
-                      snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s", m_str, s_str);
-                  }
+                  snprintf(stopwatch_str, sizeof(stopwatch_str), "%s:%s", m_str, s_str);
               }
           }
           
