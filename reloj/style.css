@@ -14,15 +14,55 @@
   
   --topbar-bg: rgba(25, 67, 75, 0.5);
   --topbar-blur: 8px;
+  --topbar-muted: rgba(255, 255, 255, 0.25);
   
   --transition-speed: 0.3s;
   --transition-func: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ------------------------------------------
-  Base Layout
+  Icon Styling (Material Symbols Outlined)
 ------------------------------------------- */
-.btn-group > label {
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: 300;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  vertical-align: middle;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+/* ------------------------------------------
+  Dropdown Toggle Customization
+------------------------------------------- */
+.dropdown-toggle::after {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0;
+  border-top: 0.4em solid;
+  border-right: 0.4em solid transparent;
+  border-left: 0.4em solid transparent;
+}
+
+/* Base Layout */
+.btn-group > label,
+.btn-group > .btn {
   flex: 1 1 0;
   text-align: center;
 }
@@ -137,8 +177,27 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 }
 
 /* ------------------------------------------
-  Icon Label Buttons
+  Reveal Buttons (Icons that show as buttons on hover)
 ------------------------------------------- */
+.btn-reveal:not(:hover) {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Ensure the button is visible if the hidden checkbox is checked (toggle state) */
+.btn-check:checked + .btn-reveal:not(:hover) {
+  background-color: var(--bs-danger) !important;
+  border-color: var(--bs-danger) !important;
+  color: white !important;
+  opacity: 1 !important;
+}
+
+.btn-reveal {
+  transition: all 0.2s ease;
+}
+
+/* Icon Label Buttons */
 .icon-label-btn {
   display: flex;
   flex-direction: column;
@@ -183,6 +242,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 
 #clockTime {
   font-weight: 600;
+  color: var(--bs-info);
 }
 
 #blinkSwitch + label {
@@ -238,6 +298,17 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 /* Preserve text/icon contrast */
 .btn i {
   color: inherit;
+}
+
+#shareBtn i,
+#settingsBtn i {
+  color: var(--bs-info);
+  transition: color 0.2s ease;
+}
+
+#shareBtn:hover i,
+#settingsBtn:hover i {
+  color: white;
 }
 
 /* Rounded pill buttons like connection status */
@@ -348,16 +419,16 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 
 .mini-led {
   font-family: 'LED Calculator', monospace;
-  color: white;
-  font-size: 1.35rem; /* ~50% bigger than original 0.9rem */
+  color: var(--bs-info);
+  font-size: 1.35rem;
   display: inline-flex;
   align-items: baseline;
 }
 
 .mini-displays i,
 .clock-container i {
-  font-size: 1rem; /* Match standard clock icon size */
-  color: var(--bs-info);
+  font-size: 1rem;
+  color: var(--topbar-muted) !important;
 }
 
 /* ------------------------------------------
@@ -400,7 +471,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 .led-label {
   font-size: 0.5rem;
   font-weight: 700;
-  color: #666;
+  color: var(--topbar-muted);
   width: 14px;
   text-align: right;
   user-select: none;

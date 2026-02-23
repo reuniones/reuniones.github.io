@@ -88,7 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
     autoShowSwitch: document.getElementById("autoShowSwitch"),
     blinkBeforeOvertimeSwitch: document.getElementById("blinkBeforeOvertimeSwitch"),
     overtimeModeSelect: document.getElementById("overtimeModeSelect"),
-    customSignInput: document.getElementById("customSignInput"),
+    customSignInput: document.getElementById("customSignInputDropdown"),
+    sendCustomSignBtn: document.getElementById("sendCustomSignBtn"),
     infoIP: document.getElementById("infoIP"),
     infoSSID: document.getElementById("infoSSID"),
     infoBSSID: document.getElementById("infoBSSID"),
@@ -134,6 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let collapseTimeout = null;
   const triedUrls = new Map(); // url -> status ('trying', 'blocked', 'failed', 'connected')
   let lastDisplayText = "";
+  let lastCustomSignText = "";
   let pendingCommands = []; // Array of { el, expectedId, timestamp }
   let lastStopwatchValue = "0:00";
   let lastTimeclockValue = "0:00:00";
@@ -173,7 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
     lastMiniSecondaryRole = role;
 
     if (role === "hora") {
-      miniSecondaryIcon.className = "bi bi-clock";
+      miniSecondaryIcon.className = "material-symbols-outlined fs-5";
+      miniSecondaryIcon.textContent = "schedule";
       miniSecondaryLink.title = "Hora";
       miniSecondaryLink.href = "#panel-pantalla";
       
@@ -183,7 +186,8 @@ document.addEventListener("DOMContentLoaded", () => {
         miniSecondaryText.innerHTML = `${miniBase}<span style="font-size: 80%; margin-left: 0.3em;">${miniSeconds}</span>`;
       }
     } else {
-      miniSecondaryIcon.className = "bi bi-stopwatch";
+      miniSecondaryIcon.className = "material-symbols-outlined fs-5";
+      miniSecondaryIcon.textContent = "timer";
       miniSecondaryLink.title = "Cronómetro";
       miniSecondaryLink.href = "#panel-crono";
       
@@ -278,16 +282,16 @@ document.addEventListener("DOMContentLoaded", () => {
         
         if (status === 'trying') {
           badge.className += "text-primary border-primary blinking";
-          icon = '<i class="bi bi-arrow-repeat me-1"></i>';
+          icon = '<i class="material-symbols-outlined fs-6 me-1">refresh</i>';
         } else if (status === 'blocked') {
           badge.className += "text-warning border-warning";
-          icon = '<i class="bi bi-shield-lock-fill me-1"></i>';
+          icon = '<i class="material-symbols-outlined fs-6 me-1">security</i>';
         } else if (status === 'failed') {
           badge.className += "text-danger border-danger";
-          icon = '<i class="bi bi-x-circle me-1"></i>';
+          icon = '<i class="material-symbols-outlined fs-6 me-1">error_outline</i>';
         } else if (status === 'connected') {
           badge.className += "text-success border-success fw-bold";
-          icon = '<i class="bi bi-check-circle-fill me-1"></i>';
+          icon = '<i class="material-symbols-outlined fs-6 me-1">check_circle</i>';
         }
 
         badge.innerHTML = `${icon}${url}`;
@@ -362,7 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
       item.className = "list-group-item d-flex justify-content-between align-items-center";
       item.innerHTML = `<span class="small font-monospace">${url}</span>
         <button class="btn btn-sm btn-link text-danger p-0 border-0 remove-url-btn" data-url="${url}">
-          <i class="bi bi-trash"></i>
+          <i class="material-symbols-outlined fs-6">delete</i>
         </button>`;
       urlManagementList.appendChild(item);
     });
@@ -691,7 +695,7 @@ function setPanelBlur(active) {
     if (isNewer) {
       if (alertEl) {
         alertEl.className = "alert alert-success mt-2 py-2 small";
-        alertEl.innerHTML = '<i class="bi bi-info-circle-fill me-2"></i> ¡Hay una versión más reciente disponible!';
+        alertEl.innerHTML = '<i class="material-symbols-outlined fs-6 me-2">info</i> ¡Hay una versión más reciente disponible!';
         alertEl.classList.remove("d-none");
       }
       settingsBadge?.classList.remove("d-none");
@@ -699,7 +703,7 @@ function setPanelBlur(active) {
     } else {
       if (alertEl) {
         alertEl.className = "alert alert-light mt-2 py-2 small text-muted";
-        alertEl.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> El firmware está actualizado.';
+        alertEl.innerHTML = '<i class="material-symbols-outlined fs-6 me-2">check_circle</i> El firmware está actualizado.';
         alertEl.classList.remove("d-none");
       }
       settingsBadge?.classList.add("d-none");
@@ -857,15 +861,14 @@ function setPanelBlur(active) {
     customSubnetDiv.classList.toggle("d-none", e.target.value !== "custom");
   });
 
-  startScanBtn?.addEventListener("click", async () => {
-    if (isScanning) {
-      isScanning = false;
-      abortController?.abort();
-      startScanBtn.innerHTML = '<i class="bi bi-search me-1"></i> Iniciar Escaneo';
-      scanStatusText.textContent = "Escaneo cancelado.";
-      return;
-    }
-
+      startScanBtn?.addEventListener("click", async () => {
+      if (isScanning) {
+        isScanning = false;
+        abortController?.abort();
+        startScanBtn.innerHTML = '<i class="material-symbols-outlined fs-6 me-1">search</i> Iniciar Escaneo';
+        scanStatusText.textContent = "Escaneo cancelado.";
+        return;
+      }
     const subnets = [];
     const val = subnetSelect.value;
     if (val === "all") {
@@ -902,7 +905,7 @@ function setPanelBlur(active) {
     }
 
     isScanning = true;
-    startScanBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> Detener Escaneo';
+    startScanBtn.innerHTML = '<i class="material-symbols-outlined fs-6 me-1">cancel</i> Detener Escaneo';
     scanProgressDiv.classList.remove("d-none");
     scanResults.innerHTML = "";
     scanProgressBar.style.width = "0%";
@@ -946,7 +949,7 @@ function setPanelBlur(active) {
     await Promise.all(workers);
 
     isScanning = false;
-    startScanBtn.innerHTML = '<i class="bi bi-search me-1"></i> Iniciar Escaneo';
+    startScanBtn.innerHTML = '<i class="material-symbols-outlined fs-6 me-1">search</i> Iniciar Escaneo';
     if (completed === total) {
       scanStatusText.textContent = "Escaneo finalizado.";
     }
@@ -983,7 +986,7 @@ function setPanelBlur(active) {
     const btn = document.createElement("button");
     btn.className = "list-group-item list-group-item-action list-group-item-success d-flex justify-content-between align-items-center";
     btn.innerHTML = `
-      <span><i class="bi bi-cpu me-2"></i> Reloj encontrado en <strong>${ip}</strong></span>
+      <span><i class="material-symbols-outlined fs-6 me-2">memory</i> Reloj encontrado en <strong>${ip}</strong></span>
       <span class="badge bg-primary rounded-pill">Usar</span>
     `;
     btn.onclick = () => {
@@ -1012,14 +1015,14 @@ function setPanelBlur(active) {
 
     const el = document.getElementById("connectionStatus");
     const iconMap = {
-      connected: ["bg-success", "bi-check-circle-fill", "Conectado"],
-      connecting: ["bg-warning", "bi-exclamation-circle-fill", "Conectando"],
-      disconnected: ["bg-danger", "bi-x-circle-fill", "Desconectado"],
+      connected: ["bg-success", "check_circle", "Conectado"],
+      connecting: ["bg-warning", "error", "Conectando"],
+      disconnected: ["bg-danger", "cancel", "Desconectado"],
     };
 
     const [color, icon, label] = iconMap[state] || iconMap.disconnected;
     el.className = `badge rounded-pill status-pill ${color}`;
-    el.innerHTML = `<i class="bi ${icon} me-1"></i> <span class="status-text">${label}</span>`;
+    el.innerHTML = `<i class="material-symbols-outlined fs-6 me-1">${icon}</i> <span class="status-text">${label}</span>`;
 
     // Reset collapse state and timer
     clearTimeout(collapseTimeout);
@@ -1071,12 +1074,41 @@ function setPanelBlur(active) {
 
   // === Sync Mode Radios ===
   const syncDisplayModeRadio = (value) => {
-    let resolved = value === "custom_sign" ? "sign" : value;
+    let isCartel = (value === "sign" || value === "custom_sign");
+    let resolved = isCartel ? "sign" : value;
     const radio = document.querySelector(`input[name='displayMode'][value='${resolved}']`);
     if (radio) {
       suppressChange = true;
       radio.checked = true;
       suppressChange = false;
+    }
+
+    // Visual feedback for the dropdown button
+    const signBtn = document.getElementById("signDropdown");
+    if (signBtn) {
+      signBtn.classList.toggle("active", isCartel);
+      // Ensure the background color matches the checked radio button
+      const radioChecked = radio && radio.checked && isCartel;
+      if (radioChecked) {
+        signBtn.style.backgroundColor = "var(--bs-danger)";
+        signBtn.style.borderColor = "var(--bs-danger)";
+      } else {
+        signBtn.style.backgroundColor = "";
+        signBtn.style.borderColor = "";
+      }
+    }
+
+    // Update checkmarks in the sign dropdown
+    document.querySelectorAll(".check-mark").forEach(i => i.classList.add("d-none"));
+    if (value === "sign") {
+      document.getElementById("signOptionTiempo")?.querySelector(".check-mark")?.classList.remove("d-none");
+    } else if (value === "custom_sign") {
+      const isZoom = lastCustomSignText.trim().toUpperCase() === "ZOOM";
+      if (isZoom) {
+        document.getElementById("signOptionZoom")?.querySelector(".check-mark")?.classList.remove("d-none");
+      } else {
+        document.getElementById("customSignOption")?.querySelector(".check-mark")?.classList.remove("d-none");
+      }
     }
   };
 
@@ -1168,17 +1200,17 @@ function setPanelBlur(active) {
       if (diag.probableCause === "mixed-content") {
         diagContainer.innerHTML = `
           <div class="alert alert-warning small py-2 mb-3">
-            <i class="bi bi-shield-lock-fill me-2"></i> <strong>Acceso bloqueado:</strong> El navegador impide la conexión por seguridad (HTTPS).
+            <i class="material-symbols-outlined fs-6 me-2">security</i> <strong>Acceso bloqueado:</strong> El navegador impide la conexión por seguridad (HTTPS).
           </div>`;
       } else if (diag.probableCause === "dns") {
         diagContainer.innerHTML = `
           <div class="alert alert-danger small py-2 mb-3">
-            <i class="bi bi-exclamation-octagon-fill me-2"></i> <strong>Error de dirección:</strong> No se pudo encontrar el destino <code>${currentUrl}</code>. Verificá si está bien escrito.
+            <i class="material-symbols-outlined fs-6 me-2">error_outline</i> <strong>Error de dirección:</strong> No se pudo encontrar el destino <code>${currentUrl}</code>. Verificá si está bien escrito.
           </div>`;
       } else if (diag.probableCause === "timeout") {
         diagContainer.innerHTML = `
           <div class="alert alert-danger small py-2 mb-3">
-            <i class="bi bi-clock-history me-2"></i> <strong>Tiempo de espera agotado:</strong> El reloj no responde en <code>${currentUrl}</code>. ¿Está encendido?
+            <i class="material-symbols-outlined fs-6 me-2">history</i> <strong>Tiempo de espera agotado:</strong> El reloj no responde en <code>${currentUrl}</code>. ¿Está encendido?
           </div>`;
       } else {
         diagContainer.innerHTML = "";
@@ -1632,9 +1664,12 @@ if (row) {
           renderStopwatchTenths();
         }
         const labelMap = { running: "Pausa", paused: "Inicio", reset: "Inicio" };
-        const iconMap = { running: "bi-pause-fill", paused: "bi-play-fill", reset: "bi-play-fill" };
+        const iconMap = { running: "pause", paused: "play_arrow", reset: "play_arrow" };
         if (elements.startPauseLabel) elements.startPauseLabel.textContent = labelMap[data.value] || "Inicio";
-        if (elements.startPauseIcon) elements.startPauseIcon.className = `bi ${iconMap[data.value]}`;
+        if (elements.startPauseIcon) {
+          elements.startPauseIcon.className = "material-symbols-outlined";
+          elements.startPauseIcon.textContent = iconMap[data.value] || "play_arrow";
+        }
         updateStopwatchClass();
         break;
 
@@ -1683,6 +1718,7 @@ if (row) {
         break;
 
       case "text-custom_sign":
+        lastCustomSignText = data.value;
         if (elements.customSignInput) elements.customSignInput.value = data.value;
         break;
 
@@ -1759,13 +1795,16 @@ if (row) {
         if (elements.infoRSSI) elements.infoRSSI.textContent = data.state;
         if (elements.wifiSignalIcon) {
           const rssi = parseInt(data.value);
-          let icon = "bi-wifi-off";
-          if (rssi > -50) icon = "bi-wifi";
-          else if (rssi > -60) icon = "bi-wifi";
-          else if (rssi > -70) icon = "bi-wifi-2";
-          else if (rssi > -80) icon = "bi-wifi-1";
-          else icon = "bi-wifi-1"; // weak but connected
-          elements.wifiSignalIcon.className = `bi ${icon} text-secondary me-3 fs-5`;
+          let icon = "signal_wifi_off";
+          if (rssi > -50) icon = "wifi";
+          else if (rssi > -60) icon = "wifi";
+          else if (rssi > -70) icon = "wifi_2_bar";
+          else if (rssi > -80) icon = "wifi_1_bar";
+          else icon = "wifi_1_bar"; // weak but connected
+          
+          elements.wifiSignalIcon.className = "material-symbols-outlined text-secondary me-3 fs-5";
+          elements.wifiSignalIcon.textContent = icon;
+          
           // Reset style override (we had it colored before)
           elements.wifiSignalIcon.style.color = "";
 
@@ -1851,10 +1890,10 @@ if (row) {
     const icon = elements.toggleWifiPassword.querySelector("i");
     if (input.type === "password") {
       input.type = "text";
-      icon.className = "bi bi-eye-slash";
+      icon.textContent = "visibility_off";
     } else {
       input.type = "password";
-      icon.className = "bi bi-eye";
+      icon.textContent = "visibility";
     }
   });
 
@@ -1967,38 +2006,61 @@ if (row) {
     sendCustomCommand(`/select/sel_overtime_mode/set?option=${value}`, e.target);
   };
 
-  document.getElementById("customSignOption").addEventListener("click", () => {
-    const modal = new bootstrap.Modal(document.getElementById("customSignModal"));
-    modal.show();
-  });
-
-  document.getElementById("customSignForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const input = document.getElementById("customSignInput");
-    let text = input.value.trim();
-
-    // Enforce character limit (including appended "  -  ")
-    const maxTextLength = 128 - 5; // reserve 5 chars for "  -  "
-
-    if (text.length > maxTextLength) {
-      text = text.substring(0, maxTextLength);
-    }
-    text = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-
+  function setCustomSign(text) {
     const fullText = `${text}        `;
-
-
-
-    fetch(`${getUrl()}/text/custom_sign/set?value=${encodeURIComponent(fullText)}`, {
+    lastCustomSignText = fullText;
+    return fetch(`${getUrl()}/text/custom_sign/set?value=${encodeURIComponent(fullText)}`, {
       method: "POST"
     }).then(() => {
-      fetch(`${getUrl()}/select/sel_display_mode/set?option=custom_sign`, {
+      return fetch(`${getUrl()}/select/sel_display_mode/set?option=custom_sign`, {
         method: "POST"
       });
     });
+  }
 
-    bootstrap.Modal.getInstance(document.getElementById("customSignModal")).hide();
+  document.getElementById("signOptionTiempo")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    sendCustomCommand("/select/sel_display_mode/set?option=sign", e.currentTarget);
+  });
+
+  document.getElementById("signOptionZoom")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setCustomSign("ZOOM");
+  });
+
+  elements.sendCustomSignBtn?.addEventListener("click", (e) => {
+    let text = elements.customSignInput.value.trim();
+    if (!text) return;
+
+    // Enforce character limit
+    const maxTextLength = 120;
+    if (text.length > maxTextLength) {
+      text = text.substring(0, maxTextLength);
+    }
+    
+    // Normalize text
+    text = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    setCustomSign(text);
+    
+    // Close the dropdown after sending
+    const dropdownToggle = bootstrap.Dropdown.getInstance(document.getElementById("signDropdown"));
+    dropdownToggle?.hide();
+  });
+
+  // Prevent dropdown from closing when clicking inside the custom input area
+  document.querySelector(".dropdown-menu")?.addEventListener("click", (e) => {
+    if (e.target.closest(".px-2.py-1")) {
+      e.stopPropagation();
+    }
+  });
+
+  // Handle 'Enter' key in the custom sign input
+  elements.customSignInput?.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      elements.sendCustomSignBtn.click();
+    }
   });
 
   // Initialize all tooltips
