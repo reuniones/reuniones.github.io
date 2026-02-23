@@ -119,6 +119,10 @@ document.addEventListener("DOMContentLoaded", () => {
     triedUrlsList: document.getElementById("triedUrlsList"),
     diagAlertContainer: document.getElementById("diagAlertContainer"),
     browserSpecificInstructions: document.getElementById("browserSpecificInstructions"),
+    blinkAutoLed: document.getElementById("blinkAutoLed"),
+    cartelAutoLed: document.getElementById("cartelAutoLed"),
+    blinkAutoIndicator: document.getElementById("blinkAutoIndicator"),
+    cartelAutoIndicator: document.getElementById("cartelAutoIndicator"),
     wifiSsidInput: document.getElementById("wifiSsidInput"),
     wifiPasswordInput: document.getElementById("wifiPasswordInput"),
     connectWifiBtn: document.getElementById("connectWifiBtn"),
@@ -137,6 +141,26 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastDisplayText = "";
   let lastCustomSignText = "";
   let pendingCommands = []; // Array of { el, expectedId, timestamp }
+  let blinkBeforeOvertimeEnabled = false;
+  let overtimeMode = "normal";
+
+  function updateAutoTooltips() {
+    if (elements.blinkAutoIndicator) {
+      let blinkText = "Parpadeo automático desactivado";
+      if (blinkBeforeOvertimeEnabled) {
+        blinkText = "Se activa un 15% antes de que termine el tiempo";
+      }
+      elements.blinkAutoIndicator.title = blinkText;
+    }
+
+    if (elements.cartelAutoIndicator) {
+      let cartelText = "Cartel automático desactivado";
+      if (overtimeMode === "sign") {
+        cartelText = "Se activa cuando excede el tiempo";
+      }
+      elements.cartelAutoIndicator.title = cartelText;
+    }
+  }
   let lastStopwatchValue = "0:00";
   let lastTimeclockValue = "0:00:00";
   let lastMiniSecondaryRole = "";
@@ -1099,15 +1123,19 @@ function setPanelBlur(active) {
     }
 
     // Update checkmarks in the sign dropdown
-    document.querySelectorAll(".check-mark").forEach(i => i.classList.add("d-none"));
-    if (value === "sign") {
-      document.getElementById("signOptionTiempo")?.querySelector(".check-mark")?.classList.remove("d-none");
-    } else if (value === "custom_sign") {
-      const isZoom = lastCustomSignText.trim().toUpperCase() === "ZOOM";
-      if (isZoom) {
-        document.getElementById("signOptionZoom")?.querySelector(".check-mark")?.classList.remove("d-none");
-      } else {
-        document.getElementById("customSignOption")?.querySelector(".check-mark")?.classList.remove("d-none");
+    const dropdownMenu = document.querySelector("#panel-pantalla .dropdown-menu");
+    if (dropdownMenu) {
+      dropdownMenu.querySelectorAll(".check-mark").forEach(i => i.classList.add("d-none"));
+      if (value === "sign") {
+        document.getElementById("signOptionTiempo")?.querySelector(".check-mark")?.classList.remove("d-none");
+      } else if (value === "custom_sign") {
+        const isZoom = lastCustomSignText.trim().toUpperCase() === "ZOOM";
+        if (isZoom) {
+          document.getElementById("signOptionZoom")?.querySelector(".check-mark")?.classList.remove("d-none");
+        } else {
+          // Fallback to the text input being considered "active"
+          dropdownMenu.querySelector(".px-2.py-1 .led-info")?.classList.add("active");
+        }
       }
     }
   };
@@ -1707,13 +1735,19 @@ if (row) {
 
       case "switch-stopwatch_blink_before_overtime":
         suppressChange = true;
-        if (elements.blinkBeforeOvertimeSwitch) elements.blinkBeforeOvertimeSwitch.checked = data.value === true;
+        blinkBeforeOvertimeEnabled = data.value === true;
+        if (elements.blinkBeforeOvertimeSwitch) elements.blinkBeforeOvertimeSwitch.checked = blinkBeforeOvertimeEnabled;
+        if (elements.blinkAutoLed) elements.blinkAutoLed.classList.toggle("active", blinkBeforeOvertimeEnabled);
+        updateAutoTooltips();
         suppressChange = false;
         break;
 
       case "select-sel_overtime_mode":
         suppressChange = true;
-        if (elements.overtimeModeSelect) elements.overtimeModeSelect.value = data.value;
+        overtimeMode = data.value;
+        if (elements.overtimeModeSelect) elements.overtimeModeSelect.value = overtimeMode;
+        if (elements.cartelAutoLed) elements.cartelAutoLed.classList.toggle("active", overtimeMode === "sign");
+        updateAutoTooltips();
         suppressChange = false;
         break;
 
@@ -2068,6 +2102,8 @@ if (row) {
   tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
+
+  updateAutoTooltips();
 
   // Scale content for very narrow screens
   function handleScaling() {

@@ -110,32 +110,44 @@
           <!-- Display box with blink toggle -->
           <div class="position-relative mb-3">
             <div class="pantalla-box" title="Pantalla actual"><span id="displayText" style="padding: .25em 1em;">&nbsp;</span></div>
-            <div class="position-absolute top-50 end-0 translate-middle-y me-1">
+            <div class="position-absolute top-50 translate-middle-y d-flex flex-column align-items-center" style="right: -1.5rem; width: calc(12.5% + 1.5rem);">
               <input type="checkbox" class="btn-check" id="blinkSwitch" autocomplete="off">
               <label class="btn btn-outline-danger btn-sm btn-reveal" for="blinkSwitch" title="Parpadear">
                 <i class="material-symbols-outlined fs-4">wb_iridescent</i>
               </label>
+              <div class="d-flex flex-column flex-md-row align-items-center justify-content-center mt-1 indicator-container" id="blinkAutoIndicator" title="Parpadeo automático">
+                <div class="d-flex align-items-center justify-content-center gap-1">
+                  <span id="blinkAutoLed" class="status-led led-info"></span>
+                  <span class="led-label">AUTO</span>
+                </div>
+              </div>
             </div>
-
           </div>
 
           <!-- Mode selection buttons: clock / stopwatch / sign -->
-          <div class="btn-group btn-group-lg w-100 mb-3" role="group" aria-label="Mostrar">
+          <div class="btn-group btn-group-lg w-100 mb-4 position-relative" role="group" aria-label="Mostrar">
             <input type="radio" class="btn-check" name="displayMode" id="displayClock" value="clock" autocomplete="off">
             <label class="btn btn-outline-danger btn-display icon-label-btn" for="displayClock" title="Mostrar hora">
-              <i class="material-symbols-outlined">schedule</i> <span class="btn-label text-uppercase">HORA</span>
+              <i class="material-symbols-outlined">schedule</i> <span class="btn-label">HORA</span>
             </label>
 
             <input type="radio" class="btn-check" name="displayMode" id="displayStopwatch" value="stopwatch" autocomplete="off">
             <label class="btn btn-outline-danger btn-display icon-label-btn" for="displayStopwatch" title="Mostrar cronómetro">
-              <i class="material-symbols-outlined">timer</i> <span class="btn-label text-uppercase">CRONO</span>
+              <i class="material-symbols-outlined">timer</i> <span class="btn-label">CRONO</span>
             </label>
 
             <input type="radio" class="btn-check" name="displayMode" id="displaySign" value="sign" autocomplete="off">
             <button class="btn btn-outline-danger btn-display icon-label-btn dropdown-toggle" type="button" id="signDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Opciones de Cartel">
               <i class="material-symbols-outlined">font_download</i>
-              <span class="btn-label text-uppercase">CARTEL</span>
+              <span class="btn-label">CARTEL</span>
             </button>
+
+            <!-- indicator placed absolute relative to the whole group, but centered on the 3rd button -->
+            <div class="position-absolute d-flex align-items-center gap-1 mt-1 indicator-container" id="cartelAutoIndicator" style="top: 100%; left: 83.3%; transform: translateX(-50%);" title="Cartel automático">
+              <span id="cartelAutoLed" class="status-led led-info"></span>
+              <span class="led-label">AUTO</span>
+            </div>
+
             <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="signDropdown" style="min-width: 200px;">
               <li><a class="dropdown-item d-flex justify-content-between align-items-center rounded" href="#" id="signOptionTiempo">TIEMPO <i class="material-symbols-outlined check-mark d-none fs-6">check</i></a></li>
               <li><a class="dropdown-item d-flex justify-content-between align-items-center rounded" href="#" id="signOptionZoom">Zoom <i class="material-symbols-outlined check-mark d-none fs-6">check</i></a></li>
