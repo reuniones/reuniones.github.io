@@ -238,6 +238,12 @@ globals:
    - id: last_display_mode
      type: std::string
      initial_value: '"clock"' 
+   - id: blink_is_auto
+     type: bool
+     initial_value: 'false'
+   - id: display_is_auto
+     type: bool
+     initial_value: 'false' 
 
 number:
   - platform: template
@@ -534,9 +540,13 @@ select:
       - custom_sign
     initial_option: clock
     on_value:
-      if:
-        condition: 
-          lambda: 'return x != "custom_sign";'
+      then:
+        - globals.set:
+            id: display_is_auto
+            value: 'false'
+        - if:
+            condition: 
+              lambda: 'return x != "custom_sign";'
         then:
           - globals.set:
               id: last_display_mode
@@ -608,6 +618,14 @@ switch:
     id: sw_blink
     name: sw_blink
     optimistic: true
+    on_turn_on:
+      - globals.set:
+          id: blink_is_auto
+          value: 'false'
+    on_turn_off:
+      - globals.set:
+          id: blink_is_auto
+          value: 'false'
   - platform: template
     id: sw_fast_blink
     name: sw_fast_blink
@@ -708,17 +726,20 @@ interval:
             //BLINK BEFORE OVERTIME
             if (id(stopwatch_blink_before_overtime).state && !id(overtime) && id(countdown_time) > 0 && id(countdown_time_left) == id(stopwatch_blink_before_overtime_second) && id(stopwatch_overtime_action_done) == 0) {
               id(sw_blink).publish_state(true);
+              id(blink_is_auto) = true;
               id(stopwatch_overtime_action_done) = 1;
             };
             
             //OVERTIME MODE          
             if (id(overtime) && (id(overtime_mode) == "blink") && (id(countdown_time) > 0) && id(stopwatch_overtime_action_done) < 2) { //overtime
               id(sw_blink).publish_state(true); //blink
+              id(blink_is_auto) = true;
               id(stopwatch_overtime_action_done) = 2;
             } else if (id(overtime) && (id(overtime_mode) == "sign") && (id(countdown_time) > 0) && id(stopwatch_overtime_action_done) < 2) { //sign
                 auto call = id(sel_display_mode).make_call();
                 call.set_option("sign");
                 call.perform();
+                id(display_is_auto) = true;
                 id(sw_blink).publish_state(false);
                 id(stopwatch_overtime_action_done) = 2;
             };
@@ -757,8 +778,11 @@ interval:
           // PUBLISH JSON STATUS
           static char json_buffer[512];
           snprintf(json_buffer, sizeof(json_buffer),
-                  "{\"display_text\": \"%s\", \"timeclock\": \"%s\", \"stopwatch\": \"%s\"}",
-                  display_text_str, timeclock_str, stopwatch_str);
+                  "{\"d\":\"%s\",\"t\":\"%s\",\"s\":\"%s\",\"b\":%s,\"ba\":%s,\"da\":%s}",
+                  display_text_str, timeclock_str, stopwatch_str,
+                  id(sw_blink).state ? "true" : "false",
+                  id(blink_is_auto) ? "true" : "false",
+                  id(display_is_auto) ? "true" : "false");
           id(status).publish_state(json_buffer);
 
   - interval: 500ms

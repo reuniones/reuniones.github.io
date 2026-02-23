@@ -1665,9 +1665,34 @@ if (row) {
       case "text_sensor-status":
         try {
           const status = JSON.parse(data.value);
-          if (status.timeclock !== undefined) updateTimeclockUI(status.timeclock);
-          if (status.stopwatch !== undefined) updateStopwatchUI(status.stopwatch);
-          if (status.display_text !== undefined) updateDisplayTextUI(status.display_text);
+          // Map short keys to existing variables, fallback to long keys for compatibility
+          const display_text = status.d || status.display_text;
+          const timeclock = status.t || status.timeclock;
+          const stopwatch = status.s || status.stopwatch;
+          const blink_is_on = status.b !== undefined ? status.b : status.blink_state;
+          const blink_is_auto = status.ba !== undefined ? status.ba : false;
+          const display_is_auto = status.da !== undefined ? status.da : false;
+
+          if (timeclock !== undefined) updateTimeclockUI(timeclock);
+          if (stopwatch !== undefined) updateStopwatchUI(stopwatch);
+          if (display_text !== undefined) updateDisplayTextUI(display_text);
+          
+          if (blink_is_on !== undefined) {
+            suppressChange = true;
+            blinkEnabled = blink_is_on;
+            if (elements.blinkSwitch) elements.blinkSwitch.checked = blinkEnabled;
+            updatePantallaClass();
+            suppressChange = false;
+          }
+
+          // Handle AUTO indicators blinking logic
+          if (elements.blinkAutoIndicator) {
+            elements.blinkAutoIndicator.classList.toggle("blinking", blink_is_auto);
+          }
+          if (elements.cartelAutoIndicator) {
+            elements.cartelAutoIndicator.classList.toggle("blinking", display_is_auto);
+          }
+
         } catch (e) {
           console.error("Error parsing combined status:", e);
         }
