@@ -18,6 +18,7 @@
   
   --transition-speed: 0.3s;
   --transition-func: cubic-bezier(0.4, 0, 0.2, 1);
+  accent-color: var(--bs-info);
 }
 
 /* ------------------------------------------
@@ -58,6 +59,76 @@
   border-top: 0.4em solid;
   border-right: 0.4em solid transparent;
   border-left: 0.4em solid transparent;
+}
+
+/* ------------------------------------------
+  Thematic UI Elements (Sliders & Switches)
+------------------------------------------- */
+.form-range::-webkit-slider-thumb {
+  background-color: var(--bs-info);
+}
+.form-range::-moz-range-thumb {
+  background-color: var(--bs-info);
+}
+.form-range::-ms-thumb {
+  background-color: var(--bs-info);
+}
+
+.form-check-input:checked {
+  background-color: var(--bs-info);
+  border-color: var(--bs-info);
+}
+
+.form-check-input:focus {
+  border-color: var(--bs-info);
+  box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus,
+.list-group-item-action:hover,
+.list-group-item-action:focus {
+  background-color: var(--bs-danger) !important;
+  color: white !important;
+}
+
+.dropdown-item.active,
+.dropdown-item:active,
+.list-group-item.active,
+.program-item.active {
+  background-color: var(--bs-info) !important;
+  border-color: var(--bs-info) !important;
+  color: white !important;
+}
+
+.form-select {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-info);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-select:hover {
+  border-color: var(--bs-danger);
+}
+
+.form-select:focus {
+  border-color: var(--bs-info);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+}
+
+/* Style the native option list where supported */
+select option {
+  background-color: #212529; /* Bootstrap dark background */
+  color: #fff;
+}
+
+.dropdown-menu {
+  background-color: #212529;
+  border: 1px solid var(--bs-info);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
 }
 
 /* Base Layout */
@@ -579,12 +650,6 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 }
 .program-item:nth-child(even) {
   background-color: var(--bs-secondary-bg-subtle);
-}
-.program-item.active {
-  background-color: var(--bs-info-bg-subtle);
-  border: 1px solid white;
-  color: white;
-  font-weight: 600;
 }
 .program-item span {
   flex: 1;

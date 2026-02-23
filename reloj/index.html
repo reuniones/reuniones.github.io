@@ -233,26 +233,26 @@
 <!-- Switch + Dropdown in one line -->
 <div id="programHeader" class="d-flex justify-content-between align-items-center mt-4 mb-2">
 
-  <div class="form-check form-switch mb-0">
+  <div class="form-check form-switch mb-0" title="Cargar automáticamente la duración de cada parte del programa.">
     <input class="form-check-input" type="checkbox" id="enableProgramSwitch">
     <label class="form-check-label" for="enableProgramSwitch">Seguir programa</label>
   </div>
-  <select id="programSelector" class="form-select form-select-sm w-auto"></select>
+  <select id="programSelector" class="form-select form-select-sm w-auto" title="Seleccionar la reunión."></select>
 </div>
 
 <!-- Hidden program controls -->
 <div id="programUI" style="display: none;">
   <div class="d-flex justify-content-between align-items-center mb-2">
 <div class="btn-group btn-group-sm me-2" role="group">
-  <button id="prevItemBtn" class="btn btn-outline-light">
+  <button id="prevItemBtn" class="btn btn-outline-light" title="Ir a la parte anterior del programa.">
     <i class="material-symbols-outlined fs-6">chevron_left</i>
   </button>
-  <button id="nextItemBtn" class="btn btn-outline-light">
+  <button id="nextItemBtn" class="btn btn-outline-light" title="Ir a la siguiente parte del programa.">
     <i class="material-symbols-outlined fs-6">chevron_right</i>
   </button>
 </div>
 
-    <button id="resetProgramBtn" class="btn btn-outline-danger btn-sm" title="Resetear">
+    <button id="resetProgramBtn" class="btn btn-outline-danger btn-sm" title="Limpiar todos los tiempos medidos en este programa.">
       <i class="material-symbols-outlined fs-6">replay</i>
     </button>
   </div>
@@ -282,19 +282,19 @@
           <!-- Reloj Section -->
           <div class="mb-4">
             <h6 class="fw-bold small text-uppercase mb-3">Reloj</h6>
-            <div class="form-check mb-2">
+            <div class="form-check mb-2" title="Al activarlo, el cronómetro empezará desde el tiempo configurado y restará hasta llegar a cero.">
               <input class="form-check-input" type="checkbox" id="countdownModeSwitch">
               <label class="form-check-label" for="countdownModeSwitch">Cuenta regresiva</label>
             </div>
-            <div class="form-check mb-2">
+            <div class="form-check mb-2" title="Cambia automáticamente a la pantalla del cronómetro al iniciarlo, y vuelve a la hora al resetearlo.">
               <input class="form-check-input" type="checkbox" id="autoShowSwitch">
-              <label class="form-check-label" for="autoShowSwitch">Mostrar cronómetro automáticamente</label>
+              <label class="form-check-label" for="autoShowSwitch">Mostrar automáticamente</label>
             </div>
-            <div class="form-check mb-2">
+            <div class="form-check mb-2" title="La pantalla parpadeará cuando falte un 15% del tiempo configurado para alertar que el tiempo está por terminar.">
               <input class="form-check-input" type="checkbox" id="blinkBeforeOvertimeSwitch">
               <label class="form-check-label" for="blinkBeforeOvertimeSwitch">Parpadear antes de tiempo excedido</label>
             </div>
-            <div class="mb-3">
+            <div class="mb-3" title="Acción que realizará el reloj una vez que la cuenta regresiva llegue a cero.">
               <label for="overtimeModeSelect" class="form-label small">Tiempo excedido</label>
               <select id="overtimeModeSelect" class="form-select form-select-sm">
                 <option value="normal">Continuar</option>
