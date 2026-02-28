@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v1.2">
+  <link rel="stylesheet" href="style.css?v1.2.1">
 
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -47,7 +47,7 @@
 <body>
       <!-- 🕒 Top bar: Clock, connection status, share/settings -->
     <div class="topbar mb-3 sticky-top">
-      <div class="container px-4 py-1 topbar-grid">
+      <div class="container px-3 py-1 topbar-grid">
               <div class="topbar-left">
                 <div class="fw-semibold text-white fs-5 page-title">RELOJ <span class="opacity-25">CRONÓMETRO</span></div>
                 
@@ -71,16 +71,16 @@
                 </div>
                 <span id="connectionStatus" class="badge rounded-pill bg-success status-pill" role="button" data-bs-toggle="modal" data-bs-target="#connectionModal" title="Estado de conexión">
                   <i class="material-symbols-outlined fs-6 me-1">check_circle</i> <span class="status-text">Conectado</span>
-                </span>          <div class="d-flex flex-column justify-content-center" style="gap: 2px;">
-            <div class="d-flex align-items-center gap-1" style="line-height: 1;">
-              <span class="led-label" title="Transmitiendo">TX</span>
-              <span id="txLed" class="status-led led-tx" title="Transmitiendo"></span>
-            </div>
-            <div class="d-flex align-items-center gap-1" style="line-height: 1;">
-              <span class="led-label" title="Recibiendo">RX</span>
-              <span id="rxLed" class="status-led led-rx" title="Recibiendo"></span>
-            </div>
-          </div>
+                </span>                <div class="d-flex flex-column justify-content-center cursor-pointer" style="gap: 2px;" data-bs-toggle="modal" data-bs-target="#connectionModal" title="Estado detallado">
+                  <div class="d-flex align-items-center gap-1" style="line-height: 1;">
+                    <span class="led-label" title="Transmitiendo">TX</span>
+                    <span id="txLed" class="status-led led-tx" title="Transmitiendo"></span>
+                  </div>
+                  <div class="d-flex align-items-center gap-1" style="line-height: 1;">
+                    <span class="led-label" title="Recibiendo">RX</span>
+                    <span id="rxLed" class="status-led led-rx" title="Recibiendo"></span>
+                  </div>
+                </div>
           <div class="btn-group" role="group">
             <button class="btn btn-sm" id="shareBtn" title="Compartir o instalar" data-bs-toggle="modal" data-bs-target="#shareModal">
               <i class="material-symbols-outlined fs-5">share</i>
@@ -764,7 +764,7 @@
 
   <!-- 📦 Bootstrap & app logic -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="script.js?v1.2"></script>
+  <script src="script.js?v1.2.1"></script>
   <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')

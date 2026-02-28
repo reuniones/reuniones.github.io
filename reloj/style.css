@@ -2,23 +2,62 @@
   Variables & Theme
 ------------------------------------------- */
 :root {
-  --led-red: #ff0000;
-  --led-red-glow: rgba(255, 0, 0, 0.37);
-  --led-green: #28a745;
-  --led-amber: #ffaa00;
-  --led-rx-off: #06200b;
-  --led-tx-off: #2b1d00;
+  /* Core Palette (RGB for opacity control) */
+  --red-rgb: 220, 53, 69;    /* Bootstrap Danger */
+  --green-rgb: 40, 167, 69;  /* Success */
+  --info-rgb: 13, 202, 240;  /* Bootstrap Info */
+  --white-rgb: 255, 255, 255;
+  --black-rgb: 0, 0, 0;
+  --dark-rgb: 33, 37, 41;    /* Gray-900 */
+  --amber-rgb: 255, 170, 0;
+
+  /* Theme Colors */
+  --color-red: rgb(var(--red-rgb));
+  --color-green: rgb(var(--green-rgb));
+  --color-info: rgb(var(--info-rgb));
+  --color-amber: rgb(var(--amber-rgb));
+  --color-white: rgba(var(--white-rgb), 0.75);
+  --color-black: rgb(var(--black-rgb));
+  --color-dark: rgb(var(--dark-rgb));
   
-  --display-bg: #000000;
+  /* LED Vibrant Colors (Pure for displays) */
+  --led-red-rgb: 255, 0, 0;
+  --color-led-red: rgb(var(--led-red-rgb));
+  --color-led-red-glow: rgba(var(--led-red-rgb), 0.5);
+  
+  /* UI Elements */
+  --display-bg: var(--color-black);
   --display-border: #808080;
   
   --topbar-bg: rgba(25, 67, 75, 0.5);
   --topbar-blur: 8px;
-  --topbar-muted: rgba(255, 255, 255, 0.25);
+  --topbar-muted: rgba(var(--white-rgb), 0.25);
+  --topbar-border: rgba(var(--white-rgb), 0.05);
   
-  --transition-speed: 0.3s;
+  --transition-speed: 0.2s;
   --transition-func: cubic-bezier(0.4, 0, 0.2, 1);
-  accent-color: var(--bs-info);
+  
+  /* Unified Button States */
+  --btn-bg: rgba(var(--info-rgb), 0.1);
+  --btn-border: rgba(var(--info-rgb), 0.5);
+  --btn-text: var(--color-white);
+  
+  --btn-hover-bg: rgba(var(--red-rgb), 0.8);
+  --btn-hover-border: var(--color-red);
+  
+  --btn-active-bg: var(--color-red);
+  --btn-active-border: var(--color-red);
+  --btn-active-shadow: 0 0 15px rgba(var(--red-rgb), 0.7), 0 0 30px rgba(var(--red-rgb), 0.4);
+  
+  --btn-waiting-bg: rgba(var(--info-rgb), 0.2);
+  --btn-waiting-border: var(--color-info);
+
+  /* Status LEDs */
+  --led-rx-off: #06200b;
+  --led-tx-off: #2b1d00;
+  --led-red-glow: rgba(var(--red-rgb), 0.4);
+
+  accent-color: var(--color-info);
 }
 
 /* ------------------------------------------
@@ -97,7 +136,7 @@
 .list-group-item-action:hover,
 .list-group-item-action:focus {
   background-color: var(--bs-danger) !important;
-  color: white !important;
+  color: var(--color-white) !important;
 }
 
 .dropdown-item.active,
@@ -106,14 +145,14 @@
 .program-item.active {
   background-color: var(--bs-info) !important;
   border-color: var(--bs-info) !important;
-  color: white !important;
+  color: var(--color-white) !important;
 }
 
 .form-select {
   background-color: var(--bs-body-bg);
   color: var(--bs-body-color);
   border-color: var(--bs-info);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
 .form-select:hover {
@@ -129,14 +168,14 @@
 
 /* Style the native option list where supported */
 select option {
-  background-color: #212529; /* Bootstrap dark background */
-  color: #fff;
+  background-color: var(--color-dark-gray);
+  color: var(--color-white);
 }
 
 .dropdown-menu {
-  background-color: #212529;
+  background-color: var(--color-dark-gray);
   border: 1px solid var(--bs-info);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0.5rem 1rem var(--color-shadow-black);
 }
 
 /* Base Layout */
@@ -184,7 +223,7 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
   width: 75%;
   height: 1.3em; 
   background-color: var(--display-bg);
-  color: var(--led-red);
+  color: var(--color-led-red);
   font-variant-numeric: tabular-nums lining-nums;
   font-family: 'LED Calculator', monospace;
   /* Font size reduced by 10% (17.5 * 0.9 = 15.75) */
@@ -193,7 +232,7 @@ h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
   padding: 0 0.5rem;
   border: 3px solid var(--display-border);
   border-radius: 0.5rem;
-  text-shadow: 0 0 3px var(--led-red), 0 0 15px var(--led-red-glow);
+  text-shadow: 0 0 3px var(--color-led-red), 0 0 15px var(--color-led-red-glow);
   overflow: hidden;
   position: relative;
   display: flex;
@@ -273,6 +312,15 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   opacity: 1 !important;
 }
 
+/* Specific Glow for Blink Button (Illuminated effect) */
+#blinkSwitch:checked + label {
+  background-color: var(--bs-danger) !important;
+  border-color: var(--bs-danger) !important;
+  box-shadow: 0 0 15px rgba(220, 53, 69, 0.7), 0 0 30px rgba(220, 53, 69, 0.4) !important;
+  color: white !important;
+  text-shadow: 0 0 5px white;
+}
+
 .btn-reveal {
   transition: all 0.2s ease;
 }
@@ -288,32 +336,22 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   font-weight: 600;
 }
 
-#panel-pantalla .btn-group .btn,
-#panel-pantalla .btn-group label,
-#panel-crono .btn-group-lg .btn,
-#panel-crono .btn-group-lg label {
+/* Control Group Heights (Narrowed to direct children to avoid nesting issues) */
+#panel-pantalla .btn-group > .btn,
+#panel-pantalla .btn-group > label,
+#panel-crono .btn-group-lg > .btn,
+#panel-crono .btn-group-lg > label {
   height: 100% !important;
+  flex: 1 1 0;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 #panel-pantalla .btn-group,
 #panel-crono .btn-group-lg {
   height: 5.5em; /* Unified group height */
-}
-
-@media (max-width: 767.98px) {
-  #panel-pantalla .btn-group,
-  #panel-crono .btn-group-lg {
-    height: 3.5em; /* Match mobile button height */
-  }
-}
-
-/* Ensure equal widths for panel buttons */
-#panel-pantalla .btn-group > .btn,
-#panel-pantalla .btn-group > label,
-#panel-crono .btn-group > .btn,
-#panel-crono .btn-group > label {
-  flex: 1 1 0;
-  display: flex !important;
 }
 
 .icon-label-btn i {
@@ -326,7 +364,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   Blur State Styling (used when disconnected)
 ------------------------------------------- */
 .blurred {
-  filter: blur(2px);
+  filter: blur(1px);
   opacity: 0.5;
 }
 
@@ -352,13 +390,25 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   color: var(--bs-info);
 }
 
-#blinkSwitch + label {
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  justify-content: center;
+/* Circular Reveal Buttons (+1, -1, Blink) */
+#blinkSwitch + label,
+#decreaseBtn,
+#increaseBtn {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50% !important;
+  display: inline-flex !important;
   align-items: center;
-  padding: 0;
+  justify-content: center;
+  padding: 0 !important;
+  flex: none !important; /* Prevent stretching in flex containers */
+}
+
+#blinkSwitch + label i,
+#decreaseBtn i,
+#increaseBtn i {
+  font-size: 1.5rem;
+  margin: 0;
 }
 #stopwatchTime.cronometro {
   padding-top: 0.2rem;
@@ -366,57 +416,91 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   line-height: 1.2;
 }
 
-/* Custom button for toggle mode buttons */
-.btn-display {
-  background-color: var(--bs-info-bg-subtle);
-  color: white;
-  border: 1px solid var(--bs-info);
-  transition: background-color 0.2s ease;
-}
+/* === UNIVERSAL BUTTON STYLE === */
 
-.btn-display:hover,
-.btn-display:focus,
-.btn-check:checked + .btn-display {
-  background-color: var(--bs-danger);
-  border-color: var(--bs-danger);
-  color: white;
-}
-
-
-/* === UNIVERSAL BUTTON STYLE OVERRIDE === */
-
-/* Base: info subtle background, white text */
 .btn {
-  background-color: var(--bs-info-bg-subtle);
-  color: white;
-  border: 1px solid var(--bs-info);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  transition: all var(--transition-speed) var(--transition-func);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-/* Hover, focus, checked: danger highlight */
+/* Hover & Focus - Unified for all control buttons */
 .btn:hover,
-.btn:focus,
-.btn-check:checked + .btn {
-  background-color: var(--bs-danger);
-  border-color: var(--bs-danger);
-  color: white;
+.btn:focus-visible,
+.btn-reveal:hover {
+  background-color: var(--btn-hover-bg) !important;
+  border-color: var(--btn-hover-border) !important;
+  color: white !important;
+  box-shadow: 0 0 12px rgba(220, 53, 69, 0.4);
+  outline: none;
+  z-index: 2; /* Ensure hover state stays on top in groups */
 }
 
-/* Preserve text/icon contrast */
-.btn i {
-  color: inherit;
+/* Active / Checked State (Mode Buttons) */
+.btn-check:checked + .btn,
+.btn.active,
+.btn:active:not(.btn-command-sent) {
+  background-color: var(--btn-active-bg) !important;
+  border-color: var(--btn-active-border) !important;
+  color: white !important;
+  box-shadow: var(--btn-active-shadow);
 }
 
+/* Specific button overrides to ensure unification over Bootstrap classes */
+#panel-pantalla .btn,
+#panel-crono .btn {
+  border-width: 1px;
+}
+
+/* Waiting State (Command Sent) */
+.btn-command-sent {
+  background-color: var(--btn-waiting-bg) !important;
+  border-color: var(--btn-waiting-border) !important;
+  color: var(--btn-waiting-border) !important;
+  cursor: wait;
+  pointer-events: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-command-sent::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.15), 
+    transparent
+  );
+  animation: wave-sweep 1.2s infinite;
+}
+
+/* Icon overrides for consistent colors */
+.btn i { color: inherit; transition: color var(--transition-speed) ease; }
+
+/* Special Buttons (Share, Settings) */
 #shareBtn i,
 #settingsBtn i {
   color: var(--bs-info);
-  transition: color 0.2s ease;
 }
 
 #shareBtn:hover i,
 #settingsBtn:hover i {
   color: white;
 }
+
+/* Modal Buttons - reset to bootstrap defaults for better readability */
+.modal-footer .btn-secondary { background-color: #6c757d; border-color: #6c757d; }
+.modal-footer .btn-primary { background-color: #0d6efd; border-color: #0d6efd; }
 
 /* Rounded pill buttons like connection status */
 .badge.rounded-pill {
@@ -435,6 +519,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   margin-bottom: 0.5rem;
   padding-bottom: 0.25rem;
   text-align: center;
+  color: var(--color-white) !important;
 }
 
 .small-seconds {
@@ -562,22 +647,22 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 }
 
 .led-rx.active {
-  background-color: var(--led-green);
-  box-shadow: 0 0 6px var(--led-green);
+  background-color: var(--color-info) !important;
+  box-shadow: 0 0 8px var(--color-info) !important;
 }
 
 .led-tx.active {
-  background-color: var(--led-amber);
-  box-shadow: 0 0 4px var(--led-amber);
+  background-color: var(--color-red) !important;
+  box-shadow: 0 0 8px var(--color-red) !important;
 }
 
 .led-info.active {
-  background-color: var(--bs-info) !important;
-  box-shadow: 0 0 6px var(--bs-info) !important;
+  background-color: var(--color-info) !important;
+  box-shadow: 0 0 8px var(--color-info) !important;
 }
 
 .led-info.active + .led-label {
-  color: white !important;
+  color: var(--color-white) !important;
   opacity: 1;
 }
 
@@ -607,6 +692,10 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   opacity: 0.8;
 }
 
+.cursor-pointer {
+  cursor: pointer;
+}
+
 /* ------------------------------------------
   Collapsible Status Pill
 ------------------------------------------- */
@@ -625,26 +714,29 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 }
 
 .status-pill.collapsed {
-  max-width: 32px; /* Width of just the icon + padding */
-  background-color: transparent !important;
-  border-color: transparent !important;
-  padding-left: 0.25rem !important;
-  padding-right: 0.25rem !important;
+  display: none !important;
 }
 
-.status-pill.collapsed .status-text {
-  opacity: 0;
-  display: none;
+/* Dropdown Customization */
+.dropdown-menu {
+  background-color: var(--color-dark) !important;
+  border: 1px solid var(--btn-border) !important;
+  box-shadow: 0 0.5rem 1rem var(--color-shadow-black) !important;
+  z-index: 1100;
 }
 
-.status-pill.collapsed i {
-  margin-right: 0 !important;
+/* Bootstrap Input Group Height Fix */
+.input-group .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto; /* Allow bootstrap flexbox to control height */
+  border-width: 1px;
 }
 
-/* Color icons when collapsed and background is gone */
-.status-pill.collapsed.bg-success i { color: var(--led-green) !important; }
-.status-pill.collapsed.bg-warning i { color: var(--led-amber) !important; }
-.status-pill.collapsed.bg-danger i { color: var(--bs-danger) !important; }
+#sendCustomSignBtn {
+  min-width: 3.5rem;
+}
 
 .program-item {
   display: flex;
@@ -685,8 +777,12 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
     padding-right: 0.5rem !important;
   }
 
-  .btn-label, .status-text {
+  .btn-label {
     display: none !important;
+  }
+
+  #connectionStatus:not(.collapsed) .status-text {
+    display: inline !important;
   }
 
   /* Force topbar layout on mobile */
@@ -705,48 +801,39 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   .mini-displays {
     display: flex !important;
     opacity: 1 !important;
+    margin-left: 0 !important;
   }
 
-  #connectionStatus {
-    padding: 0.4rem 0.25rem !important;
+  #connectionStatus:not(.collapsed) {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    padding: 0.5rem 1rem !important;
+    flex: 1;
+    max-width: none !important;
   }
 
-  #connectionStatus i {
-    margin-right: 0 !important;
+  /* Hide clock when pill is visible on mobile */
+  .topbar:has(#connectionStatus:not(.collapsed)) .clock-container {
+    display: none !important;
   }
 
   .led-label {
     /* visible */
   }
 
-  /* Force collapse on mobile */
-  .status-pill {
-    max-width: 32px !important;
-    background-color: transparent !important;
-    border-color: transparent !important;
-    padding-left: 0.25rem !important;
-    padding-right: 0.25rem !important;
-  }
-  .status-pill .status-text {
-    display: none !important;
-  }
-  .status-pill i {
-    margin-right: 0 !important;
-  }
-  .status-pill.bg-success i { color: var(--led-green) !important; }
-  .status-pill.bg-warning i { color: var(--led-amber) !important; }
-  .status-pill.bg-danger i { color: var(--bs-danger) !important; }
-
   .icon-label-btn {
-    height: 3.5em !important;
+    height: 4em !important;
   }
 
   .icon-label-btn i {
     margin-bottom: 0 !important;
-    font-size: 2rem !important;
+    font-size: 2.5rem !important;
+  }
+  
+  #panel-pantalla .btn-group,
+  #panel-crono .btn-group-lg {
+    height: 4em !important;
   }
   
   .pantalla-box {
