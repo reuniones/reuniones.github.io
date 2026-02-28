@@ -498,9 +498,43 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   color: white;
 }
 
-/* Modal Buttons - reset to bootstrap defaults for better readability */
-.modal-footer .btn-secondary { background-color: #6c757d; border-color: #6c757d; }
-.modal-footer .btn-primary { background-color: #0d6efd; border-color: #0d6efd; }
+/* Prevent icon and link underlining */
+.material-symbols-outlined,
+a,
+a:hover,
+.btn,
+.btn:hover {
+  text-decoration: none !important;
+}
+
+/* Modal Buttons - applied unified UI colors */
+.modal-footer .btn-secondary { 
+  background-color: rgba(var(--white-rgb), 0.1); 
+  border-color: rgba(var(--white-rgb), 0.2); 
+  color: var(--color-white);
+}
+
+.modal-footer .btn-primary { 
+  background-color: var(--btn-bg); 
+  border-color: var(--btn-border);
+  color: var(--color-white);
+}
+
+.modal-footer .btn-primary:hover {
+  background-color: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
+}
+
+.modal-footer .btn-danger {
+  background-color: rgba(var(--red-rgb), 0.2);
+  border-color: rgba(var(--red-rgb), 0.5);
+  color: var(--color-white);
+}
+
+.modal-footer .btn-danger:hover {
+  background-color: var(--color-red);
+  border-color: var(--color-red);
+}
 
 /* Rounded pill buttons like connection status */
 .badge.rounded-pill {
@@ -520,6 +554,10 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   padding-bottom: 0.25rem;
   text-align: center;
   color: var(--color-white) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important; /* Reduced spacing */
 }
 
 .small-seconds {

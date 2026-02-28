@@ -1269,8 +1269,9 @@ function setPanelBlur(active) {
 
 
 
-  // === Share Button (QR + WhatsApp + Install) ===
-  document.getElementById("shareBtn").addEventListener("click", () => {
+  // === Share Modal Logic (QR + WhatsApp + Install) ===
+  const shareModalEl = document.getElementById("shareModal");
+  shareModalEl.addEventListener("show.bs.modal", () => {
     const baseUrl = window.location.origin + window.location.pathname;
     const clockUrl = getUrl();
     const shareUrl = `${baseUrl}?clock=${encodeURIComponent(clockUrl)}`;
@@ -1279,12 +1280,9 @@ function setPanelBlur(active) {
     QRCode.toCanvas(document.getElementById("qrCanvas"), shareUrl, { width: 160 });
     document.getElementById("shareUrl").textContent = shareUrl;
 
-
     // WhatsApp link
     document.getElementById("whatsappShare").href =
       `https://wa.me/?text=${encodeURIComponent("Reloj: " + shareUrl)}`;
-
-    new bootstrap.Modal(document.getElementById("shareModal")).show();
   });
 
   // === Stopwatch Buttons ===
