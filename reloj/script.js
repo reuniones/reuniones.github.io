@@ -45,7 +45,7 @@ function isValidClockUrl(url) {
 const RECONNECT_DELAY_MS = 5000;        // Retry every 2s
 const CONNECTING_THRESHOLD_MS = 2500;   // Show "Conectando" after 2.5s
 const FAILURE_THRESHOLD_MS = 5000;      // Show modal after 5s
-let currentDisplayMode = "clock";
+let currentDisplayMode = localStorage.getItem("last_display_mode") || "clock";
 let connectionStatus = "connecting"; // global tracker
 let programs = {};
 let currentProgram = null;
@@ -1607,7 +1607,7 @@ if (row) {
         // Wrap text in a scrolling span for the ticker effect
         displayElem.innerHTML = `<span class="pantalla-scroll" style="animation-duration: ${duration}s">${trimmedValue} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>`;
         if (miniDisplayElem) miniDisplayElem.textContent = trimmedValue;
-      } else if (currentDisplayMode === 'clock' && trimmedValue.length >= 3) {
+      } else if (currentDisplayMode === 'clock' && trimmedValue.length >= 3 && trimmedValue[trimmedValue.length - 3] === ':') {
           const trimmed = trimmedValue;
           const thirdLastHidden = trimmed.slice(0, -3) + '<span style="display:none;">' + trimmed[trimmed.length - 3] + '</span>';
           const smallerLastTwo = thirdLastHidden + '<span style="font-size: 70%; margin-left:.3em">' + trimmed.slice(-2) + '</span>';
@@ -1669,9 +1669,16 @@ if (row) {
           const display_text = status.d || status.display_text;
           const timeclock = status.t || status.timeclock;
           const stopwatch = status.s || status.stopwatch;
+          const mode = status.m || status.mode;
           const blink_is_on = status.b !== undefined ? status.b : status.blink_state;
           const blink_is_auto = status.ba !== undefined ? status.ba : false;
           const display_is_auto = status.da !== undefined ? status.da : false;
+
+          if (mode !== undefined && mode !== currentDisplayMode) {
+            currentDisplayMode = mode;
+            localStorage.setItem("last_display_mode", mode);
+            syncDisplayModeRadio(mode);
+          }
 
           if (timeclock !== undefined) updateTimeclockUI(timeclock);
           if (stopwatch !== undefined) updateStopwatchUI(stopwatch);
@@ -1728,7 +1735,10 @@ if (row) {
 
       case "select-sel_display_mode":
         currentDisplayMode = data.value;
+        localStorage.setItem("last_display_mode", data.value);
         syncDisplayModeRadio(data.value);
+        // Re-run display text processing with the new mode immediately
+        if (lastDisplayText) updateDisplayTextUI(lastDisplayText);
         break;
 
       case "switch-sw_blink":
@@ -2150,5 +2160,8 @@ if (row) {
 
   window.addEventListener("resize", handleScaling);
   handleScaling();
+
+  // Initialize UI with current mode
+  syncDisplayModeRadio(currentDisplayMode);
 
 });

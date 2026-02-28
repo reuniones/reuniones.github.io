@@ -759,8 +759,8 @@ interval:
           // PUBLISH JSON STATUS
           static char json_buffer[512];
           snprintf(json_buffer, sizeof(json_buffer),
-                  "{\"d\":\"%s\",\"t\":\"%s\",\"s\":\"%s\",\"b\":%s,\"ba\":%s,\"da\":%s}",
-                  display_text_str, timeclock_str, stopwatch_str,
+                  "{\"d\":\"%s\",\"t\":\"%s\",\"s\":\"%s\",\"m\":\"%s\",\"b\":%s,\"ba\":%s,\"da\":%s}",
+                  display_text_str, timeclock_str, stopwatch_str, id(display_mode).c_str(),
                   id(sw_blink).state ? "true" : "false",
                   id(blink_is_auto) ? "true" : "false",
                   id(display_is_auto) ? "true" : "false");
