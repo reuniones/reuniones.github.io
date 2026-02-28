@@ -435,7 +435,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 .btn-reveal:hover {
   background-color: var(--btn-hover-bg) !important;
   border-color: var(--btn-hover-border) !important;
-  color: white !important;
+  color: var(--color-pure-white) !important;
   box-shadow: 0 0 12px rgba(220, 53, 69, 0.4);
   outline: none;
   z-index: 2; /* Ensure hover state stays on top in groups */
@@ -447,7 +447,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 .btn:active:not(.btn-command-sent) {
   background-color: var(--btn-active-bg) !important;
   border-color: var(--btn-active-border) !important;
-  color: white !important;
+  color: var(--color-pure-white) !important;
   box-shadow: var(--btn-active-shadow);
 }
 
@@ -799,6 +799,99 @@ a:hover,
 .program-item .measured {
   flex: 0 0 4em;
   text-align: end;
+}
+
+/* ------------------------------------------
+  Hamburger Menu & Adaptive Items
+------------------------------------------- */
+.menu-item-adaptive {
+  display: none !important;
+}
+
+/* Show adaptive menu items when their topbar counterparts are hidden */
+@media (max-width: 767.98px) {
+  /* Connection status always visible in menu on mobile */
+  li.menu-item-adaptive {
+    display: block !important;
+  }
+}
+
+/* Hide the clock specifically if it's visible in topbar (wide) */
+@media (min-width: 525.01px) {
+  .topbar:not(:has(#connectionStatus:not(.collapsed))) .menu-clock-container {
+    display: none !important;
+  }
+}
+
+/* ------------------------------------------
+  Hamburger Menu & Adaptive Items
+------------------------------------------- */
+.menu-item-adaptive {
+  display: none !important;
+}
+
+#topbarMenuBtn i {
+  transition: transform 0.3s ease;
+}
+
+#topbarMenuBtn[aria-expanded="true"] i {
+  transform: rotate(90deg);
+}
+
+.dropdown-menu .dropdown-item i {
+  color: var(--bs-info);
+  width: 24px;
+  text-align: center;
+}
+
+/* Show adaptive menu items when their topbar counterparts are hidden */
+@media (max-width: 767.98px) {
+  li.menu-item-adaptive {
+    display: block !important;
+  }
+}
+
+/* Hide the menu clock specifically if it's visible in topbar (wide) */
+@media (min-width: 525.01px) {
+  .topbar:not(:has(#connectionStatus:not(.collapsed))) .menu-clock-container {
+    display: none !important;
+  }
+}
+
+/* ------------------------------------------
+  Hamburger Menu & Adaptive Items
+------------------------------------------- */
+.menu-item-adaptive {
+  display: none !important;
+}
+
+#topbarMenuBtn i {
+  color: var(--color-white) !important; /* 25% transparent white from variables */
+  transition: transform 0.3s ease;
+}
+
+#topbarMenuBtn[aria-expanded="true"] i {
+  transform: rotate(90deg);
+}
+
+.dropdown-menu .dropdown-item i {
+  color: var(--bs-info);
+  width: 24px;
+  text-align: center;
+}
+
+/* Show adaptive menu items when their topbar counterparts are hidden */
+@media (max-width: 767.98px) {
+  li.menu-item-adaptive {
+    display: block !important;
+  }
+}
+
+/* Hide the menu clock specifically if it's visible in topbar (wide) */
+@media (min-width: 525.01px) {
+  .topbar:not(:has(#connectionStatus:not(.collapsed))) .menu-clock-container {
+    display: none !important;
+  }
 }
 
 /* ------------------------------------------

@@ -81,16 +81,36 @@
                     <span id="rxLed" class="status-led led-rx" title="Recibiendo"></span>
                   </div>
                 </div>
-          <div class="btn-group" role="group">
-            <button class="btn btn-sm" id="shareBtn" title="Compartir o instalar" data-bs-toggle="modal" data-bs-target="#shareModal">
-              <i class="material-symbols-outlined fs-5">share</i>
-            </button>
-            <button class="btn btn-sm position-relative" id="settingsBtn" title="Configuración" data-bs-toggle="modal" data-bs-target="#settingsModal">
-              <i class="material-symbols-outlined fs-5">settings</i>
+          <!-- Hamburger Menu -->
+          <div class="dropdown">
+            <button class="btn btn-sm border-0 bg-transparent shadow-none position-relative" type="button" id="topbarMenuBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Menú">
+              <i class="material-symbols-outlined fs-4" style="color: rgba(255,255,255,0.75);">menu</i>
               <span id="settingsUpdateBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
                 <span class="visually-hidden">Actualización disponible</span>
               </span>
             </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg py-2" aria-labelledby="topbarMenuBtn" style="min-width: 220px;">
+              <!-- Adaptive items: Shown here when hidden from the topbar -->
+              <li class="menu-item-adaptive">
+                <div class="px-3 py-2 d-flex justify-content-between align-items-center border-bottom mb-2 bg-body-tertiary">
+                  <div class="d-flex align-items-center gap-2 menu-clock-container">
+                    <i class="material-symbols-outlined fs-5 text-secondary">schedule</i>
+                    <span id="menuClockTime" class="fw-bold text-info small">--:--:--</span>
+                  </div>
+                  <span id="menuConnectionStatus" class="badge rounded-pill bg-success" style="font-size: 0.7rem;">Conectado</span>
+                </div>
+              </li>
+              
+              <li><a class="dropdown-item d-flex align-items-center gap-3 py-2" href="#" data-bs-toggle="modal" data-bs-target="#shareModal">
+                <i class="material-symbols-outlined fs-5">share</i> Compartir o Instalar
+              </a></li>
+              <li><a class="dropdown-item d-flex align-items-center gap-3 py-2" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                <i class="material-symbols-outlined fs-5">settings</i> Configuración
+              </a></li>
+              <li><a class="dropdown-item d-flex align-items-center gap-3 py-2" href="#" data-bs-toggle="modal" data-bs-target="#connectionModal">
+                <i class="material-symbols-outlined fs-5">info</i> Estado del Sistema
+              </a></li>
+            </ul>
           </div>
         </div>
       </div>
