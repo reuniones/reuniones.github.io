@@ -2146,7 +2146,7 @@ if (row) {
     const topbar = document.querySelector(".topbar");
     if (!wrapper || !topbar) return;
 
-    const baseTopbarHeight = 45; // Standard unscaled height
+    const baseTopbarHeight = 60; // Standard unscaled height
 
     if (width < minWidth) {
       const scale = width / minWidth;
