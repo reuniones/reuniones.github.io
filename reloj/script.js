@@ -2142,38 +2142,17 @@ if (row) {
   function handleScaling() {
     const width = window.innerWidth;
     const minWidth = 400;
-    const wrapper = document.getElementById("main-wrapper");
-    const topbar = document.querySelector(".topbar");
-    if (!wrapper || !topbar) return;
-
-    const baseTopbarHeight = 60; // Standard unscaled height
-
     if (width < minWidth) {
       const scale = width / minWidth;
-      const scaledPadding = baseTopbarHeight * scale;
-      
-      document.body.style.paddingTop = `${scaledPadding}px`;
-
-      [topbar, wrapper].forEach(el => {
-        el.style.width = `${minWidth}px`;
-        el.style.position = (el === topbar) ? "fixed" : "relative";
-        el.style.left = "50%";
-        el.style.marginLeft = `-${minWidth / 2}px`;
-        el.style.transform = `scale(${scale})`;
-        el.style.transformOrigin = "top center";
-        el.style.zIndex = (el === topbar) ? "1050" : "";
-      });
+      document.body.style.transform = `scale(${scale})`;
+      document.body.style.transformOrigin = "top left";
+      document.body.style.width = `${(1 / scale) * 100}%`;
+      document.body.style.height = `${(1 / scale) * 100}%`;
     } else {
-      document.body.style.paddingTop = `${baseTopbarHeight}px`;
-      [topbar, wrapper].forEach(el => {
-        el.style.width = "";
-        el.style.position = "";
-        el.style.left = "";
-        el.style.marginLeft = "";
-        el.style.transform = "";
-        el.style.transformOrigin = "";
-        el.style.zIndex = "";
-      });
+      document.body.style.transform = "";
+      document.body.style.transformOrigin = "";
+      document.body.style.width = "";
+      document.body.style.height = "";
     }
   }
 

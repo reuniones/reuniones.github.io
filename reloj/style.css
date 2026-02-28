@@ -190,24 +190,17 @@ select option {
 @import url('https://fonts.cdnfonts.com/css/led-calculator');
 
 html {
-  scroll-padding-top: 70px;
+  scroll-padding-top: 70px; /* Account for sticky topbar height */
   scroll-behavior: smooth;
-  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 body {
   font-family: 'Montserrat', sans-serif;
+  overflow-x: hidden;
   font-weight: 300;
   font-variant-numeric: tabular-nums;
   transition: background-color 0.3s, color 0.3s;
-  overflow-x: hidden; /* Prevent horizontal scroll from scaling */
-  padding-top: 60px; /* Base space for fixed topbar */
-}
-
-#main-wrapper {
-  transition: transform var(--transition-speed) var(--transition-func);
-  transform-origin: top center;
-  will-change: transform;
 }
 
 .container {
@@ -375,6 +368,23 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
   opacity: 0.5;
 }
 
+/* ------------------------------------------
+  Optional Custom Display Button States (commented)
+------------------------------------------- */
+/*
+.btn-check:checked + .btn-display {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.btn-display {
+  background-color: #0dcaf0;
+  color: white;
+  border-color: #0dcaf0;
+}
+*/
+
 #clockTime {
   font-weight: 600;
   color: var(--bs-info);
@@ -425,8 +435,8 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 .btn-reveal:hover {
   background-color: var(--btn-hover-bg) !important;
   border-color: var(--btn-hover-border) !important;
-  color: var(--color-white) !important;
-  box-shadow: 0 0 12px rgba(var(--red-rgb), 0.4);
+  color: white !important;
+  box-shadow: 0 0 12px rgba(220, 53, 69, 0.4);
   outline: none;
   z-index: 2; /* Ensure hover state stays on top in groups */
 }
@@ -437,7 +447,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 .btn:active:not(.btn-command-sent) {
   background-color: var(--btn-active-bg) !important;
   border-color: var(--btn-active-border) !important;
-  color: var(--color-white) !important;
+  color: white !important;
   box-shadow: var(--btn-active-shadow);
 }
 
@@ -475,23 +485,17 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 }
 
 /* Icon overrides for consistent colors */
-.btn i { 
-  color: inherit; 
-  transition: color var(--transition-speed) ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.btn i { color: inherit; transition: color var(--transition-speed) ease; }
 
 /* Special Buttons (Share, Settings) */
 #shareBtn i,
 #settingsBtn i {
-  color: var(--color-info);
+  color: var(--bs-info);
 }
 
 #shareBtn:hover i,
 #settingsBtn:hover i {
-  color: var(--color-white);
+  color: white;
 }
 
 /* Prevent icon and link underlining */
@@ -541,7 +545,6 @@ a:hover,
 .btn-sm, .btn {
   font-size: 0.9rem;
 }
-
 .panel-title {
   position: absolute;
   top: 0.5rem;
@@ -563,7 +566,7 @@ a:hover,
 }
 
 .panel-blur {
-  filter: blur(1px);
+  filter: blur(3px);
   pointer-events: none;
   opacity: 0.7;
 }
@@ -575,6 +578,24 @@ a:hover,
 
 .blinking {
   animation: blink-soft 1s linear infinite;
+}
+
+.btn-command-sent {
+  position: relative;
+  overflow: hidden;
+  pointer-events: none; /* Prevent double clicks */
+  filter: brightness(1.1);
+}
+
+.btn-command-sent::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: wave-sweep 1.2s infinite;
 }
 
 @keyframes wave-sweep {
@@ -598,12 +619,7 @@ a:hover,
   backdrop-filter: blur(var(--topbar-blur));
   -webkit-backdrop-filter: blur(var(--topbar-blur));
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  z-index: 1050;
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
+  z-index: 1020;                            /* above content */
 }
 
 .topbar-grid {
@@ -633,7 +649,7 @@ a:hover,
 
 .mini-led {
   font-family: 'LED Calculator', monospace;
-  color: var(--color-info);
+  color: var(--bs-info);
   font-size: 1.35rem;
   display: inline-flex;
   align-items: baseline;
@@ -873,7 +889,7 @@ a:hover,
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 0.5rem !important; /* Reduced spacing */
+    gap: 1rem;
   }
 
   .panel-title::before,
