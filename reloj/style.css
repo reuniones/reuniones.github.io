@@ -17,7 +17,6 @@
   --color-info: rgb(var(--info-rgb));
   --color-amber: rgb(var(--amber-rgb));
   --color-white: rgba(var(--white-rgb), 0.75);
-  --color-pure-white: rgb(var(--white-rgb));
   --color-black: rgb(var(--black-rgb));
   --color-dark: rgb(var(--dark-rgb));
   
@@ -426,7 +425,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 .btn-reveal:hover {
   background-color: var(--btn-hover-bg) !important;
   border-color: var(--btn-hover-border) !important;
-  color: var(--color-pure-white) !important;
+  color: var(--color-white) !important;
   box-shadow: 0 0 12px rgba(var(--red-rgb), 0.4);
   outline: none;
   z-index: 2; /* Ensure hover state stays on top in groups */
@@ -438,7 +437,7 @@ body[data-stopwatch-state="running"] .cronometro span.colon {
 .btn:active:not(.btn-command-sent) {
   background-color: var(--btn-active-bg) !important;
   border-color: var(--btn-active-border) !important;
-  color: var(--color-pure-white) !important;
+  color: var(--color-white) !important;
   box-shadow: var(--btn-active-shadow);
 }
 
@@ -794,7 +793,7 @@ a:hover,
 }
 
 #topbarMenuBtn i {
-  color: var(--color-white);
+  color: var(--color-info);
   transition: transform 0.3s ease;
 }
 
