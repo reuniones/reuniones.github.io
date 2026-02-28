@@ -1038,6 +1038,7 @@ function setPanelBlur(active) {
     connectionStatus = state;
 
     const el = document.getElementById("connectionStatus");
+    const menuEl = document.getElementById("menuConnectionStatus");
     const iconMap = {
       connected: ["bg-success", "check_circle", "Conectado"],
       connecting: ["bg-warning", "error", "Conectando"],
@@ -1045,30 +1046,32 @@ function setPanelBlur(active) {
     };
 
     const [color, icon, label] = iconMap[state] || iconMap.disconnected;
-    el.className = `badge rounded-pill status-pill ${color}`;
-    el.innerHTML = `<i class="material-symbols-outlined fs-6 me-1">${icon}</i> <span class="status-text">${label}</span>`;
+    
+    if (el) {
+      el.className = `badge rounded-pill status-pill ${color}`;
+      el.innerHTML = `<i class="material-symbols-outlined fs-6 me-1">${icon}</i> <span class="status-text">${label}</span>`;
+      el.classList.remove("collapsed");
+      el.classList.toggle("blinking", state === "connecting");
+      el.classList.toggle("connection-warning", state === "connecting");
+      
+      // Redirect modal target based on state
+      el.setAttribute("data-bs-target", state === "connected" ? "#connectionModal" : "#reconnectModal");
+    }
+
+    if (menuEl) {
+      menuEl.className = `badge rounded-pill ${color}`;
+      menuEl.textContent = label;
+    }
 
     // Reset collapse state and timer
     clearTimeout(collapseTimeout);
-    el.classList.remove("collapsed");
 
     if (state === "connected") {
       // Auto-collapse after 5 seconds on wide screens (CSS handles mobile)
       collapseTimeout = setTimeout(() => {
-        el.classList.add("collapsed");
+        if (el) el.classList.add("collapsed");
       }, 5000);
     }
-
-    // Redirect modal target based on state
-    if (state === "connected") {
-      el.setAttribute("data-bs-target", "#connectionModal");
-    } else {
-      el.setAttribute("data-bs-target", "#reconnectModal");
-    }
-
-    // Apply blinking and dark text for connecting
-    el.classList.toggle("blinking", state === "connecting");
-    el.classList.toggle("connection-warning", state === "connecting");
 
     // Blur panels unless fully connected
     setPanelBlur(state !== "connected");
@@ -1533,15 +1536,18 @@ if (row) {
     lastTimeclockValue = value;
     globalBlinkStart = Date.now(); // Sync blink phase
     const { clockTime: el } = elements;
-    if (el) {
-      if (value.length >= 3) {
-        const base = value.slice(0, -3);
-        const seconds = value.slice(-2);
-        el.innerHTML = `${base}<span style="font-size: 80%; margin-left: 0.3em;">${seconds}</span>`;
-      } else {
-        el.textContent = value;
-      }
+    const menuEl = document.getElementById("menuClockTime");
+
+    let formattedHtml = value;
+    if (value.length >= 3) {
+      const base = value.slice(0, -3);
+      const seconds = value.slice(-2);
+      formattedHtml = `${base}<span style="font-size: 80%; margin-left: 0.3em;">${seconds}</span>`;
     }
+
+    if (el) el.innerHTML = formattedHtml;
+    if (menuEl) menuEl.innerHTML = formattedHtml;
+
     renderMiniSecondary();
   }
 
