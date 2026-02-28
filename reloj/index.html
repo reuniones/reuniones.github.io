@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="style.css?v1.2.1">
+  <link rel="stylesheet" href="style.css?v1.2.2">
 
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -46,7 +46,7 @@
 </head>
 <body>
       <!-- 🕒 Top bar: Clock, connection status, share/settings -->
-    <div class="topbar mb-3 sticky-top">
+    <div class="topbar">
       <div class="container px-3 py-1 topbar-grid">
               <div class="topbar-left">
                 <div class="fw-semibold text-white fs-5 page-title">RELOJ <span class="opacity-25">CRONÓMETRO</span></div>
@@ -95,9 +95,10 @@
         </div>
       </div>
     </div>
-  <div class="container">
-    <!-- 📐 Two-column responsive layout -->
-    <div class="row g-2">
+  <div id="main-wrapper">
+    <div class="container">
+      <!-- 📐 Two-column responsive layout -->
+      <div class="row g-2">
 
       <!-- 📺 Left Panel: Display screen + mode selector -->
       <div class="col-12 col-md-6" id="panel-pantalla">
@@ -665,7 +666,7 @@
               </h2>
               <div id="collapsePerms" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
                 <div class="accordion-body small text-muted">
-                  <p>Por seguridad el navegador bloquea conexiones a dispositivos dentro de la red local o sin encriptación. Seguí las siguientes instrucciones para permitir la conexión en tu navegador.</p>
+                  <p>Por seguridad el navegador bloquea conexiones a dispositivos dentro de la red local or sin encriptación. Seguí las siguientes instrucciones para permitir la conexión en tu navegador.</p>
                   <div id="browserSpecificInstructions" class="alert alert-warning py-2 mb-0">
                     <!-- Populated by JS -->
                   </div>
@@ -764,7 +765,7 @@
 
   <!-- 📦 Bootstrap & app logic -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="script.js?v1.2.1"></script>
+  <script src="script.js?v1.2.2"></script>
   <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
