@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <!-- Web app manifest and theme color for PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
+
+  <!-- Page metadata -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- Prevent Caching -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <title>Reloj</title>
+
+  <!-- External scripts and styles -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/led-calculator" rel="stylesheet">
+  
+  <!-- Montserrat Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css?v1.2.1">
+
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="favicon-192x192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon-180x180.png">
+  <link rel="shortcut icon" href="favicon.ico">
+
+  <!-- Smooth color transition for dark mode -->
+  <style>
+    body {
+      transition: background-color 0.3s, color 0.3s;
+    }
+  </style>
+</head>
+<body>
+      <!-- 🕒 Top bar: Clock, connection status, share/settings -->
+    <div class="topbar mb-3 sticky-top">
+      <div class="container px-3 py-1 topbar-grid">
+              <div class="topbar-left">
+                <div class="fw-semibold text-white fs-5 page-title">RELOJ <span class="opacity-25">CRONÓMETRO</span></div>
+                
+                <!-- Mini Displays for Mobile -->
+                <div class="mini-displays d-none gap-3 panel-blurable">
+                  <a href="#panel-pantalla" class="text-decoration-none d-flex align-items-center gap-1 text-white" title="Pantalla">
+                    <i class="material-symbols-outlined fs-5">tv</i>
+                    <span id="miniDisplayText" class="mini-led">---</span>
+                  </a>
+                  <a href="#panel-crono" class="text-decoration-none d-flex align-items-center gap-1 text-white" title="Cronómetro" id="miniSecondaryLink">
+                    <i class="material-symbols-outlined fs-5" id="miniSecondaryIcon">timer</i>
+                    <span id="miniSecondaryText" class="mini-led">0:00</span>
+                  </a>
+                </div>
+              </div>
+        
+              <div class="topbar-right">
+                <div class="d-flex align-items-center gap-2 panel-blurable clock-container" title="Hora actual">
+                  <i class="material-symbols-outlined fs-5">schedule</i>
+                  <span id="clockTime"></span>
+                </div>
+                <span id="connectionStatus" class="badge rounded-pill bg-success status-pill" role="button" data-bs-toggle="modal" data-bs-target="#connectionModal" title="Estado de conexión">
+                  <i class="material-symbols-outlined fs-6 me-1">check_circle</i> <span class="status-text">Conectado</span>
+                </span>                <div class="d-flex flex-column justify-content-center cursor-pointer" style="gap: 2px;" data-bs-toggle="modal" data-bs-target="#connectionModal" title="Estado detallado">
+                  <div class="d-flex align-items-center gap-1" style="line-height: 1;">
+                    <span class="led-label" title="Transmitiendo">TX</span>
+                    <span id="txLed" class="status-led led-tx" title="Transmitiendo"></span>
+                  </div>
+                  <div class="d-flex align-items-center gap-1" style="line-height: 1;">
+                    <span class="led-label" title="Recibiendo">RX</span>
+                    <span id="rxLed" class="status-led led-rx" title="Recibiendo"></span>
+                  </div>
+                </div>
+          <!-- Hamburger Menu -->
+          <div class="dropdown">
+            <button class="btn btn-sm border-0 bg-transparent shadow-none position-relative" type="button" id="topbarMenuBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Menú">
+              <i class="material-symbols-outlined fs-4" style="color: rgba(255,255,255,0.75);">menu</i>
+              <span id="settingsUpdateBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
+                <span class="visually-hidden">Actualización disponible</span>
+              </span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg py-2" aria-labelledby="topbarMenuBtn" style="min-width: 220px;">
+              <!-- Adaptive items: Shown here when hidden from the topbar -->
+              <li class="menu-item-adaptive">
+                <div class="px-3 py-2 d-flex justify-content-between align-items-center border-bottom mb-2 bg-body-tertiary">
+                  <div class="d-flex align-items-center gap-2 menu-clock-container">
+                    <i class="material-symbols-outlined fs-5 text-secondary">schedule</i>
+                    <span id="menuClockTime" class="fw-bold text-info small">--:--:--</span>
+                  </div>
+                  <span id="menuConnectionStatus" class="badge rounded-pill bg-success" style="font-size: 0.7rem;">Conectado</span>
+                </div>
+              </li>
+              
+              <li><a class="dropdown-item d-flex align-items-center gap-3 py-2" href="#" data-bs-toggle="modal" data-bs-target="#shareModal">
+                <i class="material-symbols-outlined fs-5">share</i> Compartir o Instalar
+              </a></li>
+              <li><a class="dropdown-item d-flex align-items-center gap-3 py-2" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                <i class="material-symbols-outlined fs-5">settings</i> Configuración
+              </a></li>
+              <li><a class="dropdown-item d-flex align-items-center gap-3 py-2" href="#" data-bs-toggle="modal" data-bs-target="#connectionModal">
+                <i class="material-symbols-outlined fs-5">info</i> Estado del Sistema
+              </a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <div class="container">
+    <!-- 📐 Two-column responsive layout -->
+    <div class="row g-2">
+
+      <!-- 📺 Left Panel: Display screen + mode selector -->
+      <div class="col-12 col-md-6" id="panel-pantalla">
+        <div class="border rounded-3 p-4 shadow-sm bg-secondary-subtle position-relative panel-blurable app-panel">
+          <h6 class="text-uppercase text-white fw-bold panel-title"><i class="material-symbols-outlined fs-6 me-2">tv</i>Pantalla</h6>
+
+
+
+
+          <!-- Display box with blink toggle -->
+          <div class="position-relative mb-3">
+            <div class="pantalla-box" title="Pantalla actual"><span id="displayText" style="padding: .25em 1em;">&nbsp;</span></div>
+            <div class="position-absolute top-50 translate-middle-y d-flex flex-column align-items-center" style="right: -1.5rem; width: calc(12.5% + 1.5rem);">
+              <input type="checkbox" class="btn-check" id="blinkSwitch" autocomplete="off">
+              <label class="btn btn-outline-danger btn-sm btn-reveal" for="blinkSwitch" title="Parpadear">
+                <i class="material-symbols-outlined fs-4">wb_iridescent</i>
+              </label>
+              <div class="d-flex flex-column flex-md-row align-items-center justify-content-center mt-1 indicator-container" id="blinkAutoIndicator" title="Parpadeo automático">
+                <div class="d-flex align-items-center justify-content-center gap-1">
+                  <span id="blinkAutoLed" class="status-led led-info"></span>
+                  <span class="led-label">AUTO</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode selection buttons: clock / stopwatch / sign -->
+          <div class="btn-group btn-group-lg w-100 mb-4 position-relative" role="group" aria-label="Mostrar">
+            <input type="radio" class="btn-check" name="displayMode" id="displayClock" value="clock" autocomplete="off">
+            <label class="btn btn-outline-danger btn-display icon-label-btn" for="displayClock" title="Mostrar hora">
+              <i class="material-symbols-outlined">schedule</i> <span class="btn-label">HORA</span>
+            </label>
+
+            <input type="radio" class="btn-check" name="displayMode" id="displayStopwatch" value="stopwatch" autocomplete="off">
+            <label class="btn btn-outline-danger btn-display icon-label-btn" for="displayStopwatch" title="Mostrar cronómetro">
+              <i class="material-symbols-outlined">timer</i> <span class="btn-label">CRONO</span>
+            </label>
+
+            <input type="radio" class="btn-check" name="displayMode" id="displaySign" value="sign" autocomplete="off">
+            <button class="btn btn-outline-danger btn-display icon-label-btn dropdown-toggle" type="button" id="signDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Opciones de Cartel">
+              <i class="material-symbols-outlined">font_download</i>
+              <span class="btn-label">CARTEL</span>
+            </button>
+
+            <!-- indicator placed absolute relative to the whole group, but centered on the 3rd button -->
+            <div class="position-absolute d-flex align-items-center gap-1 mt-1 indicator-container" id="cartelAutoIndicator" style="top: 100%; left: 83.3%; transform: translateX(-50%);" title="Cartel automático">
+              <span id="cartelAutoLed" class="status-led led-info"></span>
+              <span class="led-label">AUTO</span>
+            </div>
+
+            <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="signDropdown" style="min-width: 200px;">
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center rounded" href="#" id="signOptionTiempo">TIEMPO <i class="material-symbols-outlined check-mark d-none fs-6">check</i></a></li>
+              <li><a class="dropdown-item d-flex justify-content-between align-items-center rounded" href="#" id="signOptionZoom">Zoom <i class="material-symbols-outlined check-mark d-none fs-6">check</i></a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li class="px-2 py-1">
+                <label for="customSignInputDropdown" class="form-label small mb-1 text-muted">Mensaje personalizado</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" id="customSignInputDropdown" class="form-control" placeholder="Mensaje..." maxlength="120" autocomplete="off" autocorrect="off" spellcheck="false">
+                  <button class="btn btn-primary" type="button" id="sendCustomSignBtn">
+                    <i class="material-symbols-outlined fs-6">send</i>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ⏱️ Right Panel: Stopwatch + controls -->
+      <div class="col-12 col-md-6" id="panel-crono">
+        <div class="border rounded-3 p-4 shadow-sm bg-secondary-subtle position-relative panel-blurable app-panel">
+
+          <h6 class="text-uppercase text-white fw-bold panel-title"><i class="material-symbols-outlined fs-6 me-2">timer</i>Cronómetro</h6>
+
+
+
+
+          <!-- Stopwatch display with +1 / -1 buttons -->
+          <div class="mb-3 position-relative text-center">
+            <button id="decreaseBtn" class="btn btn-outline-danger btn-reveal position-absolute start-0 top-50 translate-middle-y d-flex align-items-center justify-content-center p-1" title="Restar 1 minuto">
+              <i class="material-symbols-outlined">exposure_neg_1</i>
+            </button>
+            <div id="stopwatchTime" class="cronometro d-inline-block px-2">&nbsp;</div>
+            <button id="increaseBtn" class="btn btn-outline-success btn-reveal position-absolute end-0 top-50 translate-middle-y d-flex align-items-center justify-content-center p-1" title="Sumar 1 minuto">
+              <i class="material-symbols-outlined">exposure_plus_1</i>
+            </button>
+          </div>
+
+          <!-- Stopwatch state (hidden unless needed) -->
+          <div class="mb-3 d-none">
+            <h3 id="stopwatchStatus" class="text-uppercase"></h3>
+          </div>
+
+          <!-- Start / Reset controls -->
+          <div class="btn-group btn-group-lg w-100 mb-3 text-uppercase" role="group">
+            <button id="startPauseBtn" class="btn btn-outline-success w-100 text-uppercase icon-label-btn" title="Iniciar/Pausar">
+              <i class="material-symbols-outlined" id="startPauseIcon">play_arrow</i>
+              <span id="startPauseLabel" class="btn-label"></span>
+            </button>
+
+            <button id="resetBtn" class="btn btn-outline-info w-100 text-uppercase icon-label-btn" title="Reiniciar">
+              <i class="material-symbols-outlined">replay</i> <span class="btn-label">Reset</span>
+            </button>
+          </div>
+
+          <!-- Countdown range and preset selector -->
+          <div class="mb-3">
+            <label for="countdownInput" class="form-label">Duración de la parte</label>
+
+            <!-- Slider -->
+            <input type="range" class="form-range"  title="Duración en minutos" id="countdownInput" min="0" max="60" step="1">
+
+            <!-- Presets left, minutes right -->
+            <div class="d-flex justify-content-between align-items-center mt-2"  title="Duraciones comunes">
+              <select id="presetDuration" class="form-select form-select-sm w-auto">
+                <option value="">Presets</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="10">10 (Discurso, perlas)</option>
+                <option value="15">15</option>
+                <option value="30">30 (Estudio bíblico)</option>
+                <option value="60">60 (La Atalaya)</option>
+              </select>
+              <output id="countdownOutput" class="form-text text-end">0 min</output>
+            </div>
+
+<!-- Switch + Dropdown in one line -->
+<div id="programHeader" class="d-flex justify-content-between align-items-center mt-4 mb-2">
+
+  <div class="form-check form-switch mb-0" title="Cargar automáticamente la duración de cada parte del programa.">
+    <input class="form-check-input" type="checkbox" id="enableProgramSwitch">
+    <label class="form-check-label" for="enableProgramSwitch">Seguir programa</label>
+  </div>
+  <select id="programSelector" class="form-select form-select-sm w-auto" title="Seleccionar la reunión."></select>
+</div>
+
+<!-- Hidden program controls -->
+<div id="programUI" style="display: none;">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+<div class="btn-group btn-group-sm me-2" role="group">
+  <button id="prevItemBtn" class="btn btn-outline-light" title="Ir a la parte anterior del programa.">
+    <i class="material-symbols-outlined fs-6">chevron_left</i>
+  </button>
+  <button id="nextItemBtn" class="btn btn-outline-light" title="Ir a la siguiente parte del programa.">
+    <i class="material-symbols-outlined fs-6">chevron_right</i>
+  </button>
+</div>
+
+    <button id="resetProgramBtn" class="btn btn-outline-danger btn-sm" title="Limpiar todos los tiempos medidos en este programa.">
+      <i class="material-symbols-outlined fs-6">replay</i>
+    </button>
+  </div>
+
+  <div class="list-group small" id="programItems"></div>
+</div>
+
+
+
+
+
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚙️ Settings Modal -->
+  <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="settingsModalLabel">Configuración</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Reloj Section -->
+          <div class="mb-4">
+            <h6 class="fw-bold small text-uppercase mb-3">Reloj</h6>
+            <div class="form-check mb-2" title="Al activarlo, el cronómetro empezará desde el tiempo configurado y restará hasta llegar a cero.">
+              <input class="form-check-input" type="checkbox" id="countdownModeSwitch">
+              <label class="form-check-label" for="countdownModeSwitch">Cuenta regresiva</label>
+            </div>
+            <div class="form-check mb-2" title="Cambia automáticamente a la pantalla del cronómetro al iniciarlo, y vuelve a la hora al resetearlo.">
+              <input class="form-check-input" type="checkbox" id="autoShowSwitch">
+              <label class="form-check-label" for="autoShowSwitch">Mostrar automáticamente</label>
+            </div>
+            <div class="form-check mb-2" title="La pantalla parpadeará cuando falte un 15% del tiempo configurado para alertar que el tiempo está por terminar.">
+              <input class="form-check-input" type="checkbox" id="blinkBeforeOvertimeSwitch">
+              <label class="form-check-label" for="blinkBeforeOvertimeSwitch">Parpadear antes de tiempo excedido</label>
+            </div>
+            <div class="mb-3" title="Acción que realizará el reloj una vez que la cuenta regresiva llegue a cero.">
+              <label for="overtimeModeSelect" class="form-label small">Tiempo excedido</label>
+              <select id="overtimeModeSelect" class="form-select form-select-sm">
+                <option value="normal">Continuar</option>
+                <option value="blink">Parpadear</option>
+                <option value="sign">Cartel TIEMPO</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Conexión Section -->
+          <div class="mb-2">
+            <h6 class="fw-bold small text-uppercase mb-3">Conexión</h6>
+            <div class="mb-3">
+              <label class="form-label small text-muted">Direcciones para intentar conectar</label>
+              <div id="urlManagementList" class="list-group list-group-flush border rounded mb-2">
+                <!-- Populated by JS -->
+              </div>
+              
+              <div class="input-group input-group-sm">
+                <input type="text" id="newUrlInput" class="form-control" placeholder="ej: 192.168.1.50">
+                <button class="btn btn-outline-primary" type="button" id="addUrlBtn">
+                  <i class="material-symbols-outlined fs-6">add</i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" id="openScanBtn" title="Escanear Red">
+                  <i class="material-symbols-outlined fs-6">search</i>
+                </button>
+              </div>
+              <div id="newUrlFeedback" class="invalid-feedback d-none">
+                Ingresá una dirección válida.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-link text-secondary p-0 border-0 bg-transparent shadow-none position-relative" id="openUpdateBtn" title="Actualizar Firmware">
+              <i class="material-symbols-outlined fs-5">memory</i>
+              <span id="firmwareUpdateBadge" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none">
+                <span class="visually-hidden">Actualización disponible</span>
+              </span>
+            </button>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="button" class="btn btn-primary" id="saveSettingsBtn">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔍 Scan Network Modal -->
+  <div class="modal fade" id="scanModal" tabindex="-1" aria-labelledby="scanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="scanModalLabel">Escanear Red</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-3">Buscá el reloj en tu red local intentando conectar con las IPs comunes.</p>
+          
+          <div class="mb-3">
+            <label for="subnetSelect" class="form-label">Subred</label>
+            <select id="subnetSelect" class="form-select">
+              <option value="192.168.1.0/24">192.168.1.x</option>
+              <option value="192.168.0.0/24">192.168.0.x</option>
+              <option value="10.0.0.0/24">10.0.0.x</option>
+              <option value="all">Todas las comunes</option>
+              <option value="custom">Personalizada</option>
+            </select>
+          </div>
+
+          <div id="customSubnetDiv" class="mb-3 d-none">
+            <label for="customSubnetInput" class="form-label">Subred (ej: 192.168.100)</label>
+            <input type="text" id="customSubnetInput" class="form-control" placeholder="192.168.100">
+          </div>
+
+          <button id="startScanBtn" class="btn btn-primary w-100 mb-3">
+            <i class="material-symbols-outlined fs-6 me-1">search</i> Iniciar Escaneo
+          </button>
+
+          <div id="scanProgressDiv" class="d-none">
+            <div class="progress mb-2" style="height: 10px;">
+              <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <p class="small text-muted text-center" id="scanStatusText">Preparando...</p>
+          </div>
+
+          <div id="scanResults" class="list-group mt-3">
+            <!-- Results will appear here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⬆️ 1. Update Consent Modal -->
+  <div class="modal fade" id="updateConsentModal" tabindex="-1" aria-labelledby="updateConsentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="updateConsentModalLabel">Advertencia de Actualización</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="firmwareComparison" class="mb-3 border-bottom pb-2">
+            <p class="small text-secondary mb-0" id="deviceDate">Versión instalada: Cargando...</p>
+            <p class="small text-secondary mb-0" id="firmwareDate">Última versión: Cargando...</p>
+            <div id="updateAlert" class="mt-2 d-none"></div>
+          </div>
+
+          <div class="alert alert-info small py-2">
+            <i class="material-symbols-outlined fs-6 me-2">info</i>
+            <strong>Importante:</strong> Solo realizá esta actualización si el desarrollador te lo ha indicado expresamente.
+          </div>
+
+          <div class="alert alert-danger">
+            <i class="material-symbols-outlined fs-6 me-2">warning</i>
+            <strong>¡Atención!</strong> Una actualización fallida puede dejar el reloj inoperativo. Asegurate de tener una conexión estable y <strong>no desconectar la alimentación</strong> durante el proceso.
+          </div>
+
+          <div class="alert alert-warning small">
+            <h6 class="fw-bold mb-2"><i class="material-symbols-outlined fs-6 me-2">wifi_off</i>Aviso de Reconexión WiFi</h6>
+            <p class="mb-2">Los ajustes de WiFi se restablecerán. Seguí estos pasos para volver a conectar:</p>
+            <ol class="ps-3 mb-0">
+              <li>Esperá a que aparezca una red WiFi llamada <strong>"Reloj"</strong>.</li>
+              <li>Conectate a ella desde un dispositivo móvil.</li>
+              <li>Navegá a la dirección <code>http://192.168.4.1</code>.</li>
+              <li>Ingresá los detalles de tu WiFi (asegurate de que sea la misma red que usa esta computadora).</li>
+            </ol>
+          </div>
+          
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="confirmUpdateConsentCheck">
+            <label class="form-check-label small" for="confirmUpdateConsentCheck">
+              Entiendo los riesgos y deseo proceder.
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="proceedWithUpdateButton" disabled>Continuar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⬆️ 2. Update Method Modal -->
+  <div class="modal fade" id="updateMethodModal" tabindex="-1" aria-labelledby="updateMethodModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="updateMethodModalLabel">Actualizar Firmware</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body text-center">
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="material-symbols-outlined fs-6 me-2">info</i> Usá este método para subir el archivo manualmente.
+          </div>
+          <h6 class="fw-bold mb-3">Actualización Manual</h6>
+          <div class="d-grid gap-2 mb-3">
+            <a href="reloj.bin" download class="btn btn-outline-primary">
+              <i class="material-symbols-outlined fs-6 me-1">download</i> 1. Descargar reloj.bin
+            </a>
+            <a href="#" id="clockUpdateLink" target="_blank" class="btn btn-outline-danger">
+              <i class="material-symbols-outlined fs-6 me-1">open_in_new</i> 2. Ir a la página del reloj
+            </a>
+          </div>
+          
+          <div class="text-start small bg-body-tertiary p-3 rounded mt-3">
+            <h6 class="fw-bold d-block mb-2 small text-uppercase">Pasos en la página del reloj:</h6>
+            <ol class="ps-3 mb-0 text-muted" style="font-size: 0.85rem;">
+              <li>Buscá la sección llamada <strong>"OTA Update"</strong>.</li>
+              <li>Hacé clic en el botón para elegir archivo.</li>
+              <li>Seleccioná el archivo <code>reloj.bin</code> descargado.</li>
+              <li>Hacé clic en <strong>"Update"</strong> y esperá al 100%.</li>
+              <li>El reloj se reiniciará automáticamente.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📱 Share Modal -->
+  <div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content text-center p-3">
+        <div class="modal-header">
+          <h5 class="modal-title" id="settingsModalLabel">Compartir</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <canvas id="qrCanvas" class="mx-auto mb-3"></canvas>      
+        <p id="shareUrl" class="text-muted small text-break text-center mb-3"></p>
+        <a id="whatsappShare" href="#" target="_blank" class="btn btn-success w-100 mb-2">
+          <i class="material-symbols-outlined fs-6 me-1">chat</i> Compartir por WhatsApp
+        </a>
+        <button id="installBtn" class="btn btn-outline-primary w-100 mb-2 d-none">
+          <i class="material-symbols-outlined fs-6 me-1">download</i> Instalar como app
+        </button>
+        
+      </div>
+    </div>
+  </div>
+
+  <!-- 🌐 System Status Modal -->
+  <div class="modal fade" id="connectionModal" tabindex="-1" aria-labelledby="connectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-secondary-subtle py-2">
+          <h6 class="modal-title fw-bold text-uppercase small" id="connectionModalLabel">
+            <i class="material-symbols-outlined fs-6 me-2">info</i>Estado del Sistema
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body p-0">
+          <!-- Device Section (Merged Software, Hardware & Network) -->
+          <div class="p-3 border-bottom bg-body-tertiary position-relative">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold small text-muted text-uppercase mb-0" style="font-size: 0.7rem; letter-spacing: 0.05em;">Dispositivo</h6>
+              <button id="modalRebootBtn" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.65rem;" data-bs-toggle="tooltip" title="Reiniciar dispositivo. Se perderá la conexión temporalmente y se reseteará el cronómetro.">
+                <i class="material-symbols-outlined fs-6 me-1">power_settings_new</i>REINICIAR
+              </button>
+            </div>
+
+            <!-- Network Info -->
+            <div class="mb-4">
+              <h6 class="fw-bold small text-muted text-uppercase mb-2" style="font-size: 0.65rem; opacity: 0.7;">Red</h6>
+              <div class="d-flex align-items-center mb-3" data-bs-toggle="tooltip" data-bs-placement="right" title="Dirección única del dispositivo en la red local. Permite la comunicación directa entre el navegador y el reloj.">
+                <i class="material-symbols-outlined text-secondary me-3 fs-5">public</i>
+                <div class="flex-grow-1">
+                  <div class="small text-muted mb-0" style="font-size: 0.75rem;">Dirección IP</div>
+                  <div id="infoIP" class="fw-semibold">---</div>
+                </div>
+              </div>
+              <div class="d-flex align-items-start">
+                <i id="wifiSignalIcon" class="material-symbols-outlined text-secondary me-3 fs-5">wifi</i>
+                <div class="flex-grow-1">
+                  <div class="small text-muted mb-0" style="font-size: 0.75rem;">WiFi</div>
+                                  <div class="d-flex justify-content-between align-items-baseline">
+                                    <span id="infoSSID" class="fw-semibold" data-bs-toggle="tooltip" title="Nombre de la red Wi-Fi (SSID). El reloj debe estar en la misma red que este dispositivo.">---</span>
+                                    <span class="small text-muted" style="font-size: 0.7rem;" data-bs-toggle="tooltip" title="Calidad relativa de la señal (0-100%). Valores bajos pueden causar retrasos en las actualizaciones."><span id="infoWifiPct">0</span>%</span>
+                                  </div>
+                                  <button class="btn btn-sm btn-outline-primary py-0 px-2 mt-1" style="font-size: 0.65rem;" data-bs-toggle="modal" data-bs-target="#wifiConfigModal">
+                                    <i class="material-symbols-outlined fs-6 me-1">wifi</i>Cambiar Red
+                                  </button>
+                                  <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">                    <div data-bs-toggle="tooltip" title="Intensidad de señal (RSSI). Excelente: -30 a -60, Aceptable: -70, Pobre: < -80.">Señal: <span id="infoRSSI">---</span></div>
+                    <div data-bs-toggle="tooltip" title="Dirección física (MAC) del punto de acceso actual. Útil en redes con múltiples repetidores.">BSSID: <span id="infoBSSID">--:--:--:--:--:--</span></div>
+                    <div data-bs-toggle="tooltip" title="Identificador único permanente de la placa Wi-Fi del reloj.">MAC: <span id="infoMAC">--:--:--:--:--:--</span></div>
+                    <div data-bs-toggle="tooltip" title="Servidor encargado de traducir nombres de dominio. Vital para sincronizar la hora (NTP).">DNS: <span id="infoDNS">---</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Software/Hardware Info -->
+            <div class="mb-4">
+              <h6 class="fw-bold small text-muted text-uppercase mb-2" style="font-size: 0.65rem; opacity: 0.7;">Sistema</h6>
+              <div class="d-flex align-items-start mb-3">
+                <i class="material-symbols-outlined text-secondary me-3 fs-5">memory</i>
+                <div class="flex-grow-1">
+                  <div class="small text-muted mb-0" style="font-size: 0.75rem;">Versión de ESPHome</div>
+                  <div class="fw-semibold" id="infoVersion" data-bs-toggle="tooltip" title="Versión del framework ESPHome con el que se compiló el software actual.">---</div>
+                  <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
+                    <div data-bs-toggle="tooltip" title="Fecha y hora de generación del firmware. Permite confirmar si una actualización fue aplicada.">Compilado: <span id="infoBuildTime">--/--/--</span></div>
+                    <div data-bs-toggle="tooltip" title="Modelo del microcontrolador y su frecuencia de operación real medida.">Chip: <span id="infoChip">---</span> (<span id="infoCpuFreq">--</span>)</div>
+                    <div data-bs-toggle="tooltip" title="Especificaciones de la memoria flash donde reside el programa y la configuración.">Flash: <span id="infoFlash">---</span></div>
+                    <div data-bs-toggle="tooltip" title="Versiones de las librerías base (SDK), el núcleo de Arduino y el cargador de arranque.">Software: <span id="infoSDK">---</span></div>
+                    <div class="mt-1 border-top pt-1 opacity-75">
+                      <div data-bs-toggle="tooltip" title="Memoria RAM dinámica disponible (Heap). Si baja demasiado (< 5kB), el dispositivo puede ser inestable.">Heap Libre: <span id="infoHeapFree">---</span></div>
+                      <div data-bs-toggle="tooltip" title="El bloque contiguo de memoria más grande disponible. Determina si se pueden realizar asignaciones grandes.">Bloque Máx: <span id="infoHeapMax">---</span></div>
+                      <div data-bs-toggle="tooltip" title="Nivel de fragmentación de la memoria RAM (0-100%). Valores bajos indican una memoria más saludable.">Fragmentación: <span id="infoHeapFrag">---</span></div>
+                      <div data-bs-toggle="tooltip" title="Tiempo que tarda el procesador en completar un ciclo del bucle principal. Menos es mejor.">Loop: <span id="infoLoopTime">---</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-start">
+                <i class="material-symbols-outlined text-secondary me-3 fs-5">history</i>
+                <div class="flex-grow-1">
+                  <div class="small text-muted mb-0" style="font-size: 0.75rem;">Funcionando desde</div>
+                  <div id="infoUptime" class="fw-semibold" data-bs-toggle="tooltip" title="Fecha y hora del último inicio. Útil para detectar cortes de energía o reinicios inesperados.">--/--/-- --:--</div>
+                  <div class="small text-muted mt-1 font-monospace" style="font-size: 0.7rem; line-height: 1.2;">
+                    <div data-bs-toggle="tooltip" title="Tiempo total de operación continua desde el último inicio.">Tiempo: <span id="infoUptimeDuration">- d, - h, - m</span></div>
+                    <div data-bs-toggle="tooltip" title="Razón técnica del último arranque. Ayuda a distinguir entre un encendido normal, un reinicio por software o un fallo (Crash).">Motivo: <span id="infoReset" class="text-wrap">---</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Application Section -->
+          <div class="p-3 bg-dark-subtle rounded-bottom">
+            <h6 class="fw-bold small text-muted text-uppercase mb-3" style="font-size: 0.7rem; letter-spacing: 0.05em;">Aplicación</h6>
+            <div class="row g-2 text-center">
+              <div class="col-4" data-bs-toggle="tooltip" title="Paquetes de datos recibidos exitosamente desde el reloj en esta sesión. Confirma que la comunicación está activa.">
+                <div class="small text-muted mb-0" style="font-size: 0.65rem;">Mensajes</div>
+                <div id="infoMsgCount" class="fw-bold small">0</div>
+              </div>
+              <div class="col-4 border-start border-end border-secondary-subtle" data-bs-toggle="tooltip" title="Tiempo que esta pestaña del navegador ha estado abierta y conectada al reloj.">
+                <div class="small text-muted mb-0" style="font-size: 0.65rem;">Sesión</div>
+                <div id="infoAppUptime" class="fw-bold small">0m</div>
+              </div>
+              <div class="col-4" data-bs-toggle="tooltip" title="Tiempo transcurrido desde la última actualización recibida. Debe ser constante (< 1500ms).">
+                <div class="small text-muted mb-0" style="font-size: 0.65rem;">Latencia</div>
+                <div id="infoLatency" class="fw-bold small">0ms</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ❌ Reconnect Help Modal -->
+  <div class="modal fade" id="reconnectModal" tabindex="-1" aria-labelledby="reconnectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reconnectModalLabel">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Buscando conexión con el reloj
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-4">No se puede establecer una conexión con el reloj. Esto puede deberse a problemas de red, configuración o restricciones de seguridad del navegador. La siguiente información puede ayudarte a diagnosticar el problema:</p>
+          
+          <div id="diagAlertContainer"></div>
+          <div id="triedUrlsContainer" class="mb-3 d-none">
+            <p class="small text-muted mb-1">Direcciones intentadas:</p>
+            <div id="triedUrlsList" class="d-flex flex-wrap gap-1"></div>
+          </div>
+          <p class="mb-4">Las siguientes acciones pueden ayudarte a resolver el problema:</p>
+
+          <div class="accordion accordion-flush border rounded shadow-sm" id="reconnectAccordion">
+            <!-- Step 1: WiFi -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWifi">
+                  <i class="material-symbols-outlined fs-6 me-2">wifi</i> Verificar conexión a la red
+                </button>
+              </h2>
+              <div id="collapseWifi" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted">
+                  <p>Asegurate de que el reloj esté encendido y conectado a la misma red que este dispositivo.</p>
+                  <p>Podés verificar que el reloj se conectó <b>si muestra la hora actualizada.</b></p>
+                  <div class="bg-body-tertiary p-2 rounded">
+                    <strong>Si cambió la configuración del wifi, acabás de instalar el reloj o actualizaste el firmware, seguí estos pasos:</strong>
+                    <ol class="mb-0 ps-3 mt-1">
+                      <li>Buscá la red WiFi <strong>"Reloj"</strong> y conectate.</li>
+                      <li>Entrá a <code>http://192.168.4.1</code> para configurar el WiFi.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Permissions -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePerms">
+                  <i class="material-symbols-outlined fs-6 me-2">shield</i> Permitir contenido inseguro y acceso a la red local
+                </button>
+              </h2>
+              <div id="collapsePerms" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted">
+                  <p>Por seguridad el navegador bloquea conexiones a dispositivos dentro de la red local o sin encriptación. Seguí las siguientes instrucciones para permitir la conexión en tu navegador.</p>
+                  <div id="browserSpecificInstructions" class="alert alert-warning py-2 mb-0">
+                    <!-- Populated by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Adblock -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAdblock">
+                  <i class="material-symbols-outlined fs-6 me-2">extension</i> Desactivar plugins que bloquean el acceso
+                </button>
+              </h2>
+              <div id="collapseAdblock" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted">
+                  Extensiones como <strong>uBlock</strong> o <strong>AdBlock</strong> pueden interferir con las conexiones locales. Desactivalos para este sitio.
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: IP / Scan -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIP">
+                  <i class="material-symbols-outlined fs-6 me-2">settings_ethernet</i> Configurar dirección IP o escanear la red
+                </button>
+              </h2>
+              <div id="collapseIP" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted text-center">
+                  <p>Si verificaste los pasos anteriores pero sigue sin conectarse, podés intentar  ingresar la dirección IP del reloj en el diálogo de configuración. Ahí también se puede escanear la red para encontrar la dirección IP del reloj.</p>
+                  <p>Tené en cuenta que la dirección IP puede cambiar con el tiempo.</p>
+                  <button class="btn btn-sm btn-outline-primary" id="openSettingsBtn">
+                    Configuración
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 5: Developer -->
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDev">
+                  <i class="material-symbols-outlined fs-6 me-2">chat</i> Contactar al desarrollador
+                </button>
+              </h2>
+              <div id="collapseDev" class="accordion-collapse collapse" data-bs-parent="#reconnectAccordion">
+                <div class="accordion-body small text-muted">
+                  Sólo después de intentar todos los pasos anteriores varias veces, contactá al desarrollador para obtener soporte técnico.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="small text-center text-muted mt-4 mb-0">El sistema seguirá intentando conectar automáticamente.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📶 WiFi Config Modal -->
+  <div class="modal fade" id="wifiConfigModal" tabindex="-1" aria-labelledby="wifiConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="wifiConfigModalLabel">Conectar a nueva red WiFi</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info small py-2">
+            <i class="material-symbols-outlined fs-6 me-2">info</i>
+            El dispositivo intentará conectarse a la nueva red. Si falla, volverá automáticamente a la red actual.
+          </div>
+          <div class="mb-3">
+            <label for="wifiSsidInput" class="form-label small">Nombre de la red (SSID)</label>
+            <input type="text" id="wifiSsidInput" class="form-control" placeholder="Nombre de la red">
+          </div>
+          <div class="mb-3">
+            <label for="wifiPasswordInput" class="form-label small">Contraseña</label>
+            <div class="input-group">
+              <input type="password" id="wifiPasswordInput" class="form-control" placeholder="Contraseña">
+              <button class="btn btn-outline-secondary d-flex align-items-center" type="button" id="toggleWifiPassword">
+                <i class="material-symbols-outlined fs-6">visibility</i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="connectWifiBtn">Conectar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 📦 Bootstrap & app logic -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js?v1.2.1"></script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('✅ Service Worker registered:', reg.scope))
+      .catch(err => console.warn('❌ Service Worker registration failed:', err));
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1008 @@
+/* ------------------------------------------
+  Variables & Theme
+------------------------------------------- */
+:root {
+  /* Core Palette (RGB for opacity control) */
+  --red-rgb: 220, 53, 69;    /* Bootstrap Danger */
+  --green-rgb: 40, 167, 69;  /* Success */
+  --info-rgb: 13, 202, 240;  /* Bootstrap Info */
+  --white-rgb: 255, 255, 255;
+  --black-rgb: 0, 0, 0;
+  --dark-rgb: 33, 37, 41;    /* Gray-900 */
+  --amber-rgb: 255, 170, 0;
+
+  /* Theme Colors */
+  --color-red: rgb(var(--red-rgb));
+  --color-green: rgb(var(--green-rgb));
+  --color-info: rgb(var(--info-rgb));
+  --color-amber: rgb(var(--amber-rgb));
+  --color-white: rgba(var(--white-rgb), 0.75);
+  --color-black: rgb(var(--black-rgb));
+  --color-dark: rgb(var(--dark-rgb));
+  
+  /* LED Vibrant Colors (Pure for displays) */
+  --led-red-rgb: 255, 0, 0;
+  --color-led-red: rgb(var(--led-red-rgb));
+  --color-led-red-glow: rgba(var(--led-red-rgb), 0.5);
+  
+  /* UI Elements */
+  --display-bg: var(--color-black);
+  --display-border: #808080;
+  
+  --topbar-bg: rgba(25, 67, 75, 0.5);
+  --topbar-blur: 8px;
+  --topbar-muted: rgba(var(--white-rgb), 0.25);
+  --topbar-border: rgba(var(--white-rgb), 0.05);
+  
+  --transition-speed: 0.2s;
+  --transition-func: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Unified Button States */
+  --btn-bg: rgba(var(--info-rgb), 0.1);
+  --btn-border: rgba(var(--info-rgb), 0.5);
+  --btn-text: var(--color-white);
+  
+  --btn-hover-bg: rgba(var(--red-rgb), 0.8);
+  --btn-hover-border: var(--color-red);
+  
+  --btn-active-bg: var(--color-red);
+  --btn-active-border: var(--color-red);
+  --btn-active-shadow: 0 0 15px rgba(var(--red-rgb), 0.7), 0 0 30px rgba(var(--red-rgb), 0.4);
+  
+  --btn-waiting-bg: rgba(var(--info-rgb), 0.2);
+  --btn-waiting-border: var(--color-info);
+
+  /* Status LEDs */
+  --led-rx-off: #06200b;
+  --led-tx-off: #2b1d00;
+  --led-red-glow: rgba(var(--red-rgb), 0.4);
+
+  accent-color: var(--color-info);
+}
+
+/* ------------------------------------------
+  Icon Styling (Material Symbols Outlined)
+------------------------------------------- */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: 300;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  vertical-align: middle;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300,
+    'GRAD' 0,
+    'opsz' 24;
+  
+  /* Smooth load transition */
+  animation: icon-fade-in 0.5s ease-out;
+}
+
+@keyframes icon-fade-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ------------------------------------------
+  Dropdown Toggle Customization
+------------------------------------------- */
+.dropdown-toggle::after {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0;
+  border-top: 0.4em solid;
+  border-right: 0.4em solid transparent;
+  border-left: 0.4em solid transparent;
+}
+
+/* ------------------------------------------
+  Thematic UI Elements (Sliders & Switches)
+------------------------------------------- */
+.form-range::-webkit-slider-thumb {
+  background-color: var(--bs-info);
+}
+.form-range::-moz-range-thumb {
+  background-color: var(--bs-info);
+}
+.form-range::-ms-thumb {
+  background-color: var(--bs-info);
+}
+
+.form-check-input:checked {
+  background-color: var(--bs-info);
+  border-color: var(--bs-info);
+}
+
+.form-check-input:focus {
+  border-color: var(--bs-info);
+  box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus,
+.list-group-item-action:hover,
+.list-group-item-action:focus {
+  background-color: var(--bs-danger) !important;
+  color: var(--color-white) !important;
+}
+
+.dropdown-item.active,
+.dropdown-item:active,
+.list-group-item.active,
+.program-item.active {
+  background-color: var(--bs-info) !important;
+  border-color: var(--bs-info) !important;
+  color: var(--color-white) !important;
+}
+
+.form-select {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-info);
+  transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+}
+
+.form-select:hover {
+  border-color: var(--bs-danger);
+}
+
+.form-select:focus {
+  border-color: var(--bs-info);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  box-shadow: 0 0 0 0.25rem rgba(13, 202, 240, 0.25);
+}
+
+/* Style the native option list where supported */
+select option {
+  background-color: var(--color-dark-gray);
+  color: var(--color-white);
+}
+
+.dropdown-menu {
+  background-color: var(--color-dark-gray);
+  border: 1px solid var(--bs-info);
+  box-shadow: 0 0.5rem 1rem var(--color-shadow-black);
+}
+
+/* Base Layout */
+.btn-group > label {
+  flex: 1 1 0;
+  text-align: center;
+}
+
+/* ------------------------------------------
+  Font Imports
+------------------------------------------- */
+@import url('https://fonts.cdnfonts.com/css/led-calculator');
+
+html {
+  scroll-padding-top: 70px; /* Account for sticky topbar height */
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  overflow-x: hidden;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.container {
+  max-width: 1000px;
+}
+
+h1, h2, h3, h4, h5, h6, strong, b, .fw-bold, .fw-semibold {
+  font-weight: 600 !important;
+}
+
+/* ------------------------------------------
+  Display Panel Styling
+------------------------------------------- */
+.app-panel {
+  container-type: inline-size;
+}
+
+.pantalla-box {
+  contain: layout paint;
+  width: 75%;
+  height: 1.3em; 
+  background-color: var(--display-bg);
+  color: var(--color-led-red);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-family: 'LED Calculator', monospace;
+  /* Font size reduced by 10% (17.5 * 0.9 = 15.75) */
+  font-size: clamp(1.6rem, 15.75cqi, 100px); 
+  margin: 5px auto 10px auto;
+  padding: 0 0.5rem;
+  border: 3px solid var(--display-border);
+  border-radius: 0.5rem;
+  text-shadow: 0 0 3px var(--color-led-red), 0 0 15px var(--color-led-red-glow);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* For long text, we align to start so the padding-left: 100% pushes text to the right edge */
+.pantalla-box.is-scrolling {
+  justify-content: flex-start;
+}
+
+/* Ticker scrolling effect */
+.pantalla-scroll {
+  display: inline-block;
+  white-space: nowrap;
+  animation: ticker 15s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ticker {
+  0%   { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Special mode: Blinking display */
+.pantalla-blink {
+  opacity: var(--blink-opacity, 1);
+}
+
+/* Consolidated soft blink animation (kept for reference or other uses) */
+@keyframes blink-soft {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0.5; }
+}
+
+/* ------------------------------------------
+  Stopwatch Display
+------------------------------------------- */
+.cronometro {
+  contain: layout paint;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-family: 'LED Calculator', monospace;
+  font-size: clamp(1.6rem, 15.75cqi, 100px); 
+  text-align: center;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  color: var(--bs-info);
+  text-shadow: 0 0 3px var(--bs-info), 0 0 15px rgba(13, 202, 240, 0.3);
+}
+
+/* Colon blink effect while stopwatch is running */
+body[data-stopwatch-state="running"] .cronometro span.colon {
+  opacity: var(--blink-opacity, 1);
+}
+
+/* Whole stopwatch blinks when paused */
+.stopwatch-blink {
+  opacity: var(--blink-opacity, 1);
+}
+
+/* ------------------------------------------
+  Reveal Buttons (Icons that show as buttons on hover)
+------------------------------------------- */
+.btn-reveal:not(:hover) {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Ensure the button is visible if the hidden checkbox is checked (toggle state) */
+.btn-check:checked + .btn-reveal:not(:hover) {
+  background-color: var(--bs-danger) !important;
+  border-color: var(--bs-danger) !important;
+  color: white !important;
+  opacity: 1 !important;
+}
+
+/* Specific Glow for Blink Button (Illuminated effect) */
+#blinkSwitch:checked + label {
+  background-color: var(--bs-danger) !important;
+  border-color: var(--bs-danger) !important;
+  box-shadow: 0 0 15px rgba(220, 53, 69, 0.7), 0 0 30px rgba(220, 53, 69, 0.4) !important;
+  color: white !important;
+  text-shadow: 0 0 5px white;
+}
+
+.btn-reveal {
+  transition: all 0.2s ease;
+}
+
+/* Icon Label Buttons */
+.icon-label-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  padding: 0.75rem;
+  font-weight: 600;
+}
+
+/* Control Group Heights (Narrowed to direct children to avoid nesting issues) */
+#panel-pantalla .btn-group > .btn,
+#panel-pantalla .btn-group > label,
+#panel-crono .btn-group-lg > .btn,
+#panel-crono .btn-group-lg > label {
+  height: 100% !important;
+  flex: 1 1 0;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#panel-pantalla .btn-group,
+#panel-crono .btn-group-lg {
+  height: 5.5em; /* Unified group height */
+}
+
+.icon-label-btn i {
+  font-size: 2.5rem;
+  margin-bottom: 0.1rem;
+  font-weight: 600;
+}
+
+/* ------------------------------------------
+  Blur State Styling (used when disconnected)
+------------------------------------------- */
+.blurred {
+  filter: blur(1px);
+  opacity: 0.5;
+}
+
+/* ------------------------------------------
+  Optional Custom Display Button States (commented)
+------------------------------------------- */
+/*
+.btn-check:checked + .btn-display {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.btn-display {
+  background-color: #0dcaf0;
+  color: white;
+  border-color: #0dcaf0;
+}
+*/
+
+#clockTime {
+  font-weight: 600;
+  color: var(--bs-info);
+}
+
+/* Circular Reveal Buttons (+1, -1, Blink) */
+#blinkSwitch + label,
+#decreaseBtn,
+#increaseBtn {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  flex: none !important; /* Prevent stretching in flex containers */
+}
+
+#blinkSwitch + label i,
+#decreaseBtn i,
+#increaseBtn i {
+  font-size: 1.5rem;
+  margin: 0;
+}
+#stopwatchTime.cronometro {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+  line-height: 1.2;
+}
+
+/* === UNIVERSAL BUTTON STYLE === */
+
+.btn {
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  transition: all var(--transition-speed) var(--transition-func);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Hover & Focus - Unified for all control buttons */
+.btn:hover,
+.btn:focus-visible,
+.btn-reveal:hover {
+  background-color: var(--btn-hover-bg) !important;
+  border-color: var(--btn-hover-border) !important;
+  color: var(--color-pure-white) !important;
+  box-shadow: 0 0 12px rgba(220, 53, 69, 0.4);
+  outline: none;
+  z-index: 2; /* Ensure hover state stays on top in groups */
+}
+
+/* Active / Checked State (Mode Buttons) */
+.btn-check:checked + .btn,
+.btn.active,
+.btn:active:not(.btn-command-sent) {
+  background-color: var(--btn-active-bg) !important;
+  border-color: var(--btn-active-border) !important;
+  color: var(--color-pure-white) !important;
+  box-shadow: var(--btn-active-shadow);
+}
+
+/* Specific button overrides to ensure unification over Bootstrap classes */
+#panel-pantalla .btn,
+#panel-crono .btn {
+  border-width: 1px;
+}
+
+/* Waiting State (Command Sent) */
+.btn-command-sent {
+  background-color: var(--btn-waiting-bg) !important;
+  border-color: var(--btn-waiting-border) !important;
+  color: var(--btn-waiting-border) !important;
+  cursor: wait;
+  pointer-events: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-command-sent::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.15), 
+    transparent
+  );
+  animation: wave-sweep 1.2s infinite;
+}
+
+/* Icon overrides for consistent colors */
+.btn i { color: inherit; transition: color var(--transition-speed) ease; }
+
+/* Special Buttons (Share, Settings) */
+#shareBtn i,
+#settingsBtn i {
+  color: var(--bs-info);
+}
+
+#shareBtn:hover i,
+#settingsBtn:hover i {
+  color: white;
+}
+
+/* Prevent icon and link underlining */
+.material-symbols-outlined,
+a,
+a:hover,
+.btn,
+.btn:hover {
+  text-decoration: none !important;
+}
+
+/* Modal Buttons - applied unified UI colors */
+.modal-footer .btn-secondary { 
+  background-color: rgba(var(--white-rgb), 0.1); 
+  border-color: rgba(var(--white-rgb), 0.2); 
+  color: var(--color-white);
+}
+
+.modal-footer .btn-primary { 
+  background-color: var(--btn-bg); 
+  border-color: var(--btn-border);
+  color: var(--color-white);
+}
+
+.modal-footer .btn-primary:hover {
+  background-color: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
+}
+
+.modal-footer .btn-danger {
+  background-color: rgba(var(--red-rgb), 0.2);
+  border-color: rgba(var(--red-rgb), 0.5);
+  color: var(--color-white);
+}
+
+.modal-footer .btn-danger:hover {
+  background-color: var(--color-red);
+  border-color: var(--color-red);
+}
+
+/* Rounded pill buttons like connection status */
+.badge.rounded-pill {
+  font-weight: 600;
+}
+
+/* Optional: slight size normalization */
+.btn-sm, .btn {
+  font-size: 0.9rem;
+}
+.panel-title {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  text-align: center;
+  color: var(--color-white) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important; /* Reduced spacing */
+}
+
+.small-seconds {
+  font-size: 0.6em;
+  margin-left: 0.2em;
+}
+
+.panel-blur {
+  filter: blur(3px);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Blink animation */
+@keyframes blink {
+  50% { opacity: 0.3; }
+}
+
+.blinking {
+  animation: blink-soft 1s linear infinite;
+}
+
+.btn-command-sent {
+  position: relative;
+  overflow: hidden;
+  pointer-events: none; /* Prevent double clicks */
+  filter: brightness(1.1);
+}
+
+.btn-command-sent::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: wave-sweep 1.2s infinite;
+}
+
+@keyframes wave-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Darker text for warning pill */
+.connection-warning {
+  color: #212529 !important; /* Bootstrap's text-dark */
+}
+
+.page-title, .clock-container, .mini-displays {
+  transition: all var(--transition-speed) var(--transition-func);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.topbar {
+  background-color: var(--topbar-bg);
+  backdrop-filter: blur(var(--topbar-blur));
+  -webkit-backdrop-filter: blur(var(--topbar-blur));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  z-index: 1020;                            /* above content */
+}
+
+.topbar-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+}
+
+.mini-displays {
+  margin-left: 1rem;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.mini-led {
+  font-family: 'LED Calculator', monospace;
+  color: var(--bs-info);
+  font-size: 1.35rem;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.mini-displays i,
+.clock-container i {
+  font-size: 1rem;
+  color: var(--topbar-muted) !important;
+}
+
+/* ------------------------------------------
+  Status LEDs (RX/TX)
+------------------------------------------- */
+.status-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: background-color 0.1s ease, box-shadow 0.1s ease;
+  background-color: var(--led-tx-off); /* Default off color */
+}
+
+.led-rx {
+  background-color: var(--led-rx-off);
+}
+
+.led-tx {
+  background-color: var(--led-tx-off);
+}
+
+.led-info {
+  background-color: var(--led-rx-off); /* Muted off state */
+}
+
+.led-rx.active {
+  background-color: var(--color-info) !important;
+  box-shadow: 0 0 8px var(--color-info) !important;
+}
+
+.led-tx.active {
+  background-color: var(--color-red) !important;
+  box-shadow: 0 0 8px var(--color-red) !important;
+}
+
+.led-info.active {
+  background-color: var(--color-info) !important;
+  box-shadow: 0 0 8px var(--color-info) !important;
+}
+
+.led-info.active + .led-label {
+  color: var(--color-white) !important;
+  opacity: 1;
+}
+
+.led-flicker {
+  animation: led-flicker 0.1s infinite alternate;
+}
+
+@keyframes led-flicker {
+  from { opacity: 1; }
+  to { opacity: 0.4; }
+}
+
+.led-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--topbar-muted);
+  min-width: 14px;
+  text-align: center;
+  user-select: none;
+  display: inline-block;
+}
+
+.indicator-container {
+  font-size: 0.5rem;
+  line-height: 1;
+  cursor: help;
+  opacity: 0.8;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* ------------------------------------------
+  Collapsible Status Pill
+------------------------------------------- */
+.status-pill {
+  transition: all 0.4s var(--transition-func);
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 200px; /* Large enough for full text */
+  display: inline-flex !important;
+  align-items: center;
+}
+
+.status-pill .status-text {
+  transition: opacity var(--transition-speed) ease;
+  opacity: 1;
+}
+
+.status-pill.collapsed {
+  display: none !important;
+}
+
+/* Dropdown Customization */
+.dropdown-menu {
+  background-color: var(--color-dark) !important;
+  border: 1px solid var(--btn-border) !important;
+  box-shadow: 0 0.5rem 1rem var(--color-shadow-black) !important;
+  z-index: 1100;
+}
+
+/* Bootstrap Input Group Height Fix */
+.input-group .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: auto; /* Allow bootstrap flexbox to control height */
+  border-width: 1px;
+}
+
+#sendCustomSignBtn {
+  min-width: 3.5rem;
+}
+
+.program-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+.program-item:nth-child(odd) {
+  background-color: var(--bs-body-bg);
+}
+.program-item:nth-child(even) {
+  background-color: var(--bs-secondary-bg-subtle);
+}
+.program-item span {
+  flex: 1;
+}
+.program-item .order {
+  flex: 0 0 1.5em;
+}
+.program-item .assigned,
+.program-item .measured {
+  flex: 0 0 4em;
+  text-align: end;
+}
+
+/* ------------------------------------------
+  Hamburger Menu & Adaptive Items
+------------------------------------------- */
+.menu-item-adaptive {
+  display: none !important;
+}
+
+/* Show adaptive menu items when their topbar counterparts are hidden */
+@media (max-width: 767.98px) {
+  /* Connection status always visible in menu on mobile */
+  li.menu-item-adaptive {
+    display: block !important;
+  }
+}
+
+/* Hide the clock specifically if it's visible in topbar (wide) */
+@media (min-width: 525.01px) {
+  .topbar:not(:has(#connectionStatus:not(.collapsed))) .menu-clock-container {
+    display: none !important;
+  }
+}
+
+/* ------------------------------------------
+  Hamburger Menu & Adaptive Items
+------------------------------------------- */
+.menu-item-adaptive {
+  display: none !important;
+}
+
+#topbarMenuBtn i {
+  transition: transform 0.3s ease;
+}
+
+#topbarMenuBtn[aria-expanded="true"] i {
+  transform: rotate(90deg);
+}
+
+.dropdown-menu .dropdown-item i {
+  color: var(--bs-info);
+  width: 24px;
+  text-align: center;
+}
+
+/* Show adaptive menu items when their topbar counterparts are hidden */
+@media (max-width: 767.98px) {
+  li.menu-item-adaptive {
+    display: block !important;
+  }
+}
+
+/* Hide the menu clock specifically if it's visible in topbar (wide) */
+@media (min-width: 525.01px) {
+  .topbar:not(:has(#connectionStatus:not(.collapsed))) .menu-clock-container {
+    display: none !important;
+  }
+}
+
+/* ------------------------------------------
+  Hamburger Menu & Adaptive Items
+------------------------------------------- */
+.menu-item-adaptive {
+  display: none !important;
+}
+
+#topbarMenuBtn i {
+  color: var(--color-white) !important; /* 25% transparent white from variables */
+  transition: transform 0.3s ease;
+}
+
+#topbarMenuBtn[aria-expanded="true"] i {
+  transform: rotate(90deg);
+}
+
+.dropdown-menu .dropdown-item i {
+  color: var(--bs-info);
+  width: 24px;
+  text-align: center;
+}
+
+/* Show adaptive menu items when their topbar counterparts are hidden */
+@media (max-width: 767.98px) {
+  li.menu-item-adaptive {
+    display: block !important;
+  }
+}
+
+/* Hide the menu clock specifically if it's visible in topbar (wide) */
+@media (min-width: 525.01px) {
+  .topbar:not(:has(#connectionStatus:not(.collapsed))) .menu-clock-container {
+    display: none !important;
+  }
+}
+
+/* ------------------------------------------
+  Mobile Optimization
+------------------------------------------- */
+@media (max-width: 767.98px) {
+  .app-panel {
+    border: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    padding-top: 0.1rem !important;
+    padding-bottom: 0 !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  .btn-label {
+    display: none !important;
+  }
+
+  #connectionStatus:not(.collapsed) .status-text {
+    display: inline !important;
+  }
+
+  /* Force topbar layout on mobile */
+  .topbar-grid {
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+  }
+
+  .page-title {
+    max-width: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .mini-displays {
+    display: flex !important;
+    opacity: 1 !important;
+    margin-left: 0 !important;
+  }
+
+  #connectionStatus:not(.collapsed) {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.5rem 1rem !important;
+    flex: 1;
+    max-width: none !important;
+  }
+
+  /* Hide clock when pill is visible on mobile */
+  .topbar:has(#connectionStatus:not(.collapsed)) .clock-container {
+    display: none !important;
+  }
+
+  .led-label {
+    /* visible */
+  }
+
+  .icon-label-btn {
+    height: 4em !important;
+  }
+
+  .icon-label-btn i {
+    margin-bottom: 0 !important;
+    font-size: 2.5rem !important;
+  }
+  
+  #panel-pantalla .btn-group,
+  #panel-crono .btn-group-lg {
+    height: 4em !important;
+  }
+  
+  .pantalla-box {
+    max-width: 100% !important;
+    border-width: 2px !important;
+  }
+
+  .panel-title {
+    position: static !important;
+    transform: none !important;
+    text-align: center !important;
+    margin-bottom: 0.5rem !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 1rem;
+  }
+
+  .panel-title::before,
+  .panel-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ------------------------------------------
+  Extra Narrow Screens
+------------------------------------------- */
+@media (max-width: 525px) {
+  .clock-container {
+    max-width: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+}
