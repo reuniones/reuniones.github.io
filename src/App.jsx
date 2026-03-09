@@ -7,13 +7,16 @@ const App = () => {
   const [personas, setPersonas] = useState([]);
   const [reuniones, setReuniones] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
+  const [salas, setSalas] = useState([]);
   const [config, setConfig] = useState(dataService.getConfig());
   const [showModal, setShowModal] = useState(false);
   const [showReunionModal, setShowReunionModal] = useState(false);
   const [showPlantillaModal, setShowPlantillaModal] = useState(false);
+  const [showSalaModal, setShowSalaModal] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
   const [editingPlantilla, setEditingPlantilla] = useState(null);
+  const [editingSala, setEditingSala] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,9 +26,11 @@ const App = () => {
     const p = await dataService.queryData('Personas', '$ ^(nombre)');
     const r = await dataService.getReuniones();
     const pl = await dataService.getPlantillas();
+    const sl = await dataService.getSalas();
     setPersonas(p || []);
     setReuniones(r || []);
     setPlantillas(pl || []);
+    setSalas(sl.length > 0 ? sl : [{ id: 1, nombre: 'Principal' }]);
     setLoading(false);
   };
 
@@ -192,6 +197,27 @@ const App = () => {
     }
   };
 
+  const handleSaveSala = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newSala = {
+      id: editingSala?.id || Date.now(),
+      nombre: formData.get('nombre')
+    };
+    const updated = await dataService.saveSala(newSala);
+    setSalas(updated);
+    setShowSalaModal(false);
+    setEditingSala(null);
+  };
+
+  const handleDeleteSala = async (id) => {
+    if (window.confirm('¿Eliminar esta sala?')) {
+      const updated = salas.filter(s => s.id !== id);
+      setSalas(updated);
+      localStorage.setItem('jw_reuniones_salas', JSON.stringify(updated));
+    }
+  };
+
   const getPersonaName = (id) => personas.find(p => p.id === Number(id))?.nombre || 'Sin asignar';
 
   return (
@@ -205,6 +231,7 @@ const App = () => {
           <a href="#" className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Tablero</a>
           <a href="#" className={`nav-link ${activeTab === 'personas' ? 'active' : ''}`} onClick={() => setActiveTab('personas')}>Personas</a>
           <a href="#" className={`nav-link ${activeTab === 'plantillas' ? 'active' : ''}`} onClick={() => setActiveTab('plantillas')}>Plantillas</a>
+          <a href="#" className={`nav-link ${activeTab === 'salas' ? 'active' : ''}`} onClick={() => setActiveTab('salas')}>Salas</a>
           <a href="#" className={`nav-link ${activeTab === 'reuniones' ? 'active' : ''}`} onClick={() => setActiveTab('reuniones')}>Programación</a>
           <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
             <button className="nav-link" style={{ width: '100%', textAlign: 'left', background: 'none' }} onClick={() => setShowConfigModal(true)}>
@@ -220,7 +247,8 @@ const App = () => {
             <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
               {activeTab === 'dashboard' ? 'Tablero General' :
                 activeTab === 'personas' ? 'Gestión de Personas' :
-                  activeTab === 'plantillas' ? 'Plantillas de Reunión' : 'Programación Semanal'}
+                  activeTab === 'plantillas' ? 'Plantillas de Reunión' :
+                    activeTab === 'salas' ? 'Gestión de Salas' : 'Programación Semanal'}
             </h1>
             <p style={{ color: 'var(--text-muted)' }}>
               {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
@@ -232,6 +260,9 @@ const App = () => {
             )}
             {activeTab === 'plantillas' && (
               <button className="primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva Plantilla</button>
+            )}
+            {activeTab === 'salas' && (
+              <button className="primary" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Nueva Sala</button>
             )}
             {activeTab === 'reuniones' && (
               <button className="primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva Reunión</button>
@@ -316,6 +347,29 @@ const App = () => {
             </div>
           )}
 
+          {activeTab === 'salas' && (
+            <div className="glass" style={{ overflowX: 'auto' }}>
+              <table className="custom-table">
+                <thead>
+                  <tr><th>Nombre de Sala</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {salas.map(s => (
+                    <tr key={s.id}>
+                      <td style={{ fontWeight: '600' }}>{s.nombre}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className="btn-icon" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>✎</button>
+                          <button className="btn-icon danger" onClick={() => handleDeleteSala(s.id)}>🗑</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {activeTab === 'reuniones' && (
             <div style={{ display: 'grid', gridTemplateColumns: selectedReunion ? '300px 1fr' : '1fr', gap: '1.5rem' }}>
               <div className="glass" style={{ padding: '1.5rem' }}>
@@ -389,6 +443,9 @@ const App = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <span style={{ fontWeight: '500' }}>{parte.nombre}</span>
+                                    <small className="badge" style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.1)' }}>
+                                      {salas.find(s => s.id == parte.salaId)?.nombre || 'Principal'}
+                                    </small>
                                     <button className="btn-icon" style={{ fontSize: '0.7rem', padding: '0.1rem' }} onClick={() => {
                                       const datos = JSON.parse(selectedReunion.datos_reunion);
                                       const n = prompt('Nombre de la parte:', parte.nombre);
@@ -398,7 +455,21 @@ const App = () => {
                                       }
                                     }}>✎</button>
                                   </div>
-                                  {parte.duracion && <small style={{ color: 'var(--text-muted)' }}>{parte.duracion} min</small>}
+                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <select
+                                      className="minimal-select"
+                                      style={{ fontSize: '0.7rem', padding: '0', background: 'none', border: 'none', color: 'var(--text-muted)' }}
+                                      value={parte.salaId || 1}
+                                      onChange={(e) => {
+                                        const datos = JSON.parse(selectedReunion.datos_reunion);
+                                        datos.secciones[sIdx].partes[pIdx].salaId = e.target.value;
+                                        handleUpdateWeeklyStructure(datos);
+                                      }}
+                                    >
+                                      {salas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                                    </select>
+                                    {parte.duracion && <small style={{ color: 'var(--text-muted)' }}>{parte.duracion} min</small>}
+                                  </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                   <span style={{ color: asignadoId ? 'var(--text)' : 'var(--danger)', fontSize: '0.9rem', marginRight: '0.5rem' }}>
@@ -562,17 +633,17 @@ const App = () => {
                                 setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
                               }}
                             />
-                            <input
-                              type="number"
-                              placeholder="Min"
-                              style={{ width: '60px' }}
-                              value={p.duracion}
+                            <select
+                              style={{ width: '120px', padding: '0.2rem', fontSize: '0.8rem' }}
+                              value={p.salaId || 1}
                               onChange={(e) => {
                                 const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                est[sIdx].partes[pIdx].duracion = e.target.value;
+                                est[sIdx].partes[pIdx].salaId = e.target.value;
                                 setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
                               }}
-                            />
+                            >
+                              {salas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                            </select>
                             <button type="button" className="danger" onClick={() => {
                               const est = JSON.parse(editingPlantilla?.estructura || '[]');
                               est[sIdx].partes.splice(pIdx, 1);
@@ -582,7 +653,7 @@ const App = () => {
                         ))}
                         <button type="button" onClick={() => {
                           const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                          est[sIdx].partes.push({ nombre: '', duracion: 5, id: Math.random().toString(36).substr(2, 9) });
+                          est[sIdx].partes.push({ nombre: '', salaId: 1, id: Math.random().toString(36).substr(2, 9) });
                           setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
                         }} style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>+ Añadir Parte</button>
                       </div>
@@ -597,6 +668,22 @@ const App = () => {
               </div>
 
               <div className="modal-actions"><button type="button" onClick={() => setShowPlantillaModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar Plantilla</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Salas */}
+      {showSalaModal && (
+        <div className="modal-overlay">
+          <div className="glass modal-content">
+            <h3>{editingSala ? 'Editar Sala' : 'Nueva Sala'}</h3>
+            <form onSubmit={handleSaveSala} style={{ marginTop: '1.5rem' }}>
+              <div className="form-group">
+                <label>Nombre de la Sala</label>
+                <input name="nombre" defaultValue={editingSala?.nombre} placeholder="Ej: Sala Principal, Sala B..." required />
+              </div>
+              <div className="modal-actions"><button type="button" onClick={() => setShowSalaModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar Sala</button></div>
             </form>
           </div>
         </div>

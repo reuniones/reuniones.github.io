@@ -5,6 +5,7 @@ const STORAGE_KEY_CONFIG = 'jw_reuniones_config';
 const STORAGE_KEY_PERSONAS = 'jw_reuniones_personas';
 const STORAGE_KEY_REUNIONES = 'jw_reuniones_reuniones';
 const STORAGE_KEY_PLANTILLAS = 'jw_reuniones_plantillas';
+const STORAGE_KEY_SALAS = 'jw_reuniones_salas';
 
 export const dataService = {
   getConfig: () => {
@@ -41,6 +42,7 @@ export const dataService = {
       { name: 'Personas', headers: ['id', 'nombre', 'genero', 'privilegios', 'habilidades'] },
       { name: 'Reuniones', headers: ['id', 'fecha', 'tipo', 'datos_reunion'] },
       { name: 'Plantillas', headers: ['id', 'nombre', 'tipo', 'estructura'] },
+      { name: 'Salas', headers: ['id', 'nombre'] },
       { name: 'Configuracion', headers: ['id', 'value'] }
     ];
 
@@ -84,7 +86,8 @@ export const dataService = {
     const keys = {
       'Personas': STORAGE_KEY_PERSONAS,
       'Reuniones': STORAGE_KEY_REUNIONES,
-      'Plantillas': STORAGE_KEY_PLANTILLAS
+      'Plantillas': STORAGE_KEY_PLANTILLAS,
+      'Salas': STORAGE_KEY_SALAS
     };
     if (keys[sheetName]) localStorage.removeItem(keys[sheetName]);
   },
@@ -144,11 +147,15 @@ export const dataService = {
   getPlantillas: () => dataService._get('Plantillas', STORAGE_KEY_PLANTILLAS),
   savePlantilla: (plantilla) => dataService._save('Plantillas', STORAGE_KEY_PLANTILLAS, plantilla),
 
+  getSalas: () => dataService._get('Salas', STORAGE_KEY_SALAS),
+  saveSala: (sala) => dataService._save('Salas', STORAGE_KEY_SALAS, sala),
+
   queryData: async (sheetName, expression) => {
     const data = await (
       sheetName === 'Personas' ? dataService.getPersonas() :
         sheetName === 'Reuniones' ? dataService.getReuniones() :
-          sheetName === 'Plantillas' ? dataService.getPlantillas() : null
+          sheetName === 'Plantillas' ? dataService.getPlantillas() :
+            sheetName === 'Salas' ? dataService.getSalas() : null
     );
     if (!data) return null;
     try {
