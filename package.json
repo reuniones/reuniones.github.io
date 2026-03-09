@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "build:reuniones": "vite build && powershell -Command \"Remove-Item -Recurse -Force ./reuniones/* -ErrorAction SilentlyContinue; Copy-Item -Recurse ./dist/* ./reuniones/\"",
+    "deploy:master": "npm run build:reuniones && git add reuniones/ && git commit -m 'Deploy to reuniones subfolder' && git push origin master"
   },
   "dependencies": {
     "jsonata": "^2.1.0",
