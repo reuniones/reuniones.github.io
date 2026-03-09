@@ -6,6 +6,7 @@ const STORAGE_KEY_PERSONAS = 'jw_reuniones_personas';
 const STORAGE_KEY_REUNIONES = 'jw_reuniones_reuniones';
 const STORAGE_KEY_PLANTILLAS = 'jw_reuniones_plantillas';
 const STORAGE_KEY_SALAS = 'jw_reuniones_salas';
+const STORAGE_KEY_TIPOS_ASIGNACION = 'jw_reuniones_tipos_asignacion';
 
 export const dataService = {
   getConfig: () => {
@@ -43,6 +44,7 @@ export const dataService = {
       { name: 'Reuniones', headers: ['id', 'fecha', 'tipo', 'datos_reunion'] },
       { name: 'Plantillas', headers: ['id', 'nombre', 'tipo', 'estructura'] },
       { name: 'Salas', headers: ['id', 'nombre'] },
+      { name: 'TiposAsignacion', headers: ['id', 'nombre'] },
       { name: 'Configuracion', headers: ['id', 'value'] }
     ];
 
@@ -87,7 +89,8 @@ export const dataService = {
       'Personas': STORAGE_KEY_PERSONAS,
       'Reuniones': STORAGE_KEY_REUNIONES,
       'Plantillas': STORAGE_KEY_PLANTILLAS,
-      'Salas': STORAGE_KEY_SALAS
+      'Salas': STORAGE_KEY_SALAS,
+      'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION
     };
     if (keys[sheetName]) localStorage.removeItem(keys[sheetName]);
   },
@@ -150,12 +153,16 @@ export const dataService = {
   getSalas: () => dataService._get('Salas', STORAGE_KEY_SALAS),
   saveSala: (sala) => dataService._save('Salas', STORAGE_KEY_SALAS, sala),
 
+  getTiposAsignacion: () => dataService._get('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION),
+  saveTipoAsignacion: (tipo) => dataService._save('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION, tipo),
+
   queryData: async (sheetName, expression) => {
     const data = await (
       sheetName === 'Personas' ? dataService.getPersonas() :
         sheetName === 'Reuniones' ? dataService.getReuniones() :
           sheetName === 'Plantillas' ? dataService.getPlantillas() :
-            sheetName === 'Salas' ? dataService.getSalas() : null
+            sheetName === 'Salas' ? dataService.getSalas() :
+              sheetName === 'TiposAsignacion' ? dataService.getTiposAsignacion() : null
     );
     if (!data) return null;
     try {

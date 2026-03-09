@@ -8,15 +8,18 @@ const App = () => {
   const [reuniones, setReuniones] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
   const [salas, setSalas] = useState([]);
+  const [tiposAsignacion, setTiposAsignacion] = useState([]);
   const [config, setConfig] = useState(dataService.getConfig());
   const [showModal, setShowModal] = useState(false);
   const [showReunionModal, setShowReunionModal] = useState(false);
   const [showPlantillaModal, setShowPlantillaModal] = useState(false);
   const [showSalaModal, setShowSalaModal] = useState(false);
+  const [showTipoAsignacionModal, setShowTipoAsignacionModal] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
   const [editingPlantilla, setEditingPlantilla] = useState(null);
   const [editingSala, setEditingSala] = useState(null);
+  const [editingTipoAsignacion, setEditingTipoAsignacion] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,10 +30,12 @@ const App = () => {
     const r = await dataService.getReuniones();
     const pl = await dataService.getPlantillas();
     const sl = await dataService.getSalas();
+    const ta = await dataService.getTiposAsignacion();
     setPersonas(p || []);
     setReuniones(r || []);
     setPlantillas(pl || []);
     setSalas(sl.length > 0 ? sl : [{ id: 1, nombre: 'Principal' }]);
+    setTiposAsignacion(ta || []);
     setLoading(false);
   };
 
@@ -62,15 +67,16 @@ const App = () => {
     const formData = new FormData(e.target);
     const habilidades = ['Lectura', 'Oración', 'Discursos', 'Tesoros', 'Perlas', 'Conversación']
       .filter(h => formData.get(h.toLowerCase()));
-
     const newPersona = {
       id: editingPersona?.id || Date.now(),
       nombre: formData.get('nombre'),
       genero: formData.get('genero'),
       privilegios: formData.get('privilegios'),
-      habilidades: habilidades
+      habilidades: formData.get('habilidades').split(',').map(s => s.trim()).filter(s => s),
+      asignaciones: Array.from(e.target.elements.asignaciones || [])
+        .filter(input => input.checked)
+        .map(input => input.value)
     };
-
     const updated = await dataService.savePersona(newPersona);
     setPersonas(updated);
     setShowModal(false);
@@ -218,6 +224,27 @@ const App = () => {
     }
   };
 
+  const handleSaveTipoAsignacion = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newTipo = {
+      id: editingTipoAsignacion?.id || Date.now(),
+      nombre: formData.get('nombre')
+    };
+    const updated = await dataService.saveTipoAsignacion(newTipo);
+    setTiposAsignacion(updated);
+    setShowTipoAsignacionModal(false);
+    setEditingTipoAsignacion(null);
+  };
+
+  const handleDeleteTipoAsignacion = async (id) => {
+    if (window.confirm('¿Eliminar este tipo de asignación?')) {
+      const updated = tiposAsignacion.filter(t => t.id !== id);
+      setTiposAsignacion(updated);
+      localStorage.setItem('jw_reuniones_tipos_asignacion', JSON.stringify(updated));
+    }
+  };
+
   const getPersonaName = (id) => personas.find(p => p.id === Number(id))?.nombre || 'Sin asignar';
 
   return (
@@ -232,6 +259,7 @@ const App = () => {
           <a href="#" className={`nav-link ${activeTab === 'personas' ? 'active' : ''}`} onClick={() => setActiveTab('personas')}>Personas</a>
           <a href="#" className={`nav-link ${activeTab === 'plantillas' ? 'active' : ''}`} onClick={() => setActiveTab('plantillas')}>Plantillas</a>
           <a href="#" className={`nav-link ${activeTab === 'salas' ? 'active' : ''}`} onClick={() => setActiveTab('salas')}>Salas</a>
+          <a href="#" className={`nav-link ${activeTab === 'tiposAsignacion' ? 'active' : ''}`} onClick={() => setActiveTab('tiposAsignacion')}>Asignaciones</a>
           <a href="#" className={`nav-link ${activeTab === 'reuniones' ? 'active' : ''}`} onClick={() => setActiveTab('reuniones')}>Programación</a>
           <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
             <button className="nav-link" style={{ width: '100%', textAlign: 'left', background: 'none' }} onClick={() => setShowConfigModal(true)}>
@@ -248,7 +276,8 @@ const App = () => {
               {activeTab === 'dashboard' ? 'Tablero General' :
                 activeTab === 'personas' ? 'Gestión de Personas' :
                   activeTab === 'plantillas' ? 'Plantillas de Reunión' :
-                    activeTab === 'salas' ? 'Gestión de Salas' : 'Programación Semanal'}
+                    activeTab === 'salas' ? 'Gestión de Salas' :
+                      activeTab === 'tiposAsignacion' ? 'Tipos de Asignación' : 'Programación Semanal'}
             </h1>
             <p style={{ color: 'var(--text-muted)' }}>
               {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
@@ -263,6 +292,9 @@ const App = () => {
             )}
             {activeTab === 'salas' && (
               <button className="primary" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Nueva Sala</button>
+            )}
+            {activeTab === 'tiposAsignacion' && (
+              <button className="primary" onClick={() => { setEditingTipoAsignacion(null); setShowTipoAsignacionModal(true); }}>+ Nuevo Tipo</button>
             )}
             {activeTab === 'reuniones' && (
               <button className="primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva Reunión</button>
@@ -370,6 +402,30 @@ const App = () => {
             </div>
           )}
 
+          {activeTab === 'tiposAsignacion' && (
+            <div className="glass" style={{ overflowX: 'auto' }}>
+              <table className="custom-table">
+                <thead>
+                  <tr><th>Nombre del Tipo</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {tiposAsignacion.map(t => (
+                    <tr key={t.id}>
+                      <td style={{ fontWeight: '600' }}>{t.nombre}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className="btn-icon" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>✎</button>
+                          <button className="btn-icon danger" onClick={() => handleDeleteTipoAsignacion(t.id)}>🗑</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {tiposAsignacion.length === 0 && <tr><td colSpan="2" style={{ textAlign: 'center' }}>No hay tipos definidos.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {activeTab === 'reuniones' && (
             <div style={{ display: 'grid', gridTemplateColumns: selectedReunion ? '300px 1fr' : '1fr', gap: '1.5rem' }}>
               <div className="glass" style={{ padding: '1.5rem' }}>
@@ -434,7 +490,14 @@ const App = () => {
                           {seccion.partes.map((parte, pIdx) => {
                             const asignadoId = parte.asignadoId;
                             const aptos = personas.filter(p => {
-                              if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') return p.genero === 'H';
+                              // Filtrado por Género (Oración/Lectura)
+                              if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') {
+                                if (p.genero !== 'H') return false;
+                              }
+                              // Filtrado por Tipo de Asignación
+                              if (parte.tipoAsignacionId) {
+                                return p.asignaciones?.includes(String(parte.tipoAsignacionId));
+                              }
                               return true;
                             });
 
@@ -504,7 +567,7 @@ const App = () => {
                     ))}
                     <button className="primary" style={{ padding: '1rem' }} onClick={() => {
                       const datos = JSON.parse(selectedReunion.datos_reunion);
-                      datos.secciones.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#6366f1', partes: [] });
+                      datos.secciones.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#6366f1', bgColor: 'transparent', partes: [] });
                       handleUpdateWeeklyStructure(datos);
                     }}>+ Añadir nueva sección a la semana</button>
                   </div>
@@ -527,10 +590,22 @@ const App = () => {
                 <div className="form-group" style={{ flex: 1 }}><label>Privilegios</label><select name="privilegios" defaultValue={editingPersona?.privilegios || 'Publicador'}><option>Publicador</option><option>Anciano</option><option>Siervo Ministerial</option><option>Precursor</option></select></div>
               </div>
               <div className="form-group">
-                <label>Habilidades</label>
-                <div className="checkbox-grid">
-                  {['Lectura', 'Oración', 'Discursos', 'Tesoros', 'Perlas', 'Conversación'].map(h => (
-                    <label key={h} className="checkbox-label"><input type="checkbox" name={h.toLowerCase()} defaultChecked={editingPersona?.habilidades?.includes(h)} /> {h}</label>
+                <label>Habilidades (separadas por coma)</label>
+                <input name="habilidades" defaultValue={editingPersona?.habilidades?.join(', ') || ''} placeholder="Ej: Lectura, Oración, Discursos" />
+              </div>
+              <div className="form-group">
+                <label>Tipos de Asignación (Apto para:)</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', maxHeight: '100px', overflowY: 'auto' }}>
+                  {tiposAsignacion.map(t => (
+                    <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                      <input
+                        type="checkbox"
+                        name="asignaciones"
+                        value={t.id}
+                        defaultChecked={editingPersona?.asignaciones?.includes(String(t.id))}
+                      />
+                      {t.nombre}
+                    </label>
                   ))}
                 </div>
               </div>
@@ -644,6 +719,18 @@ const App = () => {
                             >
                               {salas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                             </select>
+                            <select
+                              style={{ width: '150px', padding: '0.2rem', fontSize: '0.8rem' }}
+                              value={p.tipoAsignacionId || ''}
+                              onChange={(e) => {
+                                const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                                est[sIdx].partes[pIdx].tipoAsignacionId = e.target.value;
+                                setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                              }}
+                            >
+                              <option value="">Cualquier tipo...</option>
+                              {tiposAsignacion.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                            </select>
                             <button type="button" className="danger" onClick={() => {
                               const est = JSON.parse(editingPlantilla?.estructura || '[]');
                               est[sIdx].partes.splice(pIdx, 1);
@@ -661,13 +748,29 @@ const App = () => {
                   ))}
                   <button type="button" className="primary" onClick={() => {
                     const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                    est.push({ nombre: 'Nueva Sección', showHeader: true, headerColor: '#4f46e5', bgColor: 'transparent', partes: [] });
+                    est.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#4f46e5', bgColor: 'transparent', partes: [] });
                     setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
                   }}>+ Añadir Sección</button>
                 </div>
               </div>
 
               <div className="modal-actions"><button type="button" onClick={() => setShowPlantillaModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar Plantilla</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tipo Asignacion */}
+      {showTipoAsignacionModal && (
+        <div className="modal-overlay">
+          <div className="glass modal-content">
+            <h3>{editingTipoAsignacion ? 'Editar Tipo' : 'Nuevo Tipo de Asignación'}</h3>
+            <form onSubmit={handleSaveTipoAsignacion} style={{ marginTop: '1.5rem' }}>
+              <div className="form-group">
+                <label>Nombre del Tipo</label>
+                <input name="nombre" defaultValue={editingTipoAsignacion?.nombre} placeholder="Ej: Oración, Lectura, Discurso..." required />
+              </div>
+              <div className="modal-actions"><button type="button" onClick={() => setShowTipoAsignacionModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar</button></div>
             </form>
           </div>
         </div>
