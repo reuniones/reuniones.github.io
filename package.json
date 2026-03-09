@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "build:reuniones": "vite build && powershell -Command \"Remove-Item -Recurse -Force ./reuniones/* -ErrorAction SilentlyContinue; Copy-Item -Recurse ./dist/* ./reuniones/\"",
-    "deploy:master": "npm run build:reuniones && git add reuniones/ && git commit -m 'Deploy to reuniones subfolder' && git push origin master"
+    "deploy": "npm run build:reuniones && git add . && git commit -m 'Deploy update to reuniones subfolder' && git push origin master"
   },
   "dependencies": {
     "jsonata": "^2.1.0",

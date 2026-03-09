@@ -4,6 +4,7 @@ import jsonata from 'jsonata';
 const STORAGE_KEY_CONFIG = 'jw_reuniones_config';
 const STORAGE_KEY_PERSONAS = 'jw_reuniones_personas';
 const STORAGE_KEY_REUNIONES = 'jw_reuniones_reuniones';
+const STORAGE_KEY_PLANTILLAS = 'jw_reuniones_plantillas';
 
 export const dataService = {
   getConfig: () => {
@@ -13,7 +14,6 @@ export const dataService = {
 
   saveConfig: async (config) => {
     localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-    // Save to Google Sheet if possible
     if (config.apiUrl) {
       try {
         await fetch(config.apiUrl, {
@@ -33,14 +33,14 @@ export const dataService = {
     }
   },
 
-  // Initialize sheets if API is present
   initSheets: async () => {
     const { apiUrl, spreadsheetId } = dataService.getConfig();
     if (!apiUrl) return;
 
     const tables = [
       { name: 'Personas', headers: ['id', 'nombre', 'genero', 'privilegios', 'habilidades'] },
-      { name: 'Reuniones', headers: ['id', 'fecha', 'tipo', 'asignaciones'] },
+      { name: 'Reuniones', headers: ['id', 'fecha', 'tipo', 'datos_reunion'] },
+      { name: 'Plantillas', headers: ['id', 'nombre', 'tipo', 'estructura'] },
       { name: 'Configuracion', headers: ['id', 'value'] }
     ];
 
@@ -81,15 +81,20 @@ export const dataService = {
         console.error(`Error clearing sheet ${sheetName}:`, e);
       }
     }
-    if (sheetName === 'Personas') localStorage.removeItem(STORAGE_KEY_PERSONAS);
-    if (sheetName === 'Reuniones') localStorage.removeItem(STORAGE_KEY_REUNIONES);
+    const keys = {
+      'Personas': STORAGE_KEY_PERSONAS,
+      'Reuniones': STORAGE_KEY_REUNIONES,
+      'Plantillas': STORAGE_KEY_PLANTILLAS
+    };
+    if (keys[sheetName]) localStorage.removeItem(keys[sheetName]);
   },
 
-  getPersonas: async () => {
+  // Generic Get/Save
+  _get: async (sheet, storageKey) => {
     const { apiUrl, spreadsheetId } = dataService.getConfig();
     if (apiUrl) {
       try {
-        const response = await fetch(`${apiUrl}?action=getData&sheet=Personas&ssId=${spreadsheetId || ''}`, {
+        const response = await fetch(`${apiUrl}?action=getData&sheet=${sheet}&ssId=${spreadsheetId || ''}`, {
           method: 'GET',
           redirect: 'follow'
         });
@@ -97,14 +102,14 @@ export const dataService = {
         if (data.error) throw new Error(data.error);
         return data;
       } catch (e) {
-        console.error('Error fetching personas:', e);
+        console.error(`Error fetching ${sheet}:`, e);
       }
     }
-    const data = localStorage.getItem(STORAGE_KEY_PERSONAS);
+    const data = localStorage.getItem(storageKey);
     return data ? JSON.parse(data) : [];
   },
 
-  savePersona: async (persona) => {
+  _save: async (sheet, storageKey, payload, idField = 'id') => {
     const { apiUrl, spreadsheetId } = dataService.getConfig();
     if (apiUrl) {
       try {
@@ -114,73 +119,38 @@ export const dataService = {
           redirect: 'follow',
           body: JSON.stringify({
             action: 'saveData',
-            sheet: 'Personas',
-            payload: persona,
+            sheet: sheet,
+            payload: payload,
             ssId: spreadsheetId
           })
         });
       } catch (e) {
-        console.error('Error saving persona:', e);
+        console.error(`Error saving ${sheet}:`, e);
       }
     }
-    const personas = await dataService.getPersonas();
-    const index = personas.findIndex(p => p.id == persona.id);
-    if (index >= 0) personas[index] = persona; else personas.push(persona);
-    localStorage.setItem(STORAGE_KEY_PERSONAS, JSON.stringify(personas));
-    return personas;
+    const data = await dataService._get(sheet, storageKey);
+    const index = data.findIndex(item => item[idField] == payload[idField]);
+    if (index >= 0) data[index] = payload; else data.push(payload);
+    localStorage.setItem(storageKey, JSON.stringify(data));
+    return data;
   },
 
-  getReuniones: async () => {
-    const { apiUrl, spreadsheetId } = dataService.getConfig();
-    if (apiUrl) {
-      try {
-        const response = await fetch(`${apiUrl}?action=getData&sheet=Reuniones&ssId=${spreadsheetId || ''}`, {
-          method: 'GET',
-          redirect: 'follow'
-        });
-        const data = await response.json();
-        if (data.error) throw new Error(data.error);
-        return data;
-      } catch (e) {
-        console.error('Error fetching reuniones:', e);
-      }
-    }
-    const data = localStorage.getItem(STORAGE_KEY_REUNIONES);
-    return data ? JSON.parse(data) : [];
-  },
+  getPersonas: () => dataService._get('Personas', STORAGE_KEY_PERSONAS),
+  savePersona: (persona) => dataService._save('Personas', STORAGE_KEY_PERSONAS, persona),
 
-  saveReunion: async (reunion) => {
-    const { apiUrl, spreadsheetId } = dataService.getConfig();
-    if (apiUrl) {
-      try {
-        await fetch(apiUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          redirect: 'follow',
-          body: JSON.stringify({
-            action: 'saveData',
-            sheet: 'Reuniones',
-            payload: reunion,
-            ssId: spreadsheetId
-          })
-        });
-      } catch (e) {
-        console.error('Error saving reunion:', e);
-      }
-    }
-    const reuniones = await dataService.getReuniones();
-    const index = reuniones.findIndex(r => r.id == reunion.id);
-    if (index >= 0) reuniones[index] = reunion; else reuniones.push(reunion);
-    localStorage.setItem(STORAGE_KEY_REUNIONES, JSON.stringify(reuniones));
-    return reuniones;
-  },
+  getReuniones: () => dataService._get('Reuniones', STORAGE_KEY_REUNIONES),
+  saveReunion: (reunion) => dataService._save('Reuniones', STORAGE_KEY_REUNIONES, reunion),
+
+  getPlantillas: () => dataService._get('Plantillas', STORAGE_KEY_PLANTILLAS),
+  savePlantilla: (plantilla) => dataService._save('Plantillas', STORAGE_KEY_PLANTILLAS, plantilla),
 
   queryData: async (sheetName, expression) => {
-    let data;
-    if (sheetName === 'Personas') data = await dataService.getPersonas();
-    else if (sheetName === 'Reuniones') data = await dataService.getReuniones();
-    else return null;
-
+    const data = await (
+      sheetName === 'Personas' ? dataService.getPersonas() :
+        sheetName === 'Reuniones' ? dataService.getReuniones() :
+          sheetName === 'Plantillas' ? dataService.getPlantillas() : null
+    );
+    if (!data) return null;
     try {
       const expr = jsonata(expression);
       return await expr.evaluate(data);

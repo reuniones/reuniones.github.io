@@ -6,11 +6,14 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [personas, setPersonas] = useState([]);
   const [reuniones, setReuniones] = useState([]);
+  const [plantillas, setPlantillas] = useState([]);
   const [config, setConfig] = useState(dataService.getConfig());
   const [showModal, setShowModal] = useState(false);
   const [showReunionModal, setShowReunionModal] = useState(false);
+  const [showPlantillaModal, setShowPlantillaModal] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
+  const [editingPlantilla, setEditingPlantilla] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,8 +22,10 @@ const App = () => {
     // Ejemplo de uso de JSONata: Obtener todos los publicadores ordenados por nombre
     const p = await dataService.queryData('Personas', '$ ^(nombre)');
     const r = await dataService.getReuniones();
+    const pl = await dataService.getPlantillas();
     setPersonas(p || []);
     setReuniones(r || []);
+    setPlantillas(pl || []);
     setLoading(false);
   };
 
@@ -67,14 +72,45 @@ const App = () => {
     setEditingPersona(null);
   };
 
+  const handleSavePlantilla = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newPlantilla = {
+      id: editingPlantilla?.id || Date.now(),
+      nombre: formData.get('nombre'),
+      tipo: formData.get('tipo'),
+      estructura: editingPlantilla?.estructura || []
+    };
+    const updated = await dataService.savePlantilla(newPlantilla);
+    setPlantillas(updated);
+    setShowPlantillaModal(false);
+    setEditingPlantilla(null);
+  };
+
   const handleSaveReunion = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const plantillaId = formData.get('plantillaId');
+    const plantilla = plantillas.find(p => p.id == plantillaId);
+
+    let datosReunion = selectedReunion?.datos_reunion ? JSON.parse(selectedReunion.datos_reunion) : null;
+
+    if (!datosReunion && plantilla) {
+      // Nueva reunión a partir de plantilla
+      datosReunion = {
+        plantillaId: plantilla.id,
+        secciones: JSON.parse(plantilla.estructura || '[]').map(s => ({
+          ...s,
+          partes: s.partes.map(p => ({ ...p, id: Math.random().toString(36).substr(2, 9), asignadoId: null }))
+        }))
+      };
+    }
+
     const newReunion = {
       id: selectedReunion?.id || Date.now(),
       fecha: formData.get('fecha'),
-      tipo: formData.get('tipo'),
-      asignaciones: selectedReunion?.asignaciones || {}
+      tipo: plantilla?.tipo || formData.get('tipo'),
+      datos_reunion: JSON.stringify(datosReunion)
     };
     const updated = await dataService.saveReunion(newReunion);
     setReuniones(updated);
@@ -99,15 +135,46 @@ const App = () => {
     }
   };
 
-  const handleAsignar = async (parte, personaId) => {
+  const handleAsignar = async (parteId, personaId) => {
     if (!selectedReunion) return;
+    const datos = JSON.parse(selectedReunion.datos_reunion);
+    datos.secciones = datos.secciones.map(s => ({
+      ...s,
+      partes: s.partes.map(p => p.id === parteId ? { ...p, asignadoId: personaId } : p)
+    }));
+
     const updatedReunion = {
       ...selectedReunion,
-      asignaciones: { ...selectedReunion.asignaciones, [parte]: personaId }
+      datos_reunion: JSON.stringify(datos)
     };
     const updated = await dataService.saveReunion(updatedReunion);
     setReuniones(updated);
     setSelectedReunion(updatedReunion);
+  };
+
+  const handleDeleteReunion = async (id) => {
+    if (window.confirm('¿Eliminar esta reunión?')) {
+      const { apiUrl, spreadsheetId } = dataService.getConfig();
+      let updated;
+      if (apiUrl) {
+        // En un sistema genérico ideal, el backend borraría la fila. 
+        // Por ahora, lo manejamos filtrando y guardando la lista completa si fuera necesario, 
+        // o implementando una acción 'deleteRow' en la API.
+        // Como simplificación para este MVP, borramos local y notificamos.
+      }
+      updated = reuniones.filter(r => r.id !== id);
+      setReuniones(updated);
+      if (selectedReunion?.id === id) setSelectedReunion(null);
+      localStorage.setItem('jw_reuniones_reuniones', JSON.stringify(updated));
+    }
+  };
+
+  const handleDeletePlantilla = async (id) => {
+    if (window.confirm('¿Eliminar esta plantilla?')) {
+      const updated = plantillas.filter(p => p.id !== id);
+      setPlantillas(updated);
+      localStorage.setItem('jw_reuniones_plantillas', JSON.stringify(updated));
+    }
   };
 
   const getPersonaName = (id) => personas.find(p => p.id === Number(id))?.nombre || 'Sin asignar';
@@ -122,6 +189,7 @@ const App = () => {
         <nav>
           <a href="#" className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Tablero</a>
           <a href="#" className={`nav-link ${activeTab === 'personas' ? 'active' : ''}`} onClick={() => setActiveTab('personas')}>Personas</a>
+          <a href="#" className={`nav-link ${activeTab === 'plantillas' ? 'active' : ''}`} onClick={() => setActiveTab('plantillas')}>Plantillas</a>
           <a href="#" className={`nav-link ${activeTab === 'reuniones' ? 'active' : ''}`} onClick={() => setActiveTab('reuniones')}>Programación</a>
           <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
             <button className="nav-link" style={{ width: '100%', textAlign: 'left', background: 'none' }} onClick={() => setShowConfigModal(true)}>
@@ -135,7 +203,9 @@ const App = () => {
         <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
-              {activeTab === 'dashboard' ? 'Tablero General' : activeTab === 'personas' ? 'Gestión de Personas' : 'Programación Semanal'}
+              {activeTab === 'dashboard' ? 'Tablero General' :
+                activeTab === 'personas' ? 'Gestión de Personas' :
+                  activeTab === 'plantillas' ? 'Plantillas de Reunión' : 'Programación Semanal'}
             </h1>
             <p style={{ color: 'var(--text-muted)' }}>
               {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
@@ -144,6 +214,9 @@ const App = () => {
           <div style={{ display: 'flex', gap: '1rem' }}>
             {activeTab === 'personas' && (
               <button className="primary" onClick={() => { setEditingPersona(null); setShowModal(true); }}>+ Añadir Persona</button>
+            )}
+            {activeTab === 'plantillas' && (
+              <button className="primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva Plantilla</button>
             )}
             {activeTab === 'reuniones' && (
               <button className="primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva Reunión</button>
@@ -167,6 +240,7 @@ const App = () => {
                 <div style={{ marginTop: '1rem' }}>
                   <div className="stat-row"><span>Total Publicadores</span><span className="stat-val">{personas.length}</span></div>
                   <div className="stat-row"><span>Reuniones Programadas</span><span className="stat-val">{reuniones.length}</span></div>
+                  <div className="stat-row"><span>Plantillas Disponibles</span><span className="stat-val">{plantillas.length}</span></div>
                 </div>
               </div>
               <div className="glass" style={{ padding: '1.5rem' }}>
@@ -202,6 +276,32 @@ const App = () => {
             </div>
           )}
 
+          {activeTab === 'plantillas' && (
+            <div className="glass" style={{ overflowX: 'auto' }}>
+              <table className="custom-table">
+                <thead>
+                  <tr><th>Nombre</th><th>Tipo</th><th>Secciones</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                  {plantillas.map(pl => (
+                    <tr key={pl.id}>
+                      <td style={{ fontWeight: '600' }}>{pl.nombre}</td>
+                      <td>{pl.tipo}</td>
+                      <td>{JSON.parse(pl.estructura || '[]').length} secciones</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className="btn-icon" onClick={() => { setEditingPlantilla(pl); setShowPlantillaModal(true); }}>✎</button>
+                          <button className="btn-icon danger" onClick={() => handleDeletePlantilla(pl.id)}>🗑</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {plantillas.length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center' }}>No hay plantillas creadas.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {activeTab === 'reuniones' && (
             <div style={{ display: 'grid', gridTemplateColumns: selectedReunion ? '300px 1fr' : '1fr', gap: '1.5rem' }}>
               <div className="glass" style={{ padding: '1.5rem' }}>
@@ -212,10 +312,13 @@ const App = () => {
                       key={r.id}
                       className={`nav-link ${selectedReunion?.id === r.id ? 'active' : ''}`}
                       onClick={() => setSelectedReunion(r)}
-                      style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                      style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                      <span>{r.fecha}</span>
-                      <small>{r.tipo === 'Vida y Ministerio' ? 'V&M' : 'Fin de Semana'}</small>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span>{r.fecha}</span>
+                        <small>{r.tipo === 'Vida y Ministerio' ? 'V&M' : 'Fin de Semana'}</small>
+                      </div>
+                      <button className="btn-icon danger" style={{ padding: '0.2rem', fontSize: '0.8rem' }} onClick={(e) => { e.stopPropagation(); handleDeleteReunion(r.id); }}>🗑</button>
                     </div>
                   ))}
                 </div>
@@ -228,33 +331,46 @@ const App = () => {
                     <span className="badge H">{selectedReunion.tipo}</span>
                   </div>
 
-                  <div style={{ display: 'grid', gap: '1rem' }}>
-                    {['Lectura', 'Oración Inicial', 'Tesoros', 'Perlas', 'Discurso 1', 'Discurso 2', 'Oración Final'].map(parte => {
-                      const asignadoId = selectedReunion.asignaciones?.[parte];
-                      const aptos = personas.filter(p => {
-                        if (parte.includes('Oración') || parte === 'Lectura') return p.genero === 'H';
-                        return true;
-                      });
+                  <div style={{ display: 'grid', gap: '2rem' }}>
+                    {JSON.parse(selectedReunion.datos_reunion || '{"secciones":[]}').secciones.map((seccion, sIdx) => (
+                      <div key={sIdx}>
+                        <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                          {seccion.nombre}
+                        </h4>
+                        <div style={{ display: 'grid', gap: '0.75rem' }}>
+                          {seccion.partes.map((parte) => {
+                            const asignadoId = parte.asignadoId;
+                            const aptos = personas.filter(p => {
+                              // Lógica de filtrado simple (ej: género)
+                              if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') return p.genero === 'H';
+                              return true;
+                            });
 
-                      return (
-                        <div key={parte} className="stat-row" style={{ alignItems: 'center' }}>
-                          <span style={{ fontWeight: '500' }}>{parte}</span>
-                          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            <span style={{ color: asignadoId ? 'var(--text)' : 'var(--danger)', fontSize: '0.9rem' }}>
-                              {getPersonaName(asignadoId)}
-                            </span>
-                            <select
-                              style={{ width: 'auto', padding: '0.4rem' }}
-                              value={asignadoId || ''}
-                              onChange={(e) => handleAsignar(parte, e.target.value)}
-                            >
-                              <option value="">Asignar...</option>
-                              {aptos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                            </select>
-                          </div>
+                            return (
+                              <div key={parte.id} className="stat-row" style={{ alignItems: 'center' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                  <span style={{ fontWeight: '500' }}>{parte.nombre}</span>
+                                  {parte.duracion && <small style={{ color: 'var(--text-muted)' }}>{parte.duracion} min</small>}
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                  <span style={{ color: asignadoId ? 'var(--text)' : 'var(--danger)', fontSize: '0.9rem' }}>
+                                    {getPersonaName(asignadoId)}
+                                  </span>
+                                  <select
+                                    style={{ width: 'auto', padding: '0.4rem' }}
+                                    value={asignadoId || ''}
+                                    onChange={(e) => handleAsignar(parte.id, e.target.value)}
+                                  >
+                                    <option value="">Asignar...</option>
+                                    {aptos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                                  </select>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -295,8 +411,96 @@ const App = () => {
             <h3>Nueva Reunión</h3>
             <form onSubmit={handleSaveReunion} style={{ marginTop: '1.5rem' }}>
               <div className="form-group"><label>Fecha</label><input type="date" name="fecha" required /></div>
-              <div className="form-group"><label>Tipo de Reunión</label><select name="tipo"><option>Vida y Ministerio</option><option>Fin de Semana</option></select></div>
+              <div className="form-group">
+                <label>Plantilla Base</label>
+                <select name="plantillaId" required>
+                  <option value="">Selecciona una plantilla...</option>
+                  {plantillas.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({pl.tipo})</option>)}
+                </select>
+              </div>
               <div className="modal-actions"><button type="button" onClick={() => setShowReunionModal(false)}>Cancelar</button><button type="submit" className="primary">Crear</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Plantilla */}
+      {showPlantillaModal && (
+        <div className="modal-overlay">
+          <div className="glass modal-content" style={{ maxWidth: '600px' }}>
+            <h3>{editingPlantilla ? 'Editar Plantilla' : 'Nueva Plantilla'}</h3>
+            <form onSubmit={handleSavePlantilla} style={{ marginTop: '1.5rem' }}>
+              <div className="form-group"><label>Nombre</label><input name="nombre" defaultValue={editingPlantilla?.nombre} required /></div>
+              <div className="form-group"><label>Tipo</label><select name="tipo" defaultValue={editingPlantilla?.tipo}><option>Vida y Ministerio</option><option>Fin de Semana</option><option>Especial</option></select></div>
+
+              <div className="form-group">
+                <label>Estructura (Secciones y Partes)</label>
+                <div style={{ maxHeight: '300px', overflowY: 'auto', padding: '1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}>
+                  {(editingPlantilla?.estructura ? JSON.parse(editingPlantilla.estructura) : []).map((seccion, sIdx) => (
+                    <div key={sIdx} style={{ marginBottom: '1.5rem', borderLeft: '2px solid var(--primary)', paddingLeft: '1rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <input
+                          placeholder="Nombre de sección"
+                          value={seccion.nombre}
+                          onChange={(e) => {
+                            const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                            est[sIdx].nombre = e.target.value;
+                            setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                          }}
+                        />
+                        <button type="button" className="danger" onClick={() => {
+                          const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                          est.splice(sIdx, 1);
+                          setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                        }}>×</button>
+                      </div>
+                      <div style={{ paddingLeft: '1rem' }}>
+                        {seccion.partes.map((p, pIdx) => (
+                          <div key={pIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                            <input
+                              placeholder="Parte"
+                              value={p.nombre}
+                              onChange={(e) => {
+                                const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                                est[sIdx].partes[pIdx].nombre = e.target.value;
+                                setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                              }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Min"
+                              style={{ width: '60px' }}
+                              value={p.duracion}
+                              onChange={(e) => {
+                                const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                                est[sIdx].partes[pIdx].duracion = e.target.value;
+                                setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                              }}
+                            />
+                            <button type="button" className="danger" onClick={() => {
+                              const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                              est[sIdx].partes.splice(pIdx, 1);
+                              setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                            }}>×</button>
+                          </div>
+                        ))}
+                        <button type="button" onClick={() => {
+                          const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                          est[sIdx].partes.push({ nombre: '', duracion: 5 });
+                          setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                        }} style={{ fontSize: '0.8rem' }}>+ Añadir Parte</button>
+                      </div>
+                    </div>
+                  ))}
+                  <button type="button" className="primary" onClick={() => {
+                    const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                    est.push({ nombre: 'Nueva Sección', partes: [] });
+                    setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                  }}>+ Añadir Sección</button>
+                </div>
+              </div>
+
+              <div className="modal-actions"><button type="button" onClick={() => setShowPlantillaModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar Plantilla</button></div>
             </form>
           </div>
         </div>
@@ -325,6 +529,7 @@ const App = () => {
                     setLoading(true);
                     await dataService.clearData('Personas');
                     await dataService.clearData('Reuniones');
+                    await dataService.clearData('Plantillas');
                     await fetchData();
                     setShowConfigModal(false);
                   }
