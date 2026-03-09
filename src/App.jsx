@@ -90,32 +90,47 @@ const App = () => {
   const handleSaveReunion = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const plantillaId = formData.get('plantillaId');
-    const plantilla = plantillas.find(p => p.id == plantillaId);
+    const selectedTemplateIds = Array.from(e.target.elements.plantillaIds)
+      .filter(input => input.checked)
+      .map(input => input.value);
 
-    let datosReunion = selectedReunion?.datos_reunion ? JSON.parse(selectedReunion.datos_reunion) : null;
+    let datosReunion = selectedReunion?.datos_reunion ? JSON.parse(selectedReunion.datos_reunion) : { secciones: [] };
 
-    if (!datosReunion && plantilla) {
-      // Nueva reunión a partir de plantilla
-      datosReunion = {
-        plantillaId: plantilla.id,
-        secciones: JSON.parse(plantilla.estructura || '[]').map(s => ({
-          ...s,
-          partes: s.partes.map(p => ({ ...p, id: Math.random().toString(36).substr(2, 9), asignadoId: null }))
-        }))
-      };
+    if (selectedTemplateIds.length > 0) {
+      selectedTemplateIds.forEach(id => {
+        const plantilla = plantillas.find(p => p.id == id);
+        if (plantilla) {
+          const seccionesImportadas = JSON.parse(plantilla.estructura || '[]').map(s => ({
+            ...s,
+            id: Math.random().toString(36).substr(2, 9),
+            partes: s.partes.map(p => ({ ...p, id: Math.random().toString(36).substr(2, 9), asignadoId: null }))
+          }));
+          datosReunion.secciones.push(...seccionesImportadas);
+        }
+      });
     }
 
     const newReunion = {
       id: selectedReunion?.id || Date.now(),
       fecha: formData.get('fecha'),
-      tipo: plantilla?.tipo || formData.get('tipo'),
+      tipo: 'Programa Semanal',
       datos_reunion: JSON.stringify(datosReunion)
     };
     const updated = await dataService.saveReunion(newReunion);
     setReuniones(updated);
     setShowReunionModal(false);
     setSelectedReunion(null);
+  };
+
+  const handleUpdateWeeklyStructure = async (newDatos) => {
+    if (!selectedReunion) return;
+    const updatedReunion = {
+      ...selectedReunion,
+      datos_reunion: JSON.stringify(newDatos)
+    };
+    const updated = await dataService.saveReunion(updatedReunion);
+    setReuniones(updated);
+    setSelectedReunion(updatedReunion);
   };
 
   const handleSaveConfig = async (e) => {
@@ -280,13 +295,12 @@ const App = () => {
             <div className="glass" style={{ overflowX: 'auto' }}>
               <table className="custom-table">
                 <thead>
-                  <tr><th>Nombre</th><th>Tipo</th><th>Secciones</th><th>Acciones</th></tr>
+                  <tr><th>Nombre (Tipo)</th><th>Secciones</th><th>Acciones</th></tr>
                 </thead>
                 <tbody>
                   {plantillas.map(pl => (
                     <tr key={pl.id}>
                       <td style={{ fontWeight: '600' }}>{pl.nombre}</td>
-                      <td>{pl.tipo}</td>
                       <td>{JSON.parse(pl.estructura || '[]').length} secciones</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -328,20 +342,44 @@ const App = () => {
                 <div className="glass" style={{ padding: '2rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
                     <h3>Partes de la Reunión ({selectedReunion.fecha})</h3>
-                    <span className="badge H">{selectedReunion.tipo}</span>
                   </div>
 
                   <div style={{ display: 'grid', gap: '2rem' }}>
                     {JSON.parse(selectedReunion.datos_reunion || '{"secciones":[]}').secciones.map((seccion, sIdx) => (
-                      <div key={sIdx}>
-                        <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
-                          {seccion.nombre}
-                        </h4>
+                      <div key={sIdx} style={{
+                        background: seccion.bgColor || 'rgba(255,255,255,0.05)',
+                        borderRadius: '12px',
+                        padding: '1rem',
+                        borderLeft: `5px solid ${seccion.headerColor || 'var(--primary)'}`
+                      }}>
+                        {seccion.showHeader && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                            <h4 style={{ color: seccion.headerColor || 'var(--primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span>{seccion.headerIcon}</span> {seccion.nombre}
+                            </h4>
+                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                              <button className="btn-icon" style={{ padding: '0.2rem', fontSize: '0.7rem' }} onClick={() => {
+                                const datos = JSON.parse(selectedReunion.datos_reunion);
+                                const nombre = prompt('Nuevo nombre de sección:', seccion.nombre);
+                                if (nombre) {
+                                  datos.secciones[sIdx].nombre = nombre;
+                                  handleUpdateWeeklyStructure(datos);
+                                }
+                              }}>✎</button>
+                              <button className="btn-icon danger" style={{ padding: '0.2rem', fontSize: '0.7rem' }} onClick={() => {
+                                if (confirm('¿Eliminar esta sección de la semana?')) {
+                                  const datos = JSON.parse(selectedReunion.datos_reunion);
+                                  datos.secciones.splice(sIdx, 1);
+                                  handleUpdateWeeklyStructure(datos);
+                                }
+                              }}>×</button>
+                            </div>
+                          </div>
+                        )}
                         <div style={{ display: 'grid', gap: '0.75rem' }}>
-                          {seccion.partes.map((parte) => {
+                          {seccion.partes.map((parte, pIdx) => {
                             const asignadoId = parte.asignadoId;
                             const aptos = personas.filter(p => {
-                              // Lógica de filtrado simple (ej: género)
                               if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') return p.genero === 'H';
                               return true;
                             });
@@ -349,28 +387,55 @@ const App = () => {
                             return (
                               <div key={parte.id} className="stat-row" style={{ alignItems: 'center' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <span style={{ fontWeight: '500' }}>{parte.nombre}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span style={{ fontWeight: '500' }}>{parte.nombre}</span>
+                                    <button className="btn-icon" style={{ fontSize: '0.7rem', padding: '0.1rem' }} onClick={() => {
+                                      const datos = JSON.parse(selectedReunion.datos_reunion);
+                                      const n = prompt('Nombre de la parte:', parte.nombre);
+                                      if (n) {
+                                        datos.secciones[sIdx].partes[pIdx].nombre = n;
+                                        handleUpdateWeeklyStructure(datos);
+                                      }
+                                    }}>✎</button>
+                                  </div>
                                   {parte.duracion && <small style={{ color: 'var(--text-muted)' }}>{parte.duracion} min</small>}
                                 </div>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                  <span style={{ color: asignadoId ? 'var(--text)' : 'var(--danger)', fontSize: '0.9rem' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                  <span style={{ color: asignadoId ? 'var(--text)' : 'var(--danger)', fontSize: '0.9rem', marginRight: '0.5rem' }}>
                                     {getPersonaName(asignadoId)}
                                   </span>
                                   <select
-                                    style={{ width: 'auto', padding: '0.4rem' }}
+                                    style={{ width: 'auto', padding: '0.3rem', fontSize: '0.85rem' }}
                                     value={asignadoId || ''}
                                     onChange={(e) => handleAsignar(parte.id, e.target.value)}
                                   >
                                     <option value="">Asignar...</option>
                                     {aptos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                                   </select>
+                                  <button className="btn-icon danger" style={{ padding: '0.2rem' }} onClick={() => {
+                                    if (confirm('¿Eliminar esta parte?')) {
+                                      const datos = JSON.parse(selectedReunion.datos_reunion);
+                                      datos.secciones[sIdx].partes.splice(pIdx, 1);
+                                      handleUpdateWeeklyStructure(datos);
+                                    }
+                                  }}>×</button>
                                 </div>
                               </div>
                             );
                           })}
+                          <button className="nav-link" style={{ fontSize: '0.8rem', padding: '0.5rem', border: '1px dashed var(--border)', textAlign: 'center' }} onClick={() => {
+                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                            datos.secciones[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', duracion: 5, asignadoId: null });
+                            handleUpdateWeeklyStructure(datos);
+                          }}>+ Añadir parte ad-hoc</button>
                         </div>
                       </div>
                     ))}
+                    <button className="primary" style={{ padding: '1rem' }} onClick={() => {
+                      const datos = JSON.parse(selectedReunion.datos_reunion);
+                      datos.secciones.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#6366f1', partes: [] });
+                      handleUpdateWeeklyStructure(datos);
+                    }}>+ Añadir nueva sección a la semana</button>
                   </div>
                 </div>
               )}
@@ -412,13 +477,17 @@ const App = () => {
             <form onSubmit={handleSaveReunion} style={{ marginTop: '1.5rem' }}>
               <div className="form-group"><label>Fecha</label><input type="date" name="fecha" required /></div>
               <div className="form-group">
-                <label>Plantilla Base</label>
-                <select name="plantillaId" required>
-                  <option value="">Selecciona una plantilla...</option>
-                  {plantillas.map(pl => <option key={pl.id} value={pl.id}>{pl.nombre} ({pl.tipo})</option>)}
-                </select>
+                <label>Seleccionar Plantillas para esta semana:</label>
+                <div style={{ maxHeight: '150px', overflowY: 'auto', marginTop: '0.5rem', display: 'grid', gap: '0.5rem' }}>
+                  {plantillas.map(pl => (
+                    <label key={pl.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input type="checkbox" name="plantillaIds" value={pl.id} />
+                      <span>{pl.nombre}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-              <div className="modal-actions"><button type="button" onClick={() => setShowReunionModal(false)}>Cancelar</button><button type="submit" className="primary">Crear</button></div>
+              <div className="modal-actions"><button type="button" onClick={() => setShowReunionModal(false)}>Cancelar</button><button type="submit" className="primary">Crear Programa</button></div>
             </form>
           </div>
         </div>
@@ -430,40 +499,67 @@ const App = () => {
           <div className="glass modal-content" style={{ maxWidth: '600px' }}>
             <h3>{editingPlantilla ? 'Editar Plantilla' : 'Nueva Plantilla'}</h3>
             <form onSubmit={handleSavePlantilla} style={{ marginTop: '1.5rem' }}>
-              <div className="form-group"><label>Nombre</label><input name="nombre" defaultValue={editingPlantilla?.nombre} required /></div>
-              <div className="form-group"><label>Tipo</label><select name="tipo" defaultValue={editingPlantilla?.tipo}><option>Vida y Ministerio</option><option>Fin de Semana</option><option>Especial</option></select></div>
+              <div className="form-group"><label>Nombre de la Plantilla (Tipo de Reunión)</label><input name="nombre" defaultValue={editingPlantilla?.nombre} placeholder="Ej: Vida y Ministerio, Reunión Pública..." required /></div>
 
               <div className="form-group">
-                <label>Estructura (Secciones y Partes)</label>
-                <div style={{ maxHeight: '300px', overflowY: 'auto', padding: '1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}>
+                <label>Estructura y Estilo Visual</label>
+                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}>
                   {(editingPlantilla?.estructura ? JSON.parse(editingPlantilla.estructura) : []).map((seccion, sIdx) => (
-                    <div key={sIdx} style={{ marginBottom: '1.5rem', borderLeft: '2px solid var(--primary)', paddingLeft: '1rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <input
-                          placeholder="Nombre de sección"
-                          value={seccion.nombre}
-                          onChange={(e) => {
+                    <div key={sIdx} style={{ marginBottom: '2rem', borderLeft: `4px solid ${seccion.headerColor || 'var(--primary)'}`, paddingLeft: '1rem' }}>
+                      <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <input
+                            placeholder="Nombre de sección"
+                            value={seccion.nombre}
+                            style={{ flex: 1, fontWeight: 'bold' }}
+                            onChange={(e) => {
+                              const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                              est[sIdx].nombre = e.target.value;
+                              setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                            }}
+                          />
+                          <button type="button" className="danger" onClick={() => {
                             const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                            est[sIdx].nombre = e.target.value;
-                            setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
-                          }}
-                        />
-                        <button type="button" className="danger" onClick={() => {
-                          const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                          est.splice(sIdx, 1);
-                          setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
-                        }}>×</button>
+                            est.splice(sIdx, 1);
+                            setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                          }}>×</button>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.8rem' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <input type="checkbox" checked={seccion.showHeader} onChange={(e) => {
+                              const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                              est[sIdx].showHeader = e.target.checked;
+                              setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                            }} /> Encabezado
+                          </label>
+                          <input type="color" value={seccion.headerColor || '#4f46e5'} onChange={(e) => {
+                            const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                            est[sIdx].headerColor = e.target.value;
+                            setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                          }} style={{ width: '30px', height: '20px', padding: 0 }} title="Color Encabezado" />
+                          <input type="color" value={seccion.bgColor || 'transparent'} onChange={(e) => {
+                            const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                            est[sIdx].bgColor = e.target.value;
+                            setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                          }} style={{ width: '30px', height: '20px', padding: 0 }} title="Color Fondo" />
+                          <input placeholder="Icono (emoji)" value={seccion.headerIcon || ''} maxLength="2" onChange={(e) => {
+                            const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                            est[sIdx].headerIcon = e.target.value;
+                            setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                          }} style={{ width: '40px', padding: '0.2rem' }} />
+                        </div>
                       </div>
-                      <div style={{ paddingLeft: '1rem' }}>
+                      <div style={{ paddingLeft: '1rem', borderLeft: '1px solid var(--border)' }}>
                         {seccion.partes.map((p, pIdx) => (
                           <div key={pIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
                             <input
                               placeholder="Parte"
                               value={p.nombre}
+                              style={{ flex: 1 }}
                               onChange={(e) => {
                                 const est = JSON.parse(editingPlantilla?.estructura || '[]');
                                 est[sIdx].partes[pIdx].nombre = e.target.value;
-                                setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                                setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
                               }}
                             />
                             <input
@@ -474,28 +570,28 @@ const App = () => {
                               onChange={(e) => {
                                 const est = JSON.parse(editingPlantilla?.estructura || '[]');
                                 est[sIdx].partes[pIdx].duracion = e.target.value;
-                                setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                                setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
                               }}
                             />
                             <button type="button" className="danger" onClick={() => {
                               const est = JSON.parse(editingPlantilla?.estructura || '[]');
                               est[sIdx].partes.splice(pIdx, 1);
-                              setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                              setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
                             }}>×</button>
                           </div>
                         ))}
                         <button type="button" onClick={() => {
                           const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                          est[sIdx].partes.push({ nombre: '', duracion: 5 });
-                          setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
-                        }} style={{ fontSize: '0.8rem' }}>+ Añadir Parte</button>
+                          est[sIdx].partes.push({ nombre: '', duracion: 5, id: Math.random().toString(36).substr(2, 9) });
+                          setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                        }} style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>+ Añadir Parte</button>
                       </div>
                     </div>
                   ))}
                   <button type="button" className="primary" onClick={() => {
                     const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                    est.push({ nombre: 'Nueva Sección', partes: [] });
-                    setEditingPlantilla({ ...editingPlantilla, nombre: editingPlantilla?.nombre || '', tipo: editingPlantilla?.tipo || 'Vida y Ministerio', estructura: JSON.stringify(est) });
+                    est.push({ nombre: 'Nueva Sección', showHeader: true, headerColor: '#4f46e5', bgColor: 'transparent', partes: [] });
+                    setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
                   }}>+ Añadir Sección</button>
                 </div>
               </div>
