@@ -36,6 +36,28 @@
   .input-field {
     @apply w-full bg-transparent border border-outline-light rounded-lg px-4 py-3 focus:border-primary-light focus:ring-1 focus:ring-primary-light outline-none dark:border-outline-dark dark:focus:border-primary-dark;
   }
+
+  /* Píldoras con alto contraste */
+  .pill-container {
+    @apply flex flex-wrap gap-1.5 p-1 min-h-[42px] items-center;
+  }
+
+  .pill {
+    @apply flex items-center gap-1.5 px-3 py-1 bg-primary-light text-white text-[11px] font-bold rounded-full shadow-sm hover:shadow-md transition-all dark:bg-primary-dark dark:text-surface-dark;
+  }
+
+  .pill button {
+    @apply opacity-70 hover:opacity-100 font-black text-xs leading-none;
+  }
+
+  .pill-add {
+    @apply text-[10px] font-black uppercase opacity-50 hover:opacity-100 transition-opacity cursor-pointer px-2;
+  }
+
+  /* Modal Pantalla Completa */
+  .modal-full {
+    @apply !max-w-none !w-screen !h-screen !rounded-none !m-0 !p-10 flex flex-col;
+  }
 }
 
 /* Conservamos animaciones necesarias */

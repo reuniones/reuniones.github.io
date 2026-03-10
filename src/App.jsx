@@ -30,6 +30,17 @@ const App = () => {
   // Estado temporal para editar estructura de plantilla
   const [tempEstructura, setTempEstructura] = useState([]);
 
+  // Utilidad para parsear JSON de forma segura
+  const safeParse = (str, fallback = []) => {
+    if (!str || typeof str !== 'string' || str.trim() === '') return fallback;
+    try {
+      return JSON.parse(str);
+    } catch (e) {
+      console.warn("Error parsing JSON:", str, e);
+      return fallback;
+    }
+  };
+
   // Sistema de Temas (Material 3)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
 
@@ -612,12 +623,12 @@ const App = () => {
                       {plantillas.map(pl => (
                         <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
                           <td className="px-6 py-4 font-semibold">{pl.nombre}</td>
-                          <td className="px-6 py-4 text-sm opacity-80">{JSON.parse(pl.estructura || '[]').length} secciones</td>
+                          <td className="px-6 py-4 text-sm opacity-80">{safeParse(pl.estructura).length} secciones</td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-2">
                               <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => {
                                 setEditingPlantilla(pl);
-                                setTempEstructura(JSON.parse(pl.estructura || '[]'));
+                                setTempEstructura(safeParse(pl.estructura));
                                 setShowPlantillaModal(true);
                               }}>
                                 <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
@@ -741,9 +752,9 @@ const App = () => {
                     </div>
 
                     <div className="space-y-8">
-                      {JSON.parse(selectedReunion.datos_reunion || '{"secciones":[]}').secciones.map((seccion, sIdx) => (
+                      {safeParse(selectedReunion.datos_reunion, { secciones: [] }).secciones.map((seccion, sIdx) => (
                         <div key={sIdx} className="rounded-3xl overflow-hidden border border-outline-light/10 dark:border-outline-dark/10 bg-white dark:bg-white/5 shadow-sm">
-                          {seccion.showHeader && (
+                          {seccion.showHeader !== false && (
                             <div className="px-6 py-4 flex justify-between items-center bg-surface-light dark:bg-white/5 border-b border-outline-light/5"
                               style={{ borderLeft: `6px solid ${seccion.headerColor || 'var(--primary)'}` }}>
                               <h4 className="font-bold flex items-center gap-3" style={{ color: seccion.headerColor }}>
@@ -761,7 +772,7 @@ const App = () => {
                               </button>
                               <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors group" onClick={() => {
                                 if (confirm('¿Eliminar esta sección de la semana?')) {
-                                  const datos = JSON.parse(selectedReunion.datos_reunion);
+                                  const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                                   datos.secciones.splice(sIdx, 1);
                                   handleUpdateWeeklyStructure(datos);
                                 }
@@ -797,7 +808,7 @@ const App = () => {
                                         ))}
                                       </div>
                                       <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-all group" onClick={() => {
-                                        const datos = JSON.parse(selectedReunion.datos_reunion);
+                                        const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                                         const n = prompt('Nombre de la parte:', parte.nombre);
                                         if (n) {
                                           datos.secciones[sIdx].partes[pIdx].nombre = n;
@@ -814,13 +825,13 @@ const App = () => {
                                           items={tiposAsignacion}
                                           selectedIds={parte.tipoAsignacionIds || []}
                                           onAdd={(id) => {
-                                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                                            const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                                             const p = datos.secciones[sIdx].partes[pIdx];
                                             p.tipoAsignacionIds = [...(p.tipoAsignacionIds || []), id];
                                             handleUpdateWeeklyStructure(datos);
                                           }}
                                           onRemove={(id) => {
-                                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                                            const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                                             const p = datos.secciones[sIdx].partes[pIdx];
                                             p.tipoAsignacionIds = (p.tipoAsignacionIds || []).filter(tid => tid != id);
                                             handleUpdateWeeklyStructure(datos);
@@ -833,13 +844,13 @@ const App = () => {
                                           items={salas}
                                           selectedIds={parte.salaIds || [1]}
                                           onAdd={(id) => {
-                                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                                            const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                                             const p = datos.secciones[sIdx].partes[pIdx];
                                             p.salaIds = [...(p.salaIds || [1]), id];
                                             handleUpdateWeeklyStructure(datos);
                                           }}
                                           onRemove={(id) => {
-                                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                                            const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                                             const p = datos.secciones[sIdx].partes[pIdx];
                                             p.salaIds = (p.salaIds || [1]).filter(sid => sid != id);
                                             handleUpdateWeeklyStructure(datos);
@@ -864,7 +875,7 @@ const App = () => {
                                     </select>
                                     <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors opacity-0 group-hover:opacity-100 group" onClick={() => {
                                       if (confirm('¿Eliminar esta parte?')) {
-                                        const datos = JSON.parse(selectedReunion.datos_reunion);
+                                        const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                                         datos.secciones[sIdx].partes.splice(pIdx, 1);
                                         handleUpdateWeeklyStructure(datos);
                                       }
@@ -876,7 +887,7 @@ const App = () => {
                               );
                             })}
                             <button className="w-full py-4 text-xs font-bold opacity-40 hover:opacity-100 hover:bg-surface-light dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 border-t border-outline-light/5 group" onClick={() => {
-                              const datos = JSON.parse(selectedReunion.datos_reunion);
+                              const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                               datos.secciones[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', duracion: 5, asignadoId: null });
                               handleUpdateWeeklyStructure(datos);
                             }}>
@@ -886,7 +897,7 @@ const App = () => {
                         </div>
                       ))}
                       <button className="w-full py-6 border-2 border-dashed border-outline-light/20 rounded-3xl opacity-50 hover:opacity-100 hover:border-primary-light/50 transition-all font-bold flex items-center justify-center gap-3 group" onClick={() => {
-                        const datos = JSON.parse(selectedReunion.datos_reunion);
+                        const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
                         datos.secciones.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#6366f1', bgColor: 'transparent', partes: [] });
                         handleUpdateWeeklyStructure(datos);
                       }}>
@@ -1011,12 +1022,25 @@ const App = () => {
                                 setTempEstructura(newEst);
                               }}
                             />
-                            <input type="color" value={seccion.headerColor} className="w-6 h-6 rounded border-none p-0 cursor-pointer" onChange={(e) => {
+                            <input type="color" value={seccion.headerColor} className="w-6 h-6 rounded border-none p-0 cursor-pointer" title="Color del encabezado" onChange={(e) => {
                               const newEst = [...tempEstructura];
                               newEst[sIdx].headerColor = e.target.value;
                               setTempEstructura(newEst);
                             }} />
-                            <button type="button" className="text-error-light" onClick={() => {
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={seccion.showHeader !== false}
+                                className="w-4 h-4 rounded border-outline-light text-primary-light focus:ring-primary-light"
+                                onChange={(e) => {
+                                  const newEst = [...tempEstructura];
+                                  newEst[sIdx].showHeader = e.target.checked;
+                                  setTempEstructura(newEst);
+                                }}
+                              />
+                              <span className="text-[10px] font-bold opacity-60 uppercase">Visible</span>
+                            </label>
+                            <button type="button" className="text-error-light p-1 hover:bg-error-light/10 rounded-full transition-colors" title="Eliminar sección" onClick={() => {
                               const newEst = [...tempEstructura];
                               newEst.splice(sIdx, 1);
                               setTempEstructura(newEst);
@@ -1108,7 +1132,8 @@ const App = () => {
                   <button type="submit" className="btn-primary">Guardar Plantilla</button>
                 </div>
               </form>
-            ), onClose: () => { setShowPlantillaModal(false); setTempEstructura([]); }
+            ), onClose: () => { setShowPlantillaModal(false); setTempEstructura([]); },
+            full: true
           },
           {
             show: showSalaModal, title: editingSala ? 'Editar Sala' : 'Nueva Sala', content: (
@@ -1197,8 +1222,8 @@ const App = () => {
             ), onClose: () => setShowVersionModal(false)
           },
         ].map((m, idx) => m.show && (
-          <div key={idx} className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-on-surface-light/40 dark:bg-surface-dark/80 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white dark:bg-surface-dark w-full max-w-lg rounded-[2rem] p-8 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar border border-outline-light/5 dark:border-white/5">
+          <div key={idx} className={`fixed inset-0 z-[3000] flex items-center justify-center ${m.full ? 'p-0' : 'p-4'} bg-on-surface-light/40 dark:bg-surface-dark/80 backdrop-blur-sm animate-fade-in`}>
+            <div className={`bg-white dark:bg-surface-dark w-full shadow-2xl overflow-y-auto custom-scrollbar border border-outline-light/5 dark:border-white/5 ${m.full ? 'modal-full' : 'max-w-lg rounded-[2rem] p-8 max-h-[90vh]'}`}>
               <div className="flex justify-between items-center mb-10">
                 <h3 className="text-2xl font-black tracking-tighter">{m.title}</h3>
                 <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light dark:hover:bg-white/5 transition-all text-xl opacity-40 hover:opacity-100 group" onClick={m.onClose}>
