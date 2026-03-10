@@ -4,16 +4,25 @@
  */
 function doGet(e) {
   const action = e.parameter.action;
-  const sheetName = e.parameter.sheet;
   const ssId = e.parameter.ssId;
   
   try {
     const ss = ssId ? SpreadsheetApp.openById(ssId) : SpreadsheetApp.getActiveSpreadsheet();
+    
     if (action === 'getData') {
-      const sheet = ss.getSheetByName(sheetName);
-      if (!sheet) return createResponse({ error: 'Hoja no encontrada: ' + sheetName });
-      return createResponse(getSheetData(sheet));
+      const sheetName = e.parameter.sheet;
+      return createResponse(getCachedSheetData(ss, sheetName));
     }
+    
+    if (action === 'batchGetData') {
+      const sheets = e.parameter.sheets ? e.parameter.sheets.split(',') : [];
+      const result = {};
+      sheets.forEach(name => {
+        result[name] = getCachedSheetData(ss, name);
+      });
+      return createResponse(result);
+    }
+    
     return createResponse({ error: 'Acción GET no válida' });
   } catch (err) {
     return createResponse({ error: err.message });
@@ -35,6 +44,7 @@ function doPost(e) {
       const sheet = ss.getSheetByName(sheetName);
       if (!sheet) return createResponse({ error: 'Hoja no encontrada: ' + sheetName });
       updateOrInsert(sheet, postData.payload, postData.onlyIfNew);
+      clearCache(ss.getId(), sheetName);
       return createResponse({ success: true });
     } 
     
@@ -44,13 +54,14 @@ function doPost(e) {
         sheet = ss.insertSheet(sheetName);
         sheet.appendRow(postData.headers);
       } else if (!postData.preserveExisting) {
-        sheet.clearContents(); // Clear only contents, not formatting
+        sheet.clearContents(); 
         sheet.getRange(1, 1, 1, postData.headers.length).setValues([postData.headers]).setFontWeight('bold').setBackground('#f3f3f3');
-      } else { // If preserveExisting is true and sheet exists, ensure headers are present if sheet is empty
+      } else { 
         if (sheet.getLastRow() === 0) {
           sheet.getRange(1, 1, 1, postData.headers.length).setValues([postData.headers]).setFontWeight('bold').setBackground('#f3f3f3');
         }
       }
+      clearCache(ss.getId(), sheetName);
       return createResponse({ success: true, message: 'Hoja inicializada' });
     }
 
@@ -60,6 +71,7 @@ function doPost(e) {
       const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues();
       sheet.clearContents();
       if (headers.length > 0 && headers[0][0]) sheet.appendRow(headers[0]);
+      clearCache(ss.getId(), sheetName);
       return createResponse({ success: true });
     }
 
@@ -75,24 +87,59 @@ function doPost(e) {
   }
 }
 
+// --- Sistema de Caché ---
+const CACHE_TTL = 600; // 10 minutos
+
+function getCachedSheetData(ss, sheetName) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = ss.getId() + '_' + sheetName;
+  const cached = cache.get(cacheKey);
+  
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (e) {
+      // Fallback si la caché está corrupta
+    }
+  }
+  
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return [];
+  
+  const data = getSheetData(sheet);
+  try {
+    cache.put(cacheKey, JSON.stringify(data), CACHE_TTL);
+  } catch (e) {
+    // Si los datos son demasiado grandes para la caché, no fallar
+  }
+  return data;
+}
+
+function clearCache(ssId, sheetName) {
+  const cache = CacheService.getScriptCache();
+  cache.remove(ssId + '_' + sheetName);
+}
+
 // --- Utilidades de Hoja de Cálculo ---
 
 function getSheetData(sheet) {
   if (!sheet) return [];
   const rows = sheet.getDataRange().getValues();
+  if (rows.length < 1) return [];
   const headers = rows[0];
   return rows.slice(1).map(row => {
     let obj = {};
     headers.forEach((h, i) => {
-      // Intentar parsear JSON si parece una lista (ej. habilidades o asignaciones)
-      try {
-        if (typeof row[i] === 'string' && (row[i].startsWith('[') || row[i].startsWith('{'))) {
-          obj[h] = JSON.parse(row[i]);
-        } else {
-          obj[h] = row[i];
+      let val = row[i];
+      // Intentar parsear JSON si parece una lista o objeto
+      if (typeof val === 'string' && (val.startsWith('[') || val.startsWith('{'))) {
+        try {
+          obj[h] = JSON.parse(val);
+        } catch (e) {
+          obj[h] = val;
         }
-      } catch (e) {
-        obj[h] = row[i];
+      } else {
+        obj[h] = val;
       }
     });
     return obj;

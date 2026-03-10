@@ -152,6 +152,52 @@ export const dataService = {
     if (keys[sheetName]) localStorage.removeItem(keys[sheetName]);
   },
 
+  getBatchData: async (sheetNames) => {
+    const { apiUrl, spreadsheetId } = dataService.getConfig();
+    if (apiUrl) {
+      try {
+        const sheetsParam = sheetNames.join(',');
+        const response = await fetch(`${apiUrl}?action=batchGetData&sheets=${sheetsParam}&ssId=${spreadsheetId || ''}`);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+
+        // Actualizar caché local para cada tabla recibida
+        const keys = {
+          'Personas': STORAGE_KEY_PERSONAS,
+          'Reuniones': STORAGE_KEY_REUNIONES,
+          'Plantillas': STORAGE_KEY_PLANTILLAS,
+          'Salas': STORAGE_KEY_SALAS,
+          'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION
+        };
+
+        Object.keys(data).forEach(sheet => {
+          if (keys[sheet]) {
+            localStorage.setItem(keys[sheet], JSON.stringify(data[sheet]));
+          }
+        });
+
+        return data;
+      } catch (e) {
+        console.error(`Error fetching batch data:`, e);
+      }
+    }
+
+    // Fallback: cargar individualmente de localStorage
+    const result = {};
+    const keys = {
+      'Personas': STORAGE_KEY_PERSONAS,
+      'Reuniones': STORAGE_KEY_REUNIONES,
+      'Plantillas': STORAGE_KEY_PLANTILLAS,
+      'Salas': STORAGE_KEY_SALAS,
+      'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION
+    };
+    sheetNames.forEach(sheet => {
+      const local = localStorage.getItem(keys[sheet]);
+      result[sheet] = local ? JSON.parse(local) : [];
+    });
+    return result;
+  },
+
   _get: async (sheet, storageKey) => {
     const { apiUrl, spreadsheetId } = dataService.getConfig();
     if (apiUrl) {
@@ -159,6 +205,7 @@ export const dataService = {
         const response = await fetch(`${apiUrl}?action=getData&sheet=${sheet}&ssId=${spreadsheetId || ''}`);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
+        localStorage.setItem(storageKey, JSON.stringify(data)); // Sincronizar local al pedir individual
         return data;
       } catch (e) {
         console.error(`Error fetching ${sheet}:`, e);

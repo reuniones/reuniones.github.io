@@ -66,16 +66,24 @@ const App = () => {
       }
     }
 
-    const p = await dataService.queryData('Personas', '$ ^(nombre)');
-    const r = await dataService.getReuniones();
-    const pl = await dataService.getPlantillas();
-    const sl = await dataService.getSalas();
-    const ta = await dataService.getTiposAsignacion();
-    setPersonas(p || []);
-    setReuniones(r || []);
-    setPlantillas(pl || []);
-    setSalas(sl.length > 0 ? sl : [{ id: 1, nombre: 'Principal' }]);
-    setTiposAsignacion(ta || []);
+    const tables = ['Personas', 'Reuniones', 'Plantillas', 'Salas', 'TiposAsignacion'];
+    const batch = await dataService.getBatchData(tables);
+
+    if (batch) {
+      // Ordenar personas por nombre localmente
+      const p = (batch.Personas || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+      const r = batch.Reuniones || [];
+      const pl = batch.Plantillas || [];
+      const sl = batch.Salas || [];
+      const ta = batch.TiposAsignacion || [];
+
+      setPersonas(p);
+      setReuniones(r);
+      setPlantillas(pl);
+      setSalas(sl.length > 0 ? sl : [{ id: 1, nombre: 'Principal' }]);
+      setTiposAsignacion(ta);
+    }
+
     setLoading(false);
   };
 
