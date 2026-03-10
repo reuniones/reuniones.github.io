@@ -954,7 +954,6 @@ const App = () => {
         </div>
       )}
 
-      {isSyncing && <SyncLoader />}
     </div>
   );
 };
