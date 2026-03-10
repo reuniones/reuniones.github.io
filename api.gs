@@ -40,10 +40,17 @@ function doPost(e) {
     
     if (action === 'initSheet') {
       let sheet = ss.getSheetByName(sheetName);
-      if (!sheet) sheet = ss.insertSheet(sheetName);
-      const headers = postData.headers;
-      sheet.clearContents();
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground('#f3f3f3');
+      if (!sheet) {
+        sheet = ss.insertSheet(sheetName);
+        sheet.appendRow(postData.headers);
+      } else if (!postData.preserveExisting) {
+        sheet.clearContents(); // Clear only contents, not formatting
+        sheet.getRange(1, 1, 1, postData.headers.length).setValues([postData.headers]).setFontWeight('bold').setBackground('#f3f3f3');
+      } else { // If preserveExisting is true and sheet exists, ensure headers are present if sheet is empty
+        if (sheet.getLastRow() === 0) {
+          sheet.getRange(1, 1, 1, postData.headers.length).setValues([postData.headers]).setFontWeight('bold').setBackground('#f3f3f3');
+        }
+      }
       return createResponse({ success: true, message: 'Hoja inicializada' });
     }
 

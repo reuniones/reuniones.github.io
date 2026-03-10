@@ -15,22 +15,42 @@ export const dataService = {
   },
 
   saveConfig: async (config) => {
+    const oldConfig = dataService.getConfig();
     localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-    if (config.apiUrl) {
+
+    // Si se acaba de configurar una API y antes no había, o cambió, migramos
+    if (config.apiUrl && config.apiUrl !== oldConfig.apiUrl) {
       try {
-        await fetch(config.apiUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          redirect: 'follow',
-          body: JSON.stringify({
-            action: 'saveData',
-            sheet: 'Configuracion',
-            ssId: config.spreadsheetId,
-            payload: { id: 'app_config', value: JSON.stringify(config) }
-          })
-        });
+        await dataService.initSheets();
+        await dataService.migrateLocalToCloud();
       } catch (e) {
-        console.error('Error saving config to cloud:', e);
+        console.error('Error during config sync/migration:', e);
+      }
+    }
+  },
+
+  migrateLocalToCloud: async () => {
+    const { apiUrl } = dataService.getConfig();
+    if (!apiUrl) return;
+
+    const migrationMap = [
+      { key: STORAGE_KEY_PERSONAS, sheet: 'Personas' },
+      { key: STORAGE_KEY_REUNIONES, sheet: 'Reuniones' },
+      { key: STORAGE_KEY_PLANTILLAS, sheet: 'Plantillas' },
+      { key: STORAGE_KEY_SALAS, sheet: 'Salas' },
+      { key: STORAGE_KEY_TIPOS_ASIGNACION, sheet: 'TiposAsignacion' }
+    ];
+
+    for (const item of migrationMap) {
+      const localData = localStorage.getItem(item.key);
+      if (localData) {
+        const parsed = JSON.parse(localData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          console.log(`Migrating ${parsed.length} items to ${item.sheet}...`);
+          for (const row of parsed) {
+            await dataService._save(item.sheet, item.key, row);
+          }
+        }
       }
     }
   },
@@ -58,7 +78,8 @@ export const dataService = {
             action: 'initSheet',
             sheet: table.name,
             headers: table.headers,
-            ssId: spreadsheetId
+            ssId: spreadsheetId,
+            preserveExisting: true // Nueva bandera para el backend
           })
         });
       } catch (e) {
