@@ -21,6 +21,7 @@ const App = () => {
   const [editingSala, setEditingSala] = useState(null);
   const [editingTipoAsignacion, setEditingTipoAsignacion] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [cloudVersion, setCloudVersion] = useState(null);
