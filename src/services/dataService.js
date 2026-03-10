@@ -8,27 +8,48 @@ const STORAGE_KEY_PLANTILLAS = 'jw_reuniones_plantillas';
 const STORAGE_KEY_SALAS = 'jw_reuniones_salas';
 const STORAGE_KEY_TIPOS_ASIGNACION = 'jw_reuniones_tipos_asignacion';
 const STORAGE_KEY_PLANTILLAS_PARTES = 'jw_reuniones_plantillas_partes';
+const STORAGE_KEY_ANUNCIOS = 'jw_reuniones_anuncios';
 
-export const APP_VERSION = '1.2.0';
+export const APP_VERSION = '1.3.0';
 
 export const dataService = {
   APP_VERSION: APP_VERSION,
   getConfig: () => {
     const config = localStorage.getItem(STORAGE_KEY_CONFIG);
-    return config ? JSON.parse(config) : { apiUrl: '', spreadsheetId: '' };
+    return config ? JSON.parse(config) : { apiUrl: '', spreadsheetId: '', nombreCongregacion: '' };
   },
 
   saveConfig: async (config) => {
-    const oldConfig = dataService.getConfig();
     localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-
+    if (config.apiUrl && config.nombreCongregacion) {
+      await dataService.saveCloudConfig('nombre_congregacion', config.nombreCongregacion);
+    }
+    const oldConfig = dataService.getConfig();
     if (config.apiUrl && config.apiUrl !== oldConfig.apiUrl) {
-      // Al cambiar URL, si no hay versión en la nube, inicializamos
       const cloudVersion = await dataService.getAppVersion();
       if (!cloudVersion) {
         await dataService.initSheets(true);
         await dataService.migrateLocalToCloud();
       }
+    }
+  },
+
+  saveCloudConfig: async (id, value) => {
+    const { apiUrl, spreadsheetId } = dataService.getConfig();
+    if (!apiUrl) return;
+    try {
+      await fetch(apiUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({
+          action: 'saveData',
+          sheet: 'Configuracion',
+          ssId: spreadsheetId,
+          payload: { id, value }
+        })
+      });
+    } catch (e) {
+      console.error(`Error saving cloud config ${id}:`, e);
     }
   },
 
@@ -74,9 +95,10 @@ export const dataService = {
       { name: 'Personas', headers: ['id', 'nombre', 'genero', 'privilegios', 'habilidades', 'asignaciones'] },
       { name: 'Reuniones', headers: ['id', 'fecha', 'tipo', 'datos_reunion'] },
       { name: 'Plantillas', headers: ['id', 'nombre', 'tipo', 'estructura'] },
-      { name: 'PlantillasPartes', headers: ['id', 'nombre', 'cupos', 'permiteAyudante', 'tipoAsignacionIds', 'salaIds'] },
+      { name: 'PlantillasPartes', headers: ['id', 'nombre', 'cupos', 'permiteAyudante', 'permiteLector', 'tipoAsignacionIds', 'salaIds'] },
       { name: 'Salas', headers: ['id', 'nombre'] },
       { name: 'TiposAsignacion', headers: ['id', 'nombre'] },
+      { name: 'Anuncios', headers: ['id', 'fecha', 'contenido', 'prioridad'] },
       { name: 'Configuracion', headers: ['id', 'value'] }
     ];
 
@@ -111,7 +133,8 @@ export const dataService = {
       { key: STORAGE_KEY_PLANTILLAS, sheet: 'Plantillas' },
       { key: STORAGE_KEY_SALAS, sheet: 'Salas' },
       { key: STORAGE_KEY_TIPOS_ASIGNACION, sheet: 'TiposAsignacion' },
-      { key: STORAGE_KEY_PLANTILLAS_PARTES, sheet: 'PlantillasPartes' }
+      { key: STORAGE_KEY_PLANTILLAS_PARTES, sheet: 'PlantillasPartes' },
+      { key: STORAGE_KEY_ANUNCIOS, sheet: 'Anuncios' }
     ];
 
     for (const item of migrationMap) {
@@ -150,7 +173,10 @@ export const dataService = {
       'Reuniones': STORAGE_KEY_REUNIONES,
       'Plantillas': STORAGE_KEY_PLANTILLAS,
       'Salas': STORAGE_KEY_SALAS,
-      'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION
+      'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION,
+      'PlantillasPartes': STORAGE_KEY_PLANTILLAS_PARTES,
+      'Anuncios': STORAGE_KEY_ANUNCIOS,
+      'Configuracion': STORAGE_KEY_CONFIG
     };
     if (keys[sheetName]) localStorage.removeItem(keys[sheetName]);
   },
@@ -171,12 +197,26 @@ export const dataService = {
           'Plantillas': STORAGE_KEY_PLANTILLAS,
           'Salas': STORAGE_KEY_SALAS,
           'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION,
-          'PlantillasPartes': STORAGE_KEY_PLANTILLAS_PARTES
+          'PlantillasPartes': STORAGE_KEY_PLANTILLAS_PARTES,
+          'Anuncios': STORAGE_KEY_ANUNCIOS,
+          'Configuracion': STORAGE_KEY_CONFIG
         };
 
         Object.keys(data).forEach(sheet => {
           if (keys[sheet]) {
-            localStorage.setItem(keys[sheet], JSON.stringify(data[sheet]));
+            if (sheet === 'Configuracion') {
+              // Convertir array de {id, value} a objeto plano y fusionar con config actual
+              const configRows = data[sheet];
+              const currentConfig = dataService.getConfig();
+              const cloudConfig = {};
+              configRows.forEach(row => {
+                if (row.id === 'nombre_congregacion') cloudConfig.nombreCongregacion = row.value;
+              });
+              const newConfig = { ...currentConfig, ...cloudConfig };
+              localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(newConfig));
+            } else {
+              localStorage.setItem(keys[sheet], JSON.stringify(data[sheet]));
+            }
           }
         });
 
@@ -193,7 +233,10 @@ export const dataService = {
       'Reuniones': STORAGE_KEY_REUNIONES,
       'Plantillas': STORAGE_KEY_PLANTILLAS,
       'Salas': STORAGE_KEY_SALAS,
-      'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION
+      'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION,
+      'PlantillasPartes': STORAGE_KEY_PLANTILLAS_PARTES,
+      'Anuncios': STORAGE_KEY_ANUNCIOS,
+      'Configuracion': STORAGE_KEY_CONFIG
     };
     sheetNames.forEach(sheet => {
       const local = localStorage.getItem(keys[sheet]);
@@ -335,6 +378,10 @@ export const dataService = {
   saveTipoAsignacion: (tipo) => dataService._save('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION, tipo),
   deleteTipoAsignacion: (id) => dataService._delete('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION, id),
 
+  getAnuncios: () => dataService._get('Anuncios', STORAGE_KEY_ANUNCIOS),
+  saveAnuncio: (anuncio) => dataService._save('Anuncios', STORAGE_KEY_ANUNCIOS, anuncio),
+  deleteAnuncio: (id) => dataService._delete('Anuncios', STORAGE_KEY_ANUNCIOS, id),
+
   queryData: async (sheetName, expression) => {
     const data = await (
       sheetName === 'Personas' ? dataService.getPersonas() :
@@ -342,7 +389,8 @@ export const dataService = {
           sheetName === 'Plantillas' ? dataService.getPlantillas() :
             sheetName === 'Salas' ? dataService.getSalas() :
               sheetName === 'TiposAsignacion' ? dataService.getTiposAsignacion() :
-                sheetName === 'PlantillasPartes' ? dataService.getPlantillasPartes() : null
+                sheetName === 'PlantillasPartes' ? dataService.getPlantillasPartes() :
+                  sheetName === 'Anuncios' ? dataService.getAnuncios() : null
     );
     if (!data) return null;
     try {
