@@ -10,21 +10,46 @@ const App = () => {
   const [salas, setSalas] = useState([]);
   const [tiposAsignacion, setTiposAsignacion] = useState([]);
   const [config, setConfig] = useState(dataService.getConfig());
+  const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showReunionModal, setShowReunionModal] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [showPlantillaModal, setShowPlantillaModal] = useState(false);
   const [showSalaModal, setShowSalaModal] = useState(false);
   const [showTipoAsignacionModal, setShowTipoAsignacionModal] = useState(false);
-  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showReunionModal, setShowReunionModal] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
   const [editingPlantilla, setEditingPlantilla] = useState(null);
   const [editingSala, setEditingSala] = useState(null);
   const [editingTipoAsignacion, setEditingTipoAsignacion] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [showVersionModal, setShowVersionModal] = useState(false);
   const [cloudVersion, setCloudVersion] = useState(null);
+
+  // Sistema de Temas (Material 3)
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const applyTheme = (t) => {
+      if (t === 'system') {
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        root.classList.toggle('dark', systemTheme === 'dark');
+      } else {
+        root.classList.toggle('dark', t === 'dark');
+      }
+    };
+
+    applyTheme(theme);
+    localStorage.setItem('theme', theme);
+
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = () => applyTheme('system');
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    }
+  }, [theme]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -327,157 +352,263 @@ const App = () => {
   );
 
   return (
-    <div className="layout">
+    <div className="flex min-h-screen bg-surface-light dark:bg-surface-dark text-on-surface-light dark:text-on-surface-dark transition-colors duration-300">
       {isSyncing && (
-        <div className="sync-loader">
-          <div className="spinner"></div>
-          <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>Sincronizando...</span>
+        <div className="fixed top-4 right-4 z-[2000] flex items-center gap-3 bg-white dark:bg-surface-dark border border-primary-light dark:border-primary-dark px-4 py-2 rounded-full shadow-lg animate-fade-in">
+          <div className="w-4 h-4 border-2 border-primary-light/20 border-t-primary-light rounded-full animate-spin"></div>
+          <span className="text-xs font-medium">Sincronizando...</span>
         </div>
       )}
-      <aside className="sidebar glass">
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2.5rem', gap: '0.75rem' }}>
-          <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>JW</div>
-          <h2 style={{ color: 'var(--text)', fontSize: '1.25rem' }}>Gestor Reuniones</h2>
-        </div>
-        <nav>
-          <a href="#" className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>Tablero</a>
-          <a href="#" className={`nav-link ${activeTab === 'personas' ? 'active' : ''}`} onClick={() => setActiveTab('personas')}>Personas</a>
-          <a href="#" className={`nav-link ${activeTab === 'plantillas' ? 'active' : ''}`} onClick={() => setActiveTab('plantillas')}>Plantillas</a>
-          <a href="#" className={`nav-link ${activeTab === 'salas' ? 'active' : ''}`} onClick={() => setActiveTab('salas')}>Salas</a>
-          <a href="#" className={`nav-link ${activeTab === 'tiposAsignacion' ? 'active' : ''}`} onClick={() => setActiveTab('tiposAsignacion')}>Asignaciones</a>
-          <a href="#" className={`nav-link ${activeTab === 'reuniones' ? 'active' : ''}`} onClick={() => setActiveTab('reuniones')}>Programación</a>
-          <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
-            <button className="nav-link" style={{ width: '100%', textAlign: 'left', background: 'none' }} onClick={() => setShowConfigModal(true)}>
-              ⚙️ Configuración
-            </button>
+
+      {/* Sidebar - Material Navigation Drawer style */}
+      <aside className="w-64 flex-shrink-0 border-r border-outline-light/10 dark:border-outline-dark/10 p-6 flex flex-col sticky top-0 h-screen">
+        <div className="flex items-center gap-3 px-2 mb-8">
+          <div className="w-10 h-10 rounded-xl bg-primary-light dark:bg-primary-dark flex items-center justify-center text-white dark:text-surface-dark shadow-lg">
+            <span className="material-icons">event_note</span>
           </div>
+          <h1 className="text-xl font-bold tracking-tight text-primary-light dark:text-primary-dark">
+            Gestor Reuniones
+          </h1>
+        </div>
+
+        <nav className="flex-1 space-y-1">
+          {[
+            { id: 'dashboard', label: 'Tablero', icon: 'dashboard' },
+            { id: 'personas', label: 'Personas', icon: 'people' },
+            { id: 'plantillas', label: 'Plantillas', icon: 'description' },
+            { id: 'salas', label: 'Salas', icon: 'meeting_room' },
+            { id: 'asignaciones', label: 'Asignaciones', icon: 'assignment' },
+            { id: 'programacion', label: 'Programación', icon: 'calendar_month' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === item.id
+                ? 'bg-primary-light/10 text-primary-light dark:bg-primary-dark/10 dark:text-primary-dark font-semibold'
+                : 'text-outline-light hover:bg-surface-light dark:text-outline-dark dark:hover:bg-surface-dark/50'
+                }`}
+            >
+              <span className={`material-icons text-[22px] transition-transform duration-200 ${activeTab === item.id ? 'scale-110' : 'group-hover:scale-110'}`}>
+                {item.icon}
+              </span>
+              <span className="text-sm">{item.label}</span>
+            </button>
+          ))}
         </nav>
+
+        <div className="mt-auto pt-6 border-t border-outline-light/10 dark:border-outline-dark/10">
+          <button
+            onClick={() => setShowConfigModal(true)}
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-outline-light hover:bg-surface-light dark:text-outline-dark dark:hover:bg-surface-dark/50 transition-all group"
+          >
+            <span className="material-icons text-[22px] group-hover:rotate-45 transition-transform duration-300">settings</span>
+            <span className="text-sm">Configuración</span>
+          </button>
+          <div className="mt-4 flex gap-1 p-1 bg-surface-light dark:bg-white/5 rounded-full border border-outline-light/10">
+            {['light', 'system', 'dark'].map(m => (
+              <button
+                key={m}
+                onClick={() => setTheme(m)}
+                className={`flex-1 py-1 text-[10px] rounded-full transition-all ${theme === m
+                  ? 'bg-white dark:bg-primary-dark text-on-surface-light dark:text-surface-dark shadow-sm'
+                  : 'text-on-surface-light/40 hover:text-on-surface-light'
+                  }`}
+              >
+                {m === 'light' ? 'Claro' : m === 'dark' ? 'Oscuro' : 'Auto'}
+              </button>
+            ))}
+          </div>
+        </div>
       </aside>
 
-      <main className="main-content">
-        <header style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <main className="flex-1 p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+        <header className="flex justify-between items-center mb-10 animate-fade-in">
           <div>
-            <h1 style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">
               {activeTab === 'dashboard' ? 'Tablero General' :
                 activeTab === 'personas' ? 'Gestión de Personas' :
                   activeTab === 'plantillas' ? 'Plantillas de Reunión' :
                     activeTab === 'salas' ? 'Gestión de Salas' :
                       activeTab === 'tiposAsignacion' ? 'Tipos de Asignación' : 'Programación Semanal'}
             </h1>
-            <p style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm text-on-surface-light/60 dark:text-on-surface-dark/60 font-medium">
               {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="flex gap-3">
             {activeTab === 'personas' && (
-              <button className="primary" onClick={() => { setEditingPersona(null); setShowModal(true); }}>+ Añadir Persona</button>
+              <button className="btn-primary flex items-center gap-2" onClick={() => { setEditingPersona(null); setShowModal(true); }}>
+                <span>+</span> Añadir Persona
+              </button>
             )}
             {activeTab === 'plantillas' && (
-              <button className="primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva Plantilla</button>
+              <button className="btn-primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva Plantilla</button>
             )}
             {activeTab === 'salas' && (
-              <button className="primary" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Nueva Sala</button>
+              <button className="btn-primary" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Nueva Sala</button>
             )}
             {activeTab === 'tiposAsignacion' && (
-              <button className="primary" onClick={() => { setEditingTipoAsignacion(null); setShowTipoAsignacionModal(true); }}>+ Nuevo Tipo</button>
+              <button className="btn-primary" onClick={() => { setEditingTipoAsignacion(null); setShowTipoAsignacionModal(true); }}>+ Nuevo Tipo</button>
             )}
             {activeTab === 'reuniones' && (
-              <button className="primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva Reunión</button>
+              <button className="btn-primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva Reunión</button>
             )}
           </div>
         </header>
 
-        <div className="content-area">
+        <div className="space-y-6">
           {(!config.apiUrl || !config.spreadsheetId) && (
-            <div className="glass" style={{ padding: '2rem', marginBottom: '2rem', border: '1px solid var(--warning)' }}>
-              <h3 style={{ color: 'var(--warning)' }}>⚠️ Configuración Requerida</h3>
-              <p>Por favor, configura la <strong>URL de la API</strong> y el <strong>Spreadsheet ID</strong> para comenzar a sincronizar datos.</p>
-              <button className="primary" style={{ marginTop: '1rem' }} onClick={() => setShowConfigModal(true)}>Configurar Ahora</button>
+            <div className="bg-error-light/10 dark:bg-error-dark/20 border border-error-light/30 p-6 rounded-2xl flex items-start gap-4">
+              <span className="material-icons text-error-light dark:text-error-dark">report_problem</span>
+              <div>
+                <h3 className="font-bold text-error-light dark:text-error-dark">Configuración Requerida</h3>
+                <p className="text-sm opacity-80 mb-4">Por favor, configura la URL de la API y el Spreadsheet ID para comenzar a sincronizar datos.</p>
+                <button className="bg-error-light text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm" onClick={() => setShowConfigModal(true)}>Configurar Ahora</button>
+              </div>
             </div>
           )}
 
           {activeTab === 'dashboard' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-              <div className="glass" style={{ padding: '1.5rem' }}>
-                <h3>Estado de la Congregación</h3>
-                <div style={{ marginTop: '1rem' }}>
-                  <div className="stat-row"><span>Total Publicadores</span><span className="stat-val">{personas.length}</span></div>
-                  <div className="stat-row"><span>Reuniones Programadas</span><span className="stat-val">{reuniones.length}</span></div>
-                  <div className="stat-row"><span>Plantillas Disponibles</span><span className="stat-val">{plantillas.length}</span></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+              <div className="card shadow-md">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span className="material-icons text-primary-light dark:text-primary-dark">analytics</span> Estado de la Congregación
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
+                    <span className="text-sm opacity-70">Total Publicadores</span>
+                    <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{personas.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
+                    <span className="text-sm opacity-70">Reuniones Programadas</span>
+                    <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{reuniones.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
+                    <span className="text-sm opacity-70">Plantillas Disponibles</span>
+                    <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{plantillas.length}</span>
+                  </div>
                 </div>
               </div>
-              <div className="glass" style={{ padding: '1.5rem' }}>
-                <h3>Próxima Reunión</h3>
+              <div className="card shadow-md border-primary-light/20 dark:border-primary-dark/20">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span className="material-icons text-primary-light dark:text-primary-dark">campaign</span> Próxima Reunión
+                </h3>
                 {reuniones.length > 0 ? (
-                  <div style={{ marginTop: '1rem' }}>
-                    <p><strong>{reuniones[0].tipo}</strong></p>
-                    <p style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{reuniones[0].fecha}</p>
+                  <div className="p-4 rounded-2xl bg-primary-light/5 dark:bg-primary-dark/10 border border-primary-light/10">
+                    <p className="text-lg font-bold text-primary-light dark:text-primary-dark mb-1">{reuniones[0].tipo}</p>
+                    <p className="text-2xl font-black tracking-tighter">{reuniones[0].fecha}</p>
                   </div>
-                ) : <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>No hay reuniones próximas.</p>}
+                ) : (
+                  <div className="text-center py-8 opacity-40 italic">No hay reuniones próximas.</div>
+                )}
               </div>
             </div>
           )}
 
           {activeTab === 'personas' && (
-            <div className="glass" style={{ overflowX: 'auto' }}>
-              <table className="custom-table">
-                <thead>
-                  <tr><th>Nombre</th><th>Género</th><th>Privilegios</th><th>Habilidades</th><th>Acciones</th></tr>
-                </thead>
-                <tbody>
-                  {personas.map(p => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: '600' }}>{p.nombre}</td>
-                      <td><span className={`badge ${p.genero}`}>{p.genero === 'H' ? 'Varón' : 'Mujer'}</span></td>
-                      <td>{p.privilegios}</td>
-                      <td><div className="skill-tags">{p.habilidades?.map(h => <span key={h} className="skill-tag">{h}</span>)}</div></td>
-                      <td><button className="btn-icon" onClick={() => { setEditingPersona(p); setShowModal(true); }}>✎</button></td>
+            <div className="card shadow-md overflow-hidden p-0 animate-fade-in">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                    <tr>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Género</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Privilegios</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Habilidades</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-outline-light/5">
+                    {personas.map(p => (
+                      <tr key={p.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-semibold">{p.nombre}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${p.genero === 'H'
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                            : 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300'
+                            }`}>
+                            {p.genero === 'H' ? 'VARÓN' : 'MUJER'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm opacity-80">{p.privilegios}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-1">
+                            {p.habilidades?.map(h => (
+                              <span key={h} className="px-2 py-0.5 rounded bg-surface-light dark:bg-white/10 text-[10px] opacity-70 border border-outline-light/10">
+                                {h}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPersona(p); setShowModal(true); }}>
+                            <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {activeTab === 'plantillas' && (
-            <div className="glass" style={{ overflowX: 'auto' }}>
-              <table className="custom-table">
-                <thead>
-                  <tr><th>Nombre (Tipo)</th><th>Secciones</th><th>Acciones</th></tr>
-                </thead>
-                <tbody>
-                  {plantillas.map(pl => (
-                    <tr key={pl.id}>
-                      <td style={{ fontWeight: '600' }}>{pl.nombre}</td>
-                      <td>{JSON.parse(pl.estructura || '[]').length} secciones</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button className="btn-icon" onClick={() => { setEditingPlantilla(pl); setShowPlantillaModal(true); }}>✎</button>
-                          <button className="btn-icon danger" onClick={() => handleDeletePlantilla(pl.id)}>🗑</button>
-                        </div>
-                      </td>
+            <div className="card shadow-md overflow-hidden p-0 animate-fade-in">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                    <tr>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre (Tipo)</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Secciones</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
                     </tr>
-                  ))}
-                  {plantillas.length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center' }}>No hay plantillas creadas.</td></tr>}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-outline-light/5">
+                    {plantillas.map(pl => (
+                      <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-semibold">{pl.nombre}</td>
+                        <td className="px-6 py-4 text-sm opacity-80">{JSON.parse(pl.estructura || '[]').length} secciones</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantilla(pl); setShowPlantillaModal(true); }}>
+                              <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
+                            </button>
+                            <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeletePlantilla(pl.id)}>
+                              <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {plantillas.length === 0 && <tr><td colSpan="3" className="px-6 py-8 text-center opacity-40 italic">No hay plantillas creadas.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
           {activeTab === 'salas' && (
-            <div className="glass" style={{ overflowX: 'auto' }}>
-              <table className="custom-table">
-                <thead>
-                  <tr><th>Nombre de Sala</th><th>Acciones</th></tr>
+            <div className="card shadow-md overflow-hidden p-0 animate-fade-in max-w-2xl">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre de Sala</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
+                  </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-outline-light/5">
                   {salas.map(s => (
-                    <tr key={s.id}>
-                      <td style={{ fontWeight: '600' }}>{s.nombre}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button className="btn-icon" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>✎</button>
-                          <button className="btn-icon danger" onClick={() => handleDeleteSala(s.id)}>🗑</button>
+                    <tr key={s.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4 font-semibold">{s.nombre}</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>
+                            <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
+                          </button>
+                          <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteSala(s.id)}>
+                            <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -488,98 +619,116 @@ const App = () => {
           )}
 
           {activeTab === 'tiposAsignacion' && (
-            <div className="glass" style={{ overflowX: 'auto' }}>
-              <table className="custom-table">
-                <thead>
-                  <tr><th>Nombre del Tipo</th><th>Acciones</th></tr>
+            <div className="card shadow-md overflow-hidden p-0 animate-fade-in max-w-2xl">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre del Tipo</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
+                  </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-outline-light/5">
                   {tiposAsignacion.map(t => (
-                    <tr key={t.id}>
-                      <td style={{ fontWeight: '600' }}>{t.nombre}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button className="btn-icon" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>✎</button>
-                          <button className="btn-icon danger" onClick={() => handleDeleteTipoAsignacion(t.id)}>🗑</button>
+                    <tr key={t.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                      <td className="px-6 py-4 font-semibold">{t.nombre}</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>
+                            <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
+                          </button>
+                          <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteTipoAsignacion(t.id)}>
+                            <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ))}
-                  {tiposAsignacion.length === 0 && <tr><td colSpan="2" style={{ textAlign: 'center' }}>No hay tipos definidos.</td></tr>}
+                  {tiposAsignacion.length === 0 && <tr><td colSpan="2" className="px-6 py-8 text-center opacity-40 italic">No hay tipos definidos.</td></tr>}
                 </tbody>
               </table>
             </div>
           )}
 
           {activeTab === 'reuniones' && (
-            <div style={{ display: 'grid', gridTemplateColumns: selectedReunion ? '300px 1fr' : '1fr', gap: '1.5rem' }}>
-              <div className="glass" style={{ padding: '1.5rem' }}>
-                <h3>Listado de Reuniones</h3>
-                <div style={{ marginTop: '1rem' }}>
+            <div className="flex flex-col lg:flex-row gap-6 animate-fade-in items-start">
+              <div className="card shadow-md w-full lg:w-80 flex-shrink-0">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span className="material-icons text-primary-light dark:text-primary-dark">calendar_month</span> Listado de Reuniones
+                </h3>
+                <div className="space-y-2">
                   {reuniones.map(r => (
                     <div
                       key={r.id}
-                      className={`nav-link ${selectedReunion?.id === r.id ? 'active' : ''}`}
+                      className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${selectedReunion?.id === r.id
+                        ? 'bg-primary-light text-white shadow-md dark:bg-primary-dark dark:text-surface-dark'
+                        : 'bg-surface-light dark:bg-white/5 hover:bg-primary-light/10 dark:hover:bg-primary-dark/10'
+                        }`}
                       onClick={() => setSelectedReunion(r)}
-                      style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span>{r.fecha}</span>
-                        <small>{r.tipo === 'Vida y Ministerio' ? 'V&M' : 'Fin de Semana'}</small>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm tracking-tight">{r.fecha}</span>
+                        <span className={`text-[10px] font-medium uppercase opacity-70 ${selectedReunion?.id === r.id ? 'text-white/80' : ''}`}>
+                          {r.tipo === 'Vida y Ministerio' ? 'Vida y Ministerio' : 'Fin de Semana'}
+                        </span>
                       </div>
-                      <button className="btn-icon danger" style={{ padding: '0.2rem', fontSize: '0.8rem' }} onClick={(e) => { e.stopPropagation(); handleDeleteReunion(r.id); }}>🗑</button>
+                      <button
+                        className={`p-1.5 rounded-full transition-colors group ${selectedReunion?.id === r.id ? 'hover:bg-white/20' : 'text-error-light hover:bg-error-light/10 dark:text-error-dark dark:hover:bg-error-dark/10'
+                          }`}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteReunion(r.id); }}
+                      >
+                        <span className="material-icons text-sm group-hover:scale-110 block">delete</span>
+                      </button>
                     </div>
                   ))}
+                  {reuniones.length === 0 && <div className="text-center py-8 opacity-40 italic">No hay reuniones.</div>}
                 </div>
               </div>
 
-              {selectedReunion && (
-                <div className="glass" style={{ padding: '2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                    <h3>Partes de la Reunión ({selectedReunion.fecha})</h3>
+              {selectedReunion ? (
+                <div className="card shadow-md flex-1 w-full bg-white/50 dark:bg-surface-dark/50">
+                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-outline-light/10">
+                    <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
+                      <span className="text-primary-light dark:text-primary-dark font-normal">Programa de la semana:</span> {selectedReunion.fecha}
+                    </h3>
                   </div>
 
-                  <div style={{ display: 'grid', gap: '2rem' }}>
+                  <div className="space-y-8">
                     {JSON.parse(selectedReunion.datos_reunion || '{"secciones":[]}').secciones.map((seccion, sIdx) => (
-                      <div key={sIdx} style={{
-                        background: seccion.bgColor || 'rgba(255,255,255,0.05)',
-                        borderRadius: '12px',
-                        padding: '1rem',
-                        borderLeft: `5px solid ${seccion.headerColor || 'var(--primary)'}`
-                      }}>
+                      <div key={sIdx} className="rounded-3xl overflow-hidden border border-outline-light/10 dark:border-outline-dark/10 bg-white dark:bg-white/5 shadow-sm">
                         {seccion.showHeader && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                            <h4 style={{ color: seccion.headerColor || 'var(--primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <span>{seccion.headerIcon}</span> {seccion.nombre}
+                          <div className="px-6 py-4 flex justify-between items-center bg-surface-light dark:bg-white/5 border-b border-outline-light/5"
+                            style={{ borderLeft: `6px solid ${seccion.headerColor || 'var(--primary)'}` }}>
+                            <h4 className="font-bold flex items-center gap-3" style={{ color: seccion.headerColor }}>
+                              <span className="material-icons">{seccion.headerIcon || 'label'}</span> {seccion.nombre}
                             </h4>
-                            <div style={{ display: 'flex', gap: '0.25rem' }}>
-                              <button className="btn-icon" style={{ padding: '0.2rem', fontSize: '0.7rem' }} onClick={() => {
+                            <button className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors group" onClick={() => {
+                              const datos = JSON.parse(selectedReunion.datos_reunion);
+                              const nombre = prompt('Nuevo nombre de sección:', seccion.nombre);
+                              if (nombre) {
+                                datos.secciones[sIdx].nombre = nombre;
+                                handleUpdateWeeklyStructure(datos);
+                              }
+                            }}>
+                              <span className="material-icons text-xs group-hover:scale-110 block">edit</span>
+                            </button>
+                            <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors group" onClick={() => {
+                              if (confirm('¿Eliminar esta sección de la semana?')) {
                                 const datos = JSON.parse(selectedReunion.datos_reunion);
-                                const nombre = prompt('Nuevo nombre de sección:', seccion.nombre);
-                                if (nombre) {
-                                  datos.secciones[sIdx].nombre = nombre;
-                                  handleUpdateWeeklyStructure(datos);
-                                }
-                              }}>✎</button>
-                              <button className="btn-icon danger" style={{ padding: '0.2rem', fontSize: '0.7rem' }} onClick={() => {
-                                if (confirm('¿Eliminar esta sección de la semana?')) {
-                                  const datos = JSON.parse(selectedReunion.datos_reunion);
-                                  datos.secciones.splice(sIdx, 1);
-                                  handleUpdateWeeklyStructure(datos);
-                                }
-                              }}>×</button>
-                            </div>
+                                datos.secciones.splice(sIdx, 1);
+                                handleUpdateWeeklyStructure(datos);
+                              }
+                            }}>
+                              <span className="material-icons text-xs group-hover:scale-110 block">close</span>
+                            </button>
                           </div>
                         )}
-                        <div style={{ display: 'grid', gap: '0.75rem' }}>
+                        <div className="divide-y divide-outline-light/5">
                           {seccion.partes.map((parte, pIdx) => {
                             const asignadoId = parte.asignadoId;
                             const aptos = personas.filter(p => {
-                              // Filtrado por Género (Oración/Lectura)
                               if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') {
                                 if (p.genero !== 'H') return false;
                               }
-                              // Filtrado por Tipo de Asignación (debe tener alguna de las requeridas)
                               if (parte.tipoAsignacionIds && parte.tipoAsignacionIds.length > 0) {
                                 const hasRequired = parte.tipoAsignacionIds.some(tid => p.asignaciones?.includes(String(tid)) || p.asignaciones?.includes(Number(tid)));
                                 if (!hasRequired) return false;
@@ -588,27 +737,29 @@ const App = () => {
                             });
 
                             return (
-                              <div key={parte.id} className="stat-row" style={{ alignItems: 'center' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span style={{ fontWeight: '500' }}>{parte.nombre}</span>
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                              <div key={parte.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:bg-primary-light/5 dark:hover:bg-primary-dark/5 transition-colors">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="font-bold text-base">{parte.nombre}</span>
+                                    <div className="flex flex-wrap gap-1">
                                       {(parte.salaIds || [1]).map(sid => (
-                                        <small key={sid} className="badge" style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.1)' }}>
+                                        <span key={sid} className="text-[9px] px-2 py-0.5 rounded-full bg-outline-light/10 dark:bg-outline-dark/20 font-bold uppercase opacity-60">
                                           {salas.find(s => s.id == sid)?.nombre || 'Principal'}
-                                        </small>
+                                        </span>
                                       ))}
                                     </div>
-                                    <button className="btn-icon" style={{ fontSize: '0.7rem', padding: '0.1rem' }} onClick={() => {
+                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-all group" onClick={() => {
                                       const datos = JSON.parse(selectedReunion.datos_reunion);
                                       const n = prompt('Nombre de la parte:', parte.nombre);
                                       if (n) {
                                         datos.secciones[sIdx].partes[pIdx].nombre = n;
                                         handleUpdateWeeklyStructure(datos);
                                       }
-                                    }}>✎</button>
+                                    }}>
+                                      <span className="material-icons text-[14px] group-hover:scale-110 block">edit</span>
+                                    </button>
                                   </div>
-                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <div className="flex items-center gap-4">
                                     <PillSelector
                                       items={salas}
                                       selectedIds={parte.salaIds || [1]}
@@ -623,46 +774,59 @@ const App = () => {
                                         handleUpdateWeeklyStructure(datos);
                                       }}
                                     />
-                                    {parte.duracion && <small style={{ color: 'var(--text-muted)' }}>{parte.duracion} min</small>}
+                                    {parte.duracion && <span className="text-xs font-medium opacity-50 px-2 py-1 bg-surface-light dark:bg-white/5 rounded-md">{parte.duracion} min</span>}
                                   </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                  <span style={{ color: asignadoId ? 'var(--text)' : 'var(--danger)', fontSize: '0.9rem', marginRight: '0.5rem' }}>
-                                    {getPersonaName(asignadoId)}
-                                  </span>
+                                <div className="flex items-center gap-3">
+                                  <div className={`text-right ${asignadoId ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-error-light dark:text-error-dark'}`}>
+                                    <div className="text-[10px] uppercase font-bold opacity-40 leading-none mb-1">Asignado</div>
+                                    <div className="font-bold text-sm tracking-tight">{getPersonaName(asignadoId)}</div>
+                                  </div>
                                   <select
-                                    style={{ width: 'auto', padding: '0.3rem', fontSize: '0.85rem' }}
+                                    className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-3 py-2 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 active:scale-95 transition-all"
                                     value={asignadoId || ''}
                                     onChange={(e) => handleAsignar(parte.id, e.target.value)}
                                   >
-                                    <option value="">Asignar...</option>
-                                    {aptos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                                    <option value="">Cambiar...</option>
+                                    {aptos.map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
                                   </select>
-                                  <button className="btn-icon danger" style={{ padding: '0.2rem' }} onClick={() => {
+                                  <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors opacity-0 group-hover:opacity-100 group" onClick={() => {
                                     if (confirm('¿Eliminar esta parte?')) {
                                       const datos = JSON.parse(selectedReunion.datos_reunion);
                                       datos.secciones[sIdx].partes.splice(pIdx, 1);
                                       handleUpdateWeeklyStructure(datos);
                                     }
-                                  }}>×</button>
+                                  }}>
+                                    <span className="material-icons text-sm group-hover:scale-110 block">close</span>
+                                  </button>
                                 </div>
                               </div>
                             );
                           })}
-                          <button className="nav-link" style={{ fontSize: '0.8rem', padding: '0.5rem', border: '1px dashed var(--border)', textAlign: 'center' }} onClick={() => {
+                          <button className="w-full py-4 text-xs font-bold opacity-40 hover:opacity-100 hover:bg-surface-light dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 border-t border-outline-light/5 group" onClick={() => {
                             const datos = JSON.parse(selectedReunion.datos_reunion);
                             datos.secciones[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', duracion: 5, asignadoId: null });
                             handleUpdateWeeklyStructure(datos);
-                          }}>+ Añadir parte ad-hoc</button>
+                          }}>
+                            <span className="material-icons text-sm group-hover:scale-110">add</span> AÑADIR PARTE AD-HOC
+                          </button>
                         </div>
                       </div>
                     ))}
-                    <button className="primary" style={{ padding: '1rem' }} onClick={() => {
+                    <button className="w-full py-6 border-2 border-dashed border-outline-light/20 rounded-3xl opacity-50 hover:opacity-100 hover:border-primary-light/50 transition-all font-bold flex items-center justify-center gap-3 group" onClick={() => {
                       const datos = JSON.parse(selectedReunion.datos_reunion);
                       datos.secciones.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#6366f1', bgColor: 'transparent', partes: [] });
                       handleUpdateWeeklyStructure(datos);
-                    }}>+ Añadir nueva sección a la semana</button>
+                    }}>
+                      <span className="material-icons text-2xl group-hover:scale-110">add_circle_outline</span> Añadir nueva sección a la semana
+                    </button>
                   </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center py-20 card shadow-sm opacity-30 text-center">
+                  <span className="material-icons text-6xl mb-4">calendar_today</span>
+                  <h3 className="text-xl font-bold">Selecciona una reunión</h3>
+                  <p className="text-sm">Elige una fecha a la izquierda para ver su programa detallado.</p>
                 </div>
               )}
             </div>
@@ -670,303 +834,181 @@ const App = () => {
         </div>
       </main>
 
-      {/* Modal Persona */}
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="glass modal-content">
-            <h3>{editingPersona ? 'Editar Persona' : 'Nueva Persona'}</h3>
-            <form onSubmit={handleSavePersona} style={{ marginTop: '1.5rem' }}>
-              <div className="form-group"><label>Nombre</label><input name="nombre" defaultValue={editingPersona?.nombre} required /></div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div className="form-group" style={{ flex: 1 }}><label>Género</label><select name="genero" defaultValue={editingPersona?.genero || 'H'}><option value="H">Varón</option><option value="M">Mujer</option></select></div>
-                <div className="form-group" style={{ flex: 1 }}><label>Privilegios</label><select name="privilegios" defaultValue={editingPersona?.privilegios || 'Publicador'}><option>Publicador</option><option>Anciano</option><option>Siervo Ministerial</option><option>Precursor</option></select></div>
-              </div>
-              <div className="form-group">
-                <label>Habilidades (separadas por coma)</label>
-                <input name="habilidades" defaultValue={editingPersona?.habilidades?.join(', ') || ''} placeholder="Ej: Lectura, Oración, Discursos" />
-              </div>
-              <div className="form-group">
-                <label>Tipos de Asignación (Apto para:)</label>
-                <PillSelector
-                  items={tiposAsignacion}
-                  selectedIds={editingPersona?.asignaciones || []}
-                  onAdd={(id) => setEditingPersona({ ...editingPersona, asignaciones: [...(editingPersona?.asignaciones || []), id] })}
-                  onRemove={(id) => setEditingPersona({ ...editingPersona, asignaciones: (editingPersona?.asignaciones || []).filter(aid => aid != id) })}
-                  placeholder="+ Añadir aptitud"
-                />
-              </div>
-              <div className="modal-actions"><button type="button" onClick={() => setShowModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar</button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Reunion */}
-      {showReunionModal && (
-        <div className="modal-overlay">
-          <div className="glass modal-content">
-            <h3>Nueva Reunión</h3>
-            <form onSubmit={handleSaveReunion} style={{ marginTop: '1.5rem' }}>
-              <div className="form-group"><label>Fecha</label><input type="date" name="fecha" required /></div>
-              <div className="form-group">
-                <label>Seleccionar Plantillas para esta semana:</label>
-                <div style={{ maxHeight: '150px', overflowY: 'auto', marginTop: '0.5rem', display: 'grid', gap: '0.5rem' }}>
-                  {plantillas.map(pl => (
-                    <label key={pl.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input type="checkbox" name="plantillaIds" value={pl.id} />
-                      <span>{pl.nombre}</span>
-                    </label>
-                  ))}
+      {/* Modal Genérico Adaptado a Material 3 */}
+      {
+        [
+          {
+            show: showModal, title: editingPersona ? 'Editar Persona' : 'Nueva Persona', content: (
+              <form onSubmit={handleSavePersona} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold opacity-60 ml-1">NOMBRE COMPLETO</label>
+                  <input className="input-field" name="nombre" defaultValue={editingPersona?.nombre} required />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold opacity-60 ml-1">GÉNERO</label>
+                    <select className="input-field" name="genero" defaultValue={editingPersona?.genero || 'H'}>
+                      <option value="H">Varón</option>
+                      <option value="M">Mujer</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold opacity-60 ml-1">PRIVILEGIOS</label>
+                    <select className="input-field" name="privilegios" defaultValue={editingPersona?.privilegios || 'Publicador'}>
+                      <option>Publicador</option>
+                      <option>Anciano</option>
+                      <option>Siervo Ministerial</option>
+                      <option>Precursor</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold opacity-60 ml-1">HABILIDADES (COMAS)</label>
+                  <input className="input-field" name="habilidades" defaultValue={editingPersona?.habilidades?.join(', ') || ''} placeholder="Ej: Lectura, Oración..." />
+                </div>
+                <div className="space-y-1 text-surface-dark dark:text-white">
+                  <label className="text-xs font-bold opacity-60 ml-1">APTITUDES DE ASIGNACIÓN</label>
+                  <PillSelector
+                    items={tiposAsignacion}
+                    selectedIds={editingPersona?.asignaciones || []}
+                    onAdd={(id) => setEditingPersona({ ...editingPersona, asignaciones: [...(editingPersona?.asignaciones || []), id] })}
+                    onRemove={(id) => setEditingPersona({ ...editingPersona, asignaciones: (editingPersona?.asignaciones || []).filter(aid => aid != id) })}
+                    placeholder="+ Añadir aptitud"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-6 border-t border-outline-light/10 mt-6">
+                  <button type="button" className="px-6 py-2.5 rounded-full font-bold opacity-60 hover:opacity-100 transition-all" onClick={() => setShowModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar</button>
+                </div>
+              </form>
+            ), onClose: () => setShowModal(false)
+          },
+          {
+            show: showReunionModal, title: 'Nueva Reunión', content: (
+              <form onSubmit={handleSaveReunion} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold opacity-60 ml-1">FECHA DE REUNIÓN</label>
+                  <input type="date" className="input-field" name="fecha" required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold opacity-60 ml-1">PLANTILLAS PARA ESTA SEMANA</label>
+                  <div className="max-h-48 overflow-y-auto pr-2 space-y-1 custom-scrollbar">
+                    {plantillas.map(pl => (
+                      <label key={pl.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-light dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-outline-light/10 transition-all">
+                        <input type="checkbox" name="plantillaIds" value={pl.id} className="w-5 h-5 accent-primary-light" />
+                        <span className="font-medium text-sm">{pl.nombre}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-6 border-t border-outline-light/10 mt-6">
+                  <button type="button" className="px-6 py-2.5 rounded-full font-bold opacity-60 hover:opacity-100 transition-all" onClick={() => setShowReunionModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Crear Programa</button>
+                </div>
+              </form>
+            ), onClose: () => setShowReunionModal(false)
+          },
+          {
+            show: showSalaModal, title: editingSala ? 'Editar Sala' : 'Nueva Sala', content: (
+              <form onSubmit={handleSaveSala} className="space-y-6">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold opacity-60 ml-1 uppercase">Nombre de la Sala</label>
+                  <input name="nombre" className="input-field" defaultValue={editingSala?.nombre} placeholder="Ej: Sala Principal, Sala B..." required />
+                </div>
+                <div className="flex justify-end gap-3 pt-4 border-t border-outline-light/10">
+                  <button type="button" className="px-6 py-2.5 rounded-full font-bold opacity-60 hover:opacity-100 transition-all" onClick={() => setShowSalaModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar Sala</button>
+                </div>
+              </form>
+            ), onClose: () => setShowSalaModal(false)
+          },
+          {
+            show: showTipoAsignacionModal, title: editingTipoAsignacion ? 'Editar Tipo' : 'Nuevo Tipo de Asignación', content: (
+              <form onSubmit={handleSaveTipoAsignacion} className="space-y-6">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold opacity-60 ml-1 uppercase">Nombre del Tipo</label>
+                  <input name="nombre" className="input-field" defaultValue={editingTipoAsignacion?.nombre} placeholder="Ej: Oración, Lectura..." required />
+                </div>
+                <div className="flex justify-end gap-3 pt-4 border-t border-outline-light/10">
+                  <button type="button" className="px-6 py-2.5 rounded-full font-bold opacity-60 hover:opacity-100 transition-all" onClick={() => setShowTipoAsignacionModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar</button>
+                </div>
+              </form>
+            ), onClose: () => setShowTipoAsignacionModal(false)
+          },
+          {
+            show: showConfigModal, title: 'Configuración del Sistema', content: (
+              <form onSubmit={handleSaveConfig} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold opacity-60 ml-1 uppercase">URL de Apps Script</label>
+                    <input name="apiUrl" className="input-field py-2 text-xs" defaultValue={config.apiUrl} placeholder="https://..." />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold opacity-60 ml-1 uppercase">Spreadsheet ID</label>
+                    <input name="spreadsheetId" className="input-field py-2 text-xs" defaultValue={config.spreadsheetId} placeholder="ID..." />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button type="button" className="px-6 py-2.5 rounded-full font-bold opacity-60 hover:opacity-100 transition-all" onClick={() => setShowConfigModal(false)}>Cerrar</button>
+                  <button type="submit" className="btn-primary">Guardar y Conectar</button>
+                </div>
+                <div className="mt-8 pt-8 border-t border-outline-light/10 space-y-4">
+                  <h4 className="text-xs font-black uppercase tracking-widest opacity-40">Mantenimiento Crítico</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    <button type="button" onClick={() => handleRecreateTables(true)} className="w-full py-3 bg-surface-light dark:bg-white/5 rounded-xl text-xs font-bold hover:bg-primary-light/10 transition-all border border-outline-light/10 flex items-center justify-center gap-2 group">
+                      <span className="material-icons text-sm group-hover:rotate-180 transition-transform duration-500">update</span>
+                      Actualizar Estructura (Conservar Datos)
+                    </button>
+                    <button type="button" onClick={() => handleRecreateTables(false)} className="w-full py-3 bg-error-light/10 text-error-light rounded-xl text-xs font-bold hover:bg-error-light hover:text-white transition-all border border-error-light/20 flex items-center justify-center gap-2 group">
+                      <span className="material-icons text-sm group-hover:scale-110">delete_forever</span>
+                      Reiniciar Todo (BORRAR DATOS)
+                    </button>
+                  </div>
+                  <div className="text-center opacity-30 text-[9px] font-bold tracking-tighter pt-4">
+                    JW GESTOR DE REUNIONES V{dataService.APP_VERSION}
+                  </div>
+                </div>
+              </form>
+            ), onClose: () => setShowConfigModal(false)
+          },
+          {
+            show: showVersionModal, title: 'Actualización del Sistema', content: (
+              <div className="space-y-6">
+                <div className="bg-primary-light/5 dark:bg-white/5 p-5 rounded-3xl border border-primary-light/10">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-xs font-bold opacity-50 uppercase">Versión App</span>
+                    <span className="bg-primary-light text-white px-3 py-1 rounded-full text-xs font-black">v{dataService.APP_VERSION}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold opacity-50 uppercase">Versión Nube</span>
+                    <span className="bg-error-light/20 text-error-light px-3 py-1 rounded-full text-xs font-black">{cloudVersion ? `v${cloudVersion}` : 'v0.0.0'}</span>
+                  </div>
+                </div>
+                <p className="text-sm opacity-80 leading-relaxed px-2">Se ha detectado un cambio en la estructura interna de datos. Debes actualizar las hojas de Google Sheets para continuar.</p>
+                <div className="space-y-3 pt-6 border-t border-outline-light/10">
+                  <button onClick={() => handleRecreateTables(true)} className="w-full btn-primary py-4 rounded-3xl shadow-lg">Actualizar y CONSERVAR datos</button>
+                  <button onClick={() => handleRecreateTables(false)} className="w-full py-3 bg-error-light/10 text-error-light rounded-2xl text-xs font-bold hover:bg-error-light hover:text-white transition-all">Limpiar y Reiniciar Estructura</button>
+                  <button onClick={() => setShowVersionModal(false)} className="w-full py-2 opacity-50 hover:opacity-100 text-xs font-bold underline underline-offset-4">Continuar sin actualizar</button>
                 </div>
               </div>
-              <div className="modal-actions"><button type="button" onClick={() => setShowReunionModal(false)}>Cancelar</button><button type="submit" className="primary">Crear Programa</button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Plantilla */}
-      {showPlantillaModal && (
-        <div className="modal-overlay">
-          <div className="glass modal-content" style={{ maxWidth: '600px' }}>
-            <h3>{editingPlantilla ? 'Editar Plantilla' : 'Nueva Plantilla'}</h3>
-            <form onSubmit={handleSavePlantilla} style={{ marginTop: '1.5rem' }}>
-              <div className="form-group"><label>Nombre de la Plantilla (Tipo de Reunión)</label><input name="nombre" defaultValue={editingPlantilla?.nombre} placeholder="Ej: Vida y Ministerio, Reunión Pública..." required /></div>
-
-              <div className="form-group">
-                <label>Estructura y Estilo Visual</label>
-                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '1rem', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}>
-                  {(editingPlantilla?.estructura ? JSON.parse(editingPlantilla.estructura) : []).map((seccion, sIdx) => (
-                    <div key={sIdx} style={{ marginBottom: '2rem', borderLeft: `4px solid ${seccion.headerColor || 'var(--primary)'}`, paddingLeft: '1rem' }}>
-                      <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <input
-                            placeholder="Nombre de sección"
-                            value={seccion.nombre}
-                            style={{ flex: 1, fontWeight: 'bold' }}
-                            onChange={(e) => {
-                              const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                              est[sIdx].nombre = e.target.value;
-                              setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                            }}
-                          />
-                          <button type="button" className="danger" onClick={() => {
-                            const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                            est.splice(sIdx, 1);
-                            setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                          }}>×</button>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.8rem' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <input type="checkbox" checked={seccion.showHeader} onChange={(e) => {
-                              const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                              est[sIdx].showHeader = e.target.checked;
-                              setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                            }} /> Encabezado
-                          </label>
-                          <input type="color" value={seccion.headerColor || '#4f46e5'} onChange={(e) => {
-                            const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                            est[sIdx].headerColor = e.target.value;
-                            setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                          }} style={{ width: '30px', height: '20px', padding: 0 }} title="Color Encabezado" />
-                          <input type="color" value={seccion.bgColor || 'transparent'} onChange={(e) => {
-                            const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                            est[sIdx].bgColor = e.target.value;
-                            setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                          }} style={{ width: '30px', height: '20px', padding: 0 }} title="Color Fondo" />
-                          <input placeholder="Icono (emoji)" value={seccion.headerIcon || ''} maxLength="2" onChange={(e) => {
-                            const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                            est[sIdx].headerIcon = e.target.value;
-                            setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                          }} style={{ width: '40px', padding: '0.2rem' }} />
-                        </div>
-                      </div>
-                      <div style={{ paddingLeft: '1rem', borderLeft: '1px solid var(--border)' }}>
-                        {seccion.partes.map((p, pIdx) => (
-                          <div key={pIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                            <div style={{ flex: 1, display: 'grid', gap: '0.5rem' }}>
-                              <input
-                                placeholder="Parte"
-                                value={p.nombre}
-                                style={{ width: '100%', fontWeight: '500' }}
-                                onChange={(e) => {
-                                  const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                  est[sIdx].partes[pIdx].nombre = e.target.value;
-                                  setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                                }}
-                              />
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                                <div>
-                                  <small style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Salas:</small>
-                                  <PillSelector
-                                    items={salas}
-                                    selectedIds={p.salaIds || [1]}
-                                    onAdd={(id) => {
-                                      const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                      est[sIdx].partes[pIdx].salaIds = [...(est[sIdx].partes[pIdx].salaIds || [1]), id];
-                                      setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                                    }}
-                                    onRemove={(id) => {
-                                      const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                      est[sIdx].partes[pIdx].salaIds = (est[sIdx].partes[pIdx].salaIds || [1]).filter(sid => sid != id);
-                                      setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <small style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Asignaciones Requeridas:</small>
-                                  <PillSelector
-                                    items={tiposAsignacion}
-                                    selectedIds={p.tipoAsignacionIds || []}
-                                    onAdd={(id) => {
-                                      const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                      est[sIdx].partes[pIdx].tipoAsignacionIds = [...(est[sIdx].partes[pIdx].tipoAsignacionIds || []), id];
-                                      setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                                    }}
-                                    onRemove={(id) => {
-                                      const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                      est[sIdx].partes[pIdx].tipoAsignacionIds = (est[sIdx].partes[pIdx].tipoAsignacionIds || []).filter(tid => tid != id);
-                                      setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            <button type="button" className="danger" onClick={() => {
-                              const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                              est[sIdx].partes.splice(pIdx, 1);
-                              setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                            }}>×</button>
-                          </div>
-                        ))}
-                        <button type="button" onClick={() => {
-                          const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                          est[sIdx].partes.push({ nombre: '', salaId: 1, id: Math.random().toString(36).substr(2, 9) });
-                          setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                        }} style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>+ Añadir Parte</button>
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" className="primary" onClick={() => {
-                    const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                    est.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#4f46e5', bgColor: 'transparent', partes: [] });
-                    setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                  }}>+ Añadir Sección</button>
-                </div>
-              </div>
-
-              <div className="modal-actions"><button type="button" onClick={() => setShowPlantillaModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar Plantilla</button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Tipo Asignacion */}
-      {showTipoAsignacionModal && (
-        <div className="modal-overlay">
-          <div className="glass modal-content">
-            <h3>{editingTipoAsignacion ? 'Editar Tipo' : 'Nuevo Tipo de Asignación'}</h3>
-            <form onSubmit={handleSaveTipoAsignacion} style={{ marginTop: '1.5rem' }}>
-              <div className="form-group">
-                <label>Nombre del Tipo</label>
-                <input name="nombre" defaultValue={editingTipoAsignacion?.nombre} placeholder="Ej: Oración, Lectura, Discurso..." required />
-              </div>
-              <div className="modal-actions"><button type="button" onClick={() => setShowTipoAsignacionModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar</button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Salas */}
-      {showSalaModal && (
-        <div className="modal-overlay">
-          <div className="glass modal-content">
-            <h3>{editingSala ? 'Editar Sala' : 'Nueva Sala'}</h3>
-            <form onSubmit={handleSaveSala} style={{ marginTop: '1.5rem' }}>
-              <div className="form-group">
-                <label>Nombre de la Sala</label>
-                <input name="nombre" defaultValue={editingSala?.nombre} placeholder="Ej: Sala Principal, Sala B..." required />
-              </div>
-              <div className="modal-actions"><button type="button" onClick={() => setShowSalaModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar Sala</button></div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Configuración */}
-      {showConfigModal && (
-        <div className="modal-overlay">
-          <div className="glass modal-content" style={{ maxWidth: '500px' }}>
-            <h3>Configuración del Sistema</h3>
-            <form onSubmit={handleSaveConfig} style={{ marginTop: '1.5rem' }}>
-              <div className="form-group">
-                <label>URL de Apps Script (Web App URL)</label>
-                <input name="apiUrl" defaultValue={config.apiUrl} placeholder="https://script.google.com/macros/s/.../exec" />
-              </div>
-              <div className="form-group">
-                <label>Spreadsheet ID</label>
-                <input name="spreadsheetId" defaultValue={config.spreadsheetId} placeholder="ID de la hoja de cálculo" />
-              </div>
-              <div className="modal-actions">
-                <button type="button" onClick={() => setShowConfigModal(false)}>Cerrar</button>
-                <button type="submit" className="primary">Guardar y Conectar</button>
-              </div>
-
-              <hr style={{ margin: '1.5rem 0', opacity: 0.1 }} />
-
-              <h4>Mantenimiento</h4>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                Usa estas opciones si necesitas recrear la estructura de las hojas (ej. al actualizar la app).
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <button type="button" onClick={() => handleRecreateTables(true)} style={{ fontSize: '0.8rem' }}>
-                  Actualizar Estructura (Conservar Datos)
-                </button>
-                <button type="button" className="danger" onClick={() => handleRecreateTables(false)} style={{ fontSize: '0.8rem' }}>
-                  Reiniciar Todo (BORRAR DATOS)
+            ), onClose: () => setShowVersionModal(false)
+          },
+        ].map((m, idx) => m.show && (
+          <div key={idx} className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-on-surface-light/40 dark:bg-surface-dark/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white dark:bg-surface-dark w-full max-w-lg rounded-[2rem] p-8 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar border border-outline-light/5 dark:border-white/5">
+              <div className="flex justify-between items-center mb-10">
+                <h3 className="text-2xl font-black tracking-tighter">{m.title}</h3>
+                <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-light dark:hover:bg-white/5 transition-all text-xl opacity-40 hover:opacity-100 group" onClick={m.onClose}>
+                  <span className="material-icons group-hover:scale-110">close</span>
                 </button>
               </div>
-              <div style={{ marginTop: '1.5rem', textAlign: 'center', opacity: 0.4, fontSize: '0.7rem' }}>
-                JW Gestor de Reuniones v{dataService.APP_VERSION}
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Versión */}
-      {showVersionModal && (
-        <div className="modal-overlay">
-          <div className="glass modal" style={{ maxWidth: '450px', border: '1px solid var(--accent)', padding: '2rem' }}>
-            <h2 style={{ color: 'var(--accent)', marginBottom: '1.5rem', textAlign: 'center' }}>Actualización del Sistema</h2>
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ opacity: 0.7 }}>Versión de la App:</span>
-                <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>v{dataService.APP_VERSION}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ opacity: 0.7 }}>Versión en la Nube:</span>
-                <span style={{ fontWeight: 'bold', color: 'var(--warning)' }}>{cloudVersion ? `v${cloudVersion}` : 'Desconocida'}</span>
-              </div>
-            </div>
-            <p style={{ fontSize: '0.9rem', marginBottom: '1.5rem' }}>Se ha detectado un cambio en la estructura de datos. Para continuar, es necesario actualizar las tablas de Google Sheets.</p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '2rem' }}>
-              <button onClick={() => handleRecreateTables(true)} className="primary">
-                Actualizar y CONSERVAR datos
-              </button>
-              <button onClick={() => handleRecreateTables(false)} className="danger">
-                Actualizar y BORRAR TODO (Limpiar)
-              </button>
-              <button onClick={() => setShowVersionModal(false)} style={{ background: 'none', border: '1px solid var(--text-muted)', color: 'var(--text-muted)' }}>
-                Continuar sin actualizar (No recomendado)
-              </button>
+              {m.content}
             </div>
           </div>
-        </div>
-      )}
-
-    </div>
+        ))
+      }
+    </div >
   );
 };
 
