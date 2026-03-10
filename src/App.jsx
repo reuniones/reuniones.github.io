@@ -25,6 +25,7 @@ const App = () => {
   const [editingTipoAsignacion, setEditingTipoAsignacion] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
   const [cloudVersion, setCloudVersion] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Sistema de Temas (Material 3)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
@@ -360,8 +361,16 @@ const App = () => {
         </div>
       )}
 
+      {/* Mobile Backdrop */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 bg-on-surface-light/30 dark:bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar - Material Navigation Drawer style */}
-      <aside className="w-64 flex-shrink-0 border-r border-outline-light/10 dark:border-outline-dark/10 p-6 flex flex-col sticky top-0 h-screen">
+      <aside className={`fixed lg:sticky top-0 left-0 z-50 w-72 h-screen bg-surface-light dark:bg-surface-dark border-r border-outline-light/10 dark:border-outline-dark/10 p-6 flex flex-col transition-transform duration-300 transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="flex items-center gap-3 px-2 mb-8">
           <div className="w-10 h-10 rounded-xl bg-primary-light dark:bg-primary-dark flex items-center justify-center text-white dark:text-surface-dark shadow-lg">
             <span className="material-icons">event_note</span>
@@ -382,7 +391,10 @@ const App = () => {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                setActiveTab(item.id);
+                setIsMenuOpen(false);
+              }}
               className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === item.id
                 ? 'bg-primary-light/10 text-primary-light dark:bg-primary-dark/10 dark:text-primary-dark font-semibold'
                 : 'text-outline-light hover:bg-surface-light dark:text-outline-dark dark:hover:bg-surface-dark/50'
@@ -421,416 +433,437 @@ const App = () => {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 max-w-7xl mx-auto w-full overflow-y-auto">
-        <header className="flex justify-between items-center mb-10 animate-fade-in">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-1">
-              {activeTab === 'dashboard' ? 'Tablero General' :
-                activeTab === 'personas' ? 'Gestión de Personas' :
-                  activeTab === 'plantillas' ? 'Plantillas de Reunión' :
-                    activeTab === 'salas' ? 'Gestión de Salas' :
-                      activeTab === 'tiposAsignacion' ? 'Tipos de Asignación' : 'Programación Semanal'}
-            </h1>
-            <p className="text-sm text-on-surface-light/60 dark:text-on-surface-dark/60 font-medium">
-              {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
-            </p>
+      <main className="flex-1 min-w-0 h-screen overflow-y-auto overflow-x-hidden">
+        {/* Mobile Top Header */}
+        <div className="lg:hidden flex items-center justify-between px-6 py-4 bg-surface-light dark:bg-surface-dark border-b border-outline-light/10 sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMenuOpen(true)}
+              className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+            >
+              <span className="material-icons">menu</span>
+            </button>
+            <span className="font-bold tracking-tight text-primary-light dark:text-primary-dark">Gestor Reuniones</span>
           </div>
-          <div className="flex gap-3">
-            {activeTab === 'personas' && (
-              <button className="btn-primary flex items-center gap-2" onClick={() => { setEditingPersona(null); setShowModal(true); }}>
-                <span>+</span> Añadir Persona
-              </button>
-            )}
-            {activeTab === 'plantillas' && (
-              <button className="btn-primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva Plantilla</button>
-            )}
-            {activeTab === 'salas' && (
-              <button className="btn-primary" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Nueva Sala</button>
-            )}
-            {activeTab === 'tiposAsignacion' && (
-              <button className="btn-primary" onClick={() => { setEditingTipoAsignacion(null); setShowTipoAsignacionModal(true); }}>+ Nuevo Tipo</button>
-            )}
-            {activeTab === 'reuniones' && (
-              <button className="btn-primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva Reunión</button>
-            )}
-          </div>
-        </header>
+          <button
+            onClick={() => setShowConfigModal(true)}
+            className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+          >
+            <span className="material-icons text-outline-light dark:text-outline-dark">settings</span>
+          </button>
+        </div>
 
-        <div className="space-y-6">
-          {(!config.apiUrl || !config.spreadsheetId) && (
-            <div className="bg-error-light/10 dark:bg-error-dark/20 border border-error-light/30 p-6 rounded-2xl flex items-start gap-4">
-              <span className="material-icons text-error-light dark:text-error-dark">report_problem</span>
-              <div>
-                <h3 className="font-bold text-error-light dark:text-error-dark">Configuración Requerida</h3>
-                <p className="text-sm opacity-80 mb-4">Por favor, configura la URL de la API y el Spreadsheet ID para comenzar a sincronizar datos.</p>
-                <button className="bg-error-light text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm" onClick={() => setShowConfigModal(true)}>Configurar Ahora</button>
-              </div>
+        <div className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto w-full">
+          <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-fade-in">
+            <div>
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tighter mb-1">
+                {activeTab === 'dashboard' ? 'Tablero General' :
+                  activeTab === 'personas' ? 'Gestión de Personas' :
+                    activeTab === 'plantillas' ? 'Plantillas de Reunión' :
+                      activeTab === 'salas' ? 'Gestión de Salas' :
+                        activeTab === 'tiposAsignacion' ? 'Tipos de Asignación' : 'Programación Semanal'}
+              </h1>
+              <p className="text-sm text-on-surface-light/60 dark:text-on-surface-dark/60 font-medium">
+                {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
+              </p>
             </div>
-          )}
+            <div className="flex gap-3">
+              {activeTab === 'personas' && (
+                <button className="btn-primary flex items-center gap-2" onClick={() => { setEditingPersona(null); setShowModal(true); }}>
+                  <span>+</span> Añadir Persona
+                </button>
+              )}
+              {activeTab === 'plantillas' && (
+                <button className="btn-primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva Plantilla</button>
+              )}
+              {activeTab === 'salas' && (
+                <button className="btn-primary" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Nueva Sala</button>
+              )}
+              {activeTab === 'tiposAsignacion' && (
+                <button className="btn-primary" onClick={() => { setEditingTipoAsignacion(null); setShowTipoAsignacionModal(true); }}>+ Nuevo Tipo</button>
+              )}
+              {activeTab === 'reuniones' && (
+                <button className="btn-primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva Reunión</button>
+              )}
+            </div>
+          </header>
 
-          {activeTab === 'dashboard' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-              <div className="card shadow-md">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <span className="material-icons text-primary-light dark:text-primary-dark">analytics</span> Estado de la Congregación
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
-                    <span className="text-sm opacity-70">Total Publicadores</span>
-                    <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{personas.length}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
-                    <span className="text-sm opacity-70">Reuniones Programadas</span>
-                    <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{reuniones.length}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
-                    <span className="text-sm opacity-70">Plantillas Disponibles</span>
-                    <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{plantillas.length}</span>
-                  </div>
+          <div className="space-y-6">
+            {(!config.apiUrl || !config.spreadsheetId) && (
+              <div className="bg-error-light/10 dark:bg-error-dark/20 border border-error-light/30 p-6 rounded-2xl flex items-start gap-4">
+                <span className="material-icons text-error-light dark:text-error-dark">report_problem</span>
+                <div>
+                  <h3 className="font-bold text-error-light dark:text-error-dark">Configuración Requerida</h3>
+                  <p className="text-sm opacity-80 mb-4">Por favor, configura la URL de la API y el Spreadsheet ID para comenzar a sincronizar datos.</p>
+                  <button className="bg-error-light text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm" onClick={() => setShowConfigModal(true)}>Configurar Ahora</button>
                 </div>
               </div>
-              <div className="card shadow-md border-primary-light/20 dark:border-primary-dark/20">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <span className="material-icons text-primary-light dark:text-primary-dark">campaign</span> Próxima Reunión
-                </h3>
-                {reuniones.length > 0 ? (
-                  <div className="p-4 rounded-2xl bg-primary-light/5 dark:bg-primary-dark/10 border border-primary-light/10">
-                    <p className="text-lg font-bold text-primary-light dark:text-primary-dark mb-1">{reuniones[0].tipo}</p>
-                    <p className="text-2xl font-black tracking-tighter">{reuniones[0].fecha}</p>
+            )}
+
+            {activeTab === 'dashboard' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                <div className="card shadow-md">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span className="material-icons text-primary-light dark:text-primary-dark">analytics</span> Estado de la Congregación
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
+                      <span className="text-sm opacity-70">Total Publicadores</span>
+                      <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{personas.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
+                      <span className="text-sm opacity-70">Reuniones Programadas</span>
+                      <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{reuniones.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
+                      <span className="text-sm opacity-70">Plantillas Disponibles</span>
+                      <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{plantillas.length}</span>
+                    </div>
                   </div>
-                ) : (
-                  <div className="text-center py-8 opacity-40 italic">No hay reuniones próximas.</div>
-                )}
+                </div>
+                <div className="card shadow-md border-primary-light/20 dark:border-primary-dark/20">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span className="material-icons text-primary-light dark:text-primary-dark">campaign</span> Próxima Reunión
+                  </h3>
+                  {reuniones.length > 0 ? (
+                    <div className="p-4 rounded-2xl bg-primary-light/5 dark:bg-primary-dark/10 border border-primary-light/10">
+                      <p className="text-lg font-bold text-primary-light dark:text-primary-dark mb-1">{reuniones[0].tipo}</p>
+                      <p className="text-2xl font-black tracking-tighter">{reuniones[0].fecha}</p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 opacity-40 italic">No hay reuniones próximas.</div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTab === 'personas' && (
-            <div className="card shadow-md overflow-hidden p-0 animate-fade-in">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
-                    <tr>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Género</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Privilegios</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Habilidades</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-light/5">
-                    {personas.map(p => (
-                      <tr key={p.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4 font-semibold">{p.nombre}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${p.genero === 'H'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                            : 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300'
-                            }`}>
-                            {p.genero === 'H' ? 'VARÓN' : 'MUJER'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm opacity-80">{p.privilegios}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {p.habilidades?.map(h => (
-                              <span key={h} className="px-2 py-0.5 rounded bg-surface-light dark:bg-white/10 text-[10px] opacity-70 border border-outline-light/10">
-                                {h}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPersona(p); setShowModal(true); }}>
-                            <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
-                          </button>
-                        </td>
+            {activeTab === 'personas' && (
+              <div className="card shadow-md overflow-hidden p-0 animate-fade-in">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                      <tr>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Género</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Privilegios</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Habilidades</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'plantillas' && (
-            <div className="card shadow-md overflow-hidden p-0 animate-fade-in">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
-                    <tr>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre (Tipo)</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Secciones</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-light/5">
-                    {plantillas.map(pl => (
-                      <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4 font-semibold">{pl.nombre}</td>
-                        <td className="px-6 py-4 text-sm opacity-80">{JSON.parse(pl.estructura || '[]').length} secciones</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantilla(pl); setShowPlantillaModal(true); }}>
+                    </thead>
+                    <tbody className="divide-y divide-outline-light/5">
+                      {personas.map(p => (
+                        <tr key={p.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                          <td className="px-6 py-4 font-semibold">{p.nombre}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${p.genero === 'H'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                              : 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300'
+                              }`}>
+                              {p.genero === 'H' ? 'VARÓN' : 'MUJER'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm opacity-80">{p.privilegios}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-1">
+                              {p.habilidades?.map(h => (
+                                <span key={h} className="px-2 py-0.5 rounded bg-surface-light dark:bg-white/10 text-[10px] opacity-70 border border-outline-light/10">
+                                  {h}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPersona(p); setShowModal(true); }}>
                               <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
                             </button>
-                            <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeletePlantilla(pl.id)}>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'plantillas' && (
+              <div className="card shadow-md overflow-hidden p-0 animate-fade-in">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                      <tr>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre (Tipo)</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Secciones</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-light/5">
+                      {plantillas.map(pl => (
+                        <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                          <td className="px-6 py-4 font-semibold">{pl.nombre}</td>
+                          <td className="px-6 py-4 text-sm opacity-80">{JSON.parse(pl.estructura || '[]').length} secciones</td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantilla(pl); setShowPlantillaModal(true); }}>
+                                <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
+                              </button>
+                              <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeletePlantilla(pl.id)}>
+                                <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {plantillas.length === 0 && <tr><td colSpan="3" className="px-6 py-8 text-center opacity-40 italic">No hay plantillas creadas.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'salas' && (
+              <div className="card shadow-md overflow-hidden p-0 animate-fade-in max-w-2xl">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                    <tr>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre de Sala</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-light/5">
+                    {salas.map(s => (
+                      <tr key={s.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-semibold">{s.nombre}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>
+                              <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
+                            </button>
+                            <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteSala(s.id)}>
                               <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
                             </button>
                           </div>
                         </td>
                       </tr>
                     ))}
-                    {plantillas.length === 0 && <tr><td colSpan="3" className="px-6 py-8 text-center opacity-40 italic">No hay plantillas creadas.</td></tr>}
                   </tbody>
                 </table>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeTab === 'salas' && (
-            <div className="card shadow-md overflow-hidden p-0 animate-fade-in max-w-2xl">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
-                  <tr>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre de Sala</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-light/5">
-                  {salas.map(s => (
-                    <tr key={s.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 font-semibold">{s.nombre}</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>
-                            <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
-                          </button>
-                          <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteSala(s.id)}>
-                            <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
-                          </button>
-                        </div>
-                      </td>
+            {activeTab === 'tiposAsignacion' && (
+              <div className="card shadow-md overflow-hidden p-0 animate-fade-in max-w-2xl">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                    <tr>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre del Tipo</th>
+                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {activeTab === 'tiposAsignacion' && (
-            <div className="card shadow-md overflow-hidden p-0 animate-fade-in max-w-2xl">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
-                  <tr>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre del Tipo</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-light/5">
-                  {tiposAsignacion.map(t => (
-                    <tr key={t.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 font-semibold">{t.nombre}</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>
-                            <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
-                          </button>
-                          <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteTipoAsignacion(t.id)}>
-                            <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {tiposAsignacion.length === 0 && <tr><td colSpan="2" className="px-6 py-8 text-center opacity-40 italic">No hay tipos definidos.</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {activeTab === 'reuniones' && (
-            <div className="flex flex-col lg:flex-row gap-6 animate-fade-in items-start">
-              <div className="card shadow-md w-full lg:w-80 flex-shrink-0">
-                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <span className="material-icons text-primary-light dark:text-primary-dark">calendar_month</span> Listado de Reuniones
-                </h3>
-                <div className="space-y-2">
-                  {reuniones.map(r => (
-                    <div
-                      key={r.id}
-                      className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${selectedReunion?.id === r.id
-                        ? 'bg-primary-light text-white shadow-md dark:bg-primary-dark dark:text-surface-dark'
-                        : 'bg-surface-light dark:bg-white/5 hover:bg-primary-light/10 dark:hover:bg-primary-dark/10'
-                        }`}
-                      onClick={() => setSelectedReunion(r)}
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm tracking-tight">{r.fecha}</span>
-                        <span className={`text-[10px] font-medium uppercase opacity-70 ${selectedReunion?.id === r.id ? 'text-white/80' : ''}`}>
-                          {r.tipo === 'Vida y Ministerio' ? 'Vida y Ministerio' : 'Fin de Semana'}
-                        </span>
-                      </div>
-                      <button
-                        className={`p-1.5 rounded-full transition-colors group ${selectedReunion?.id === r.id ? 'hover:bg-white/20' : 'text-error-light hover:bg-error-light/10 dark:text-error-dark dark:hover:bg-error-dark/10'
-                          }`}
-                        onClick={(e) => { e.stopPropagation(); handleDeleteReunion(r.id); }}
-                      >
-                        <span className="material-icons text-sm group-hover:scale-110 block">delete</span>
-                      </button>
-                    </div>
-                  ))}
-                  {reuniones.length === 0 && <div className="text-center py-8 opacity-40 italic">No hay reuniones.</div>}
-                </div>
-              </div>
-
-              {selectedReunion ? (
-                <div className="card shadow-md flex-1 w-full bg-white/50 dark:bg-surface-dark/50">
-                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-outline-light/10">
-                    <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
-                      <span className="text-primary-light dark:text-primary-dark font-normal">Programa de la semana:</span> {selectedReunion.fecha}
-                    </h3>
-                  </div>
-
-                  <div className="space-y-8">
-                    {JSON.parse(selectedReunion.datos_reunion || '{"secciones":[]}').secciones.map((seccion, sIdx) => (
-                      <div key={sIdx} className="rounded-3xl overflow-hidden border border-outline-light/10 dark:border-outline-dark/10 bg-white dark:bg-white/5 shadow-sm">
-                        {seccion.showHeader && (
-                          <div className="px-6 py-4 flex justify-between items-center bg-surface-light dark:bg-white/5 border-b border-outline-light/5"
-                            style={{ borderLeft: `6px solid ${seccion.headerColor || 'var(--primary)'}` }}>
-                            <h4 className="font-bold flex items-center gap-3" style={{ color: seccion.headerColor }}>
-                              <span className="material-icons">{seccion.headerIcon || 'label'}</span> {seccion.nombre}
-                            </h4>
-                            <button className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors group" onClick={() => {
-                              const datos = JSON.parse(selectedReunion.datos_reunion);
-                              const nombre = prompt('Nuevo nombre de sección:', seccion.nombre);
-                              if (nombre) {
-                                datos.secciones[sIdx].nombre = nombre;
-                                handleUpdateWeeklyStructure(datos);
-                              }
-                            }}>
-                              <span className="material-icons text-xs group-hover:scale-110 block">edit</span>
+                  </thead>
+                  <tbody className="divide-y divide-outline-light/5">
+                    {tiposAsignacion.map(t => (
+                      <tr key={t.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-semibold">{t.nombre}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>
+                              <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
                             </button>
-                            <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors group" onClick={() => {
-                              if (confirm('¿Eliminar esta sección de la semana?')) {
-                                const datos = JSON.parse(selectedReunion.datos_reunion);
-                                datos.secciones.splice(sIdx, 1);
-                                handleUpdateWeeklyStructure(datos);
-                              }
-                            }}>
-                              <span className="material-icons text-xs group-hover:scale-110 block">close</span>
+                            <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteTipoAsignacion(t.id)}>
+                              <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
                             </button>
                           </div>
-                        )}
-                        <div className="divide-y divide-outline-light/5">
-                          {seccion.partes.map((parte, pIdx) => {
-                            const asignadoId = parte.asignadoId;
-                            const aptos = personas.filter(p => {
-                              if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') {
-                                if (p.genero !== 'H') return false;
-                              }
-                              if (parte.tipoAsignacionIds && parte.tipoAsignacionIds.length > 0) {
-                                const hasRequired = parte.tipoAsignacionIds.some(tid => p.asignaciones?.includes(String(tid)) || p.asignaciones?.includes(Number(tid)));
-                                if (!hasRequired) return false;
-                              }
-                              return true;
-                            });
+                        </td>
+                      </tr>
+                    ))}
+                    {tiposAsignacion.length === 0 && <tr><td colSpan="2" className="px-6 py-8 text-center opacity-40 italic">No hay tipos definidos.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-                            return (
-                              <div key={parte.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:bg-primary-light/5 dark:hover:bg-primary-dark/5 transition-colors">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <span className="font-bold text-base">{parte.nombre}</span>
-                                    <div className="flex flex-wrap gap-1">
-                                      {(parte.salaIds || [1]).map(sid => (
-                                        <span key={sid} className="text-[9px] px-2 py-0.5 rounded-full bg-outline-light/10 dark:bg-outline-dark/20 font-bold uppercase opacity-60">
-                                          {salas.find(s => s.id == sid)?.nombre || 'Principal'}
-                                        </span>
-                                      ))}
+            {activeTab === 'reuniones' && (
+              <div className="flex flex-col lg:flex-row gap-6 animate-fade-in items-start">
+                <div className="card shadow-md w-full lg:w-80 flex-shrink-0">
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span className="material-icons text-primary-light dark:text-primary-dark">calendar_month</span> Listado de Reuniones
+                  </h3>
+                  <div className="space-y-2">
+                    {reuniones.map(r => (
+                      <div
+                        key={r.id}
+                        className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${selectedReunion?.id === r.id
+                          ? 'bg-primary-light text-white shadow-md dark:bg-primary-dark dark:text-surface-dark'
+                          : 'bg-surface-light dark:bg-white/5 hover:bg-primary-light/10 dark:hover:bg-primary-dark/10'
+                          }`}
+                        onClick={() => setSelectedReunion(r)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm tracking-tight">{r.fecha}</span>
+                          <span className={`text-[10px] font-medium uppercase opacity-70 ${selectedReunion?.id === r.id ? 'text-white/80' : ''}`}>
+                            {r.tipo === 'Vida y Ministerio' ? 'Vida y Ministerio' : 'Fin de Semana'}
+                          </span>
+                        </div>
+                        <button
+                          className={`p-1.5 rounded-full transition-colors group ${selectedReunion?.id === r.id ? 'hover:bg-white/20' : 'text-error-light hover:bg-error-light/10 dark:text-error-dark dark:hover:bg-error-dark/10'
+                            }`}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteReunion(r.id); }}
+                        >
+                          <span className="material-icons text-sm group-hover:scale-110 block">delete</span>
+                        </button>
+                      </div>
+                    ))}
+                    {reuniones.length === 0 && <div className="text-center py-8 opacity-40 italic">No hay reuniones.</div>}
+                  </div>
+                </div>
+
+                {selectedReunion ? (
+                  <div className="card shadow-md flex-1 w-full bg-white/50 dark:bg-surface-dark/50">
+                    <div className="flex justify-between items-center mb-6 pb-4 border-b border-outline-light/10">
+                      <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
+                        <span className="text-primary-light dark:text-primary-dark font-normal">Programa de la semana:</span> {selectedReunion.fecha}
+                      </h3>
+                    </div>
+
+                    <div className="space-y-8">
+                      {JSON.parse(selectedReunion.datos_reunion || '{"secciones":[]}').secciones.map((seccion, sIdx) => (
+                        <div key={sIdx} className="rounded-3xl overflow-hidden border border-outline-light/10 dark:border-outline-dark/10 bg-white dark:bg-white/5 shadow-sm">
+                          {seccion.showHeader && (
+                            <div className="px-6 py-4 flex justify-between items-center bg-surface-light dark:bg-white/5 border-b border-outline-light/5"
+                              style={{ borderLeft: `6px solid ${seccion.headerColor || 'var(--primary)'}` }}>
+                              <h4 className="font-bold flex items-center gap-3" style={{ color: seccion.headerColor }}>
+                                <span className="material-icons">{seccion.headerIcon || 'label'}</span> {seccion.nombre}
+                              </h4>
+                              <button className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors group" onClick={() => {
+                                const datos = JSON.parse(selectedReunion.datos_reunion);
+                                const nombre = prompt('Nuevo nombre de sección:', seccion.nombre);
+                                if (nombre) {
+                                  datos.secciones[sIdx].nombre = nombre;
+                                  handleUpdateWeeklyStructure(datos);
+                                }
+                              }}>
+                                <span className="material-icons text-xs group-hover:scale-110 block">edit</span>
+                              </button>
+                              <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors group" onClick={() => {
+                                if (confirm('¿Eliminar esta sección de la semana?')) {
+                                  const datos = JSON.parse(selectedReunion.datos_reunion);
+                                  datos.secciones.splice(sIdx, 1);
+                                  handleUpdateWeeklyStructure(datos);
+                                }
+                              }}>
+                                <span className="material-icons text-xs group-hover:scale-110 block">close</span>
+                              </button>
+                            </div>
+                          )}
+                          <div className="divide-y divide-outline-light/5">
+                            {seccion.partes.map((parte, pIdx) => {
+                              const asignadoId = parte.asignadoId;
+                              const aptos = personas.filter(p => {
+                                if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') {
+                                  if (p.genero !== 'H') return false;
+                                }
+                                if (parte.tipoAsignacionIds && parte.tipoAsignacionIds.length > 0) {
+                                  const hasRequired = parte.tipoAsignacionIds.some(tid => p.asignaciones?.includes(String(tid)) || p.asignaciones?.includes(Number(tid)));
+                                  if (!hasRequired) return false;
+                                }
+                                return true;
+                              });
+
+                              return (
+                                <div key={parte.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:bg-primary-light/5 dark:hover:bg-primary-dark/5 transition-colors">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <span className="font-bold text-base">{parte.nombre}</span>
+                                      <div className="flex flex-wrap gap-1">
+                                        {(parte.salaIds || [1]).map(sid => (
+                                          <span key={sid} className="text-[9px] px-2 py-0.5 rounded-full bg-outline-light/10 dark:bg-outline-dark/20 font-bold uppercase opacity-60">
+                                            {salas.find(s => s.id == sid)?.nombre || 'Principal'}
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-all group" onClick={() => {
+                                        const datos = JSON.parse(selectedReunion.datos_reunion);
+                                        const n = prompt('Nombre de la parte:', parte.nombre);
+                                        if (n) {
+                                          datos.secciones[sIdx].partes[pIdx].nombre = n;
+                                          handleUpdateWeeklyStructure(datos);
+                                        }
+                                      }}>
+                                        <span className="material-icons text-[14px] group-hover:scale-110 block">edit</span>
+                                      </button>
                                     </div>
-                                    <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-all group" onClick={() => {
-                                      const datos = JSON.parse(selectedReunion.datos_reunion);
-                                      const n = prompt('Nombre de la parte:', parte.nombre);
-                                      if (n) {
-                                        datos.secciones[sIdx].partes[pIdx].nombre = n;
+                                    <div className="flex items-center gap-4">
+                                      <PillSelector
+                                        items={salas}
+                                        selectedIds={parte.salaIds || [1]}
+                                        onAdd={(id) => {
+                                          const datos = JSON.parse(selectedReunion.datos_reunion);
+                                          datos.secciones[sIdx].partes[pIdx].salaIds = [...(datos.secciones[sIdx].partes[pIdx].salaIds || [1]), id];
+                                          handleUpdateWeeklyStructure(datos);
+                                        }}
+                                        onRemove={(id) => {
+                                          const datos = JSON.parse(selectedReunion.datos_reunion);
+                                          datos.secciones[sIdx].partes[pIdx].salaIds = (datos.secciones[sIdx].partes[pIdx].salaIds || [1]).filter(sid => sid != id);
+                                          handleUpdateWeeklyStructure(datos);
+                                        }}
+                                      />
+                                      {parte.duracion && <span className="text-xs font-medium opacity-50 px-2 py-1 bg-surface-light dark:bg-white/5 rounded-md">{parte.duracion} min</span>}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <div className={`text-right ${asignadoId ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-error-light dark:text-error-dark'}`}>
+                                      <div className="text-[10px] uppercase font-bold opacity-40 leading-none mb-1">Asignado</div>
+                                      <div className="font-bold text-sm tracking-tight">{getPersonaName(asignadoId)}</div>
+                                    </div>
+                                    <select
+                                      className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-3 py-2 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 active:scale-95 transition-all"
+                                      value={asignadoId || ''}
+                                      onChange={(e) => handleAsignar(parte.id, e.target.value)}
+                                    >
+                                      <option value="">Cambiar...</option>
+                                      {aptos.map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
+                                    </select>
+                                    <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors opacity-0 group-hover:opacity-100 group" onClick={() => {
+                                      if (confirm('¿Eliminar esta parte?')) {
+                                        const datos = JSON.parse(selectedReunion.datos_reunion);
+                                        datos.secciones[sIdx].partes.splice(pIdx, 1);
                                         handleUpdateWeeklyStructure(datos);
                                       }
                                     }}>
-                                      <span className="material-icons text-[14px] group-hover:scale-110 block">edit</span>
+                                      <span className="material-icons text-sm group-hover:scale-110 block">close</span>
                                     </button>
                                   </div>
-                                  <div className="flex items-center gap-4">
-                                    <PillSelector
-                                      items={salas}
-                                      selectedIds={parte.salaIds || [1]}
-                                      onAdd={(id) => {
-                                        const datos = JSON.parse(selectedReunion.datos_reunion);
-                                        datos.secciones[sIdx].partes[pIdx].salaIds = [...(datos.secciones[sIdx].partes[pIdx].salaIds || [1]), id];
-                                        handleUpdateWeeklyStructure(datos);
-                                      }}
-                                      onRemove={(id) => {
-                                        const datos = JSON.parse(selectedReunion.datos_reunion);
-                                        datos.secciones[sIdx].partes[pIdx].salaIds = (datos.secciones[sIdx].partes[pIdx].salaIds || [1]).filter(sid => sid != id);
-                                        handleUpdateWeeklyStructure(datos);
-                                      }}
-                                    />
-                                    {parte.duracion && <span className="text-xs font-medium opacity-50 px-2 py-1 bg-surface-light dark:bg-white/5 rounded-md">{parte.duracion} min</span>}
-                                  </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <div className={`text-right ${asignadoId ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-error-light dark:text-error-dark'}`}>
-                                    <div className="text-[10px] uppercase font-bold opacity-40 leading-none mb-1">Asignado</div>
-                                    <div className="font-bold text-sm tracking-tight">{getPersonaName(asignadoId)}</div>
-                                  </div>
-                                  <select
-                                    className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-3 py-2 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 active:scale-95 transition-all"
-                                    value={asignadoId || ''}
-                                    onChange={(e) => handleAsignar(parte.id, e.target.value)}
-                                  >
-                                    <option value="">Cambiar...</option>
-                                    {aptos.map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
-                                  </select>
-                                  <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors opacity-0 group-hover:opacity-100 group" onClick={() => {
-                                    if (confirm('¿Eliminar esta parte?')) {
-                                      const datos = JSON.parse(selectedReunion.datos_reunion);
-                                      datos.secciones[sIdx].partes.splice(pIdx, 1);
-                                      handleUpdateWeeklyStructure(datos);
-                                    }
-                                  }}>
-                                    <span className="material-icons text-sm group-hover:scale-110 block">close</span>
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          <button className="w-full py-4 text-xs font-bold opacity-40 hover:opacity-100 hover:bg-surface-light dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 border-t border-outline-light/5 group" onClick={() => {
-                            const datos = JSON.parse(selectedReunion.datos_reunion);
-                            datos.secciones[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', duracion: 5, asignadoId: null });
-                            handleUpdateWeeklyStructure(datos);
-                          }}>
-                            <span className="material-icons text-sm group-hover:scale-110">add</span> AÑADIR PARTE AD-HOC
-                          </button>
+                              );
+                            })}
+                            <button className="w-full py-4 text-xs font-bold opacity-40 hover:opacity-100 hover:bg-surface-light dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 border-t border-outline-light/5 group" onClick={() => {
+                              const datos = JSON.parse(selectedReunion.datos_reunion);
+                              datos.secciones[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', duracion: 5, asignadoId: null });
+                              handleUpdateWeeklyStructure(datos);
+                            }}>
+                              <span className="material-icons text-sm group-hover:scale-110">add</span> AÑADIR PARTE AD-HOC
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    <button className="w-full py-6 border-2 border-dashed border-outline-light/20 rounded-3xl opacity-50 hover:opacity-100 hover:border-primary-light/50 transition-all font-bold flex items-center justify-center gap-3 group" onClick={() => {
-                      const datos = JSON.parse(selectedReunion.datos_reunion);
-                      datos.secciones.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#6366f1', bgColor: 'transparent', partes: [] });
-                      handleUpdateWeeklyStructure(datos);
-                    }}>
-                      <span className="material-icons text-2xl group-hover:scale-110">add_circle_outline</span> Añadir nueva sección a la semana
-                    </button>
+                      ))}
+                      <button className="w-full py-6 border-2 border-dashed border-outline-light/20 rounded-3xl opacity-50 hover:opacity-100 hover:border-primary-light/50 transition-all font-bold flex items-center justify-center gap-3 group" onClick={() => {
+                        const datos = JSON.parse(selectedReunion.datos_reunion);
+                        datos.secciones.push({ id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#6366f1', bgColor: 'transparent', partes: [] });
+                        handleUpdateWeeklyStructure(datos);
+                      }}>
+                        <span className="material-icons text-2xl group-hover:scale-110">add_circle_outline</span> Añadir nueva sección a la semana
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center py-20 card shadow-sm opacity-30 text-center">
-                  <span className="material-icons text-6xl mb-4">calendar_today</span>
-                  <h3 className="text-xl font-bold">Selecciona una reunión</h3>
-                  <p className="text-sm">Elige una fecha a la izquierda para ver su programa detallado.</p>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center py-20 card shadow-sm opacity-30 text-center">
+                    <span className="material-icons text-6xl mb-4">calendar_today</span>
+                    <h3 className="text-xl font-bold">Selecciona una reunión</h3>
+                    <p className="text-sm">Elige una fecha a la izquierda para ver su programa detallado.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </main>
 
@@ -1008,7 +1041,7 @@ const App = () => {
           </div>
         ))
       }
-    </div >
+    </div>
   );
 };
 
