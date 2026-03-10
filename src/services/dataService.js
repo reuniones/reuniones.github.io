@@ -8,6 +8,8 @@ const STORAGE_KEY_PLANTILLAS = 'jw_reuniones_plantillas';
 const STORAGE_KEY_SALAS = 'jw_reuniones_salas';
 const STORAGE_KEY_TIPOS_ASIGNACION = 'jw_reuniones_tipos_asignacion';
 
+export const APP_VERSION = '1.1.0';
+
 export const dataService = {
   getConfig: () => {
     const config = localStorage.getItem(STORAGE_KEY_CONFIG);
@@ -18,15 +20,82 @@ export const dataService = {
     const oldConfig = dataService.getConfig();
     localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
 
-    // Si se acaba de configurar una API y antes no había, o cambió, migramos
     if (config.apiUrl && config.apiUrl !== oldConfig.apiUrl) {
-      try {
-        await dataService.initSheets();
+      // Al cambiar URL, si no hay versión en la nube, inicializamos
+      const cloudVersion = await dataService.getAppVersion();
+      if (!cloudVersion) {
+        await dataService.initSheets(true);
         await dataService.migrateLocalToCloud();
-      } catch (e) {
-        console.error('Error during config sync/migration:', e);
       }
     }
+  },
+
+  getAppVersion: async () => {
+    const { apiUrl, spreadsheetId } = dataService.getConfig();
+    if (!apiUrl) return null;
+    try {
+      const response = await fetch(`${apiUrl}?action=getData&sheet=Configuracion&ssId=${spreadsheetId || ''}`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        const versionItem = data.find(i => i.id === 'app_version');
+        return versionItem ? versionItem.value : null;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  saveAppVersion: async () => {
+    const { apiUrl, spreadsheetId } = dataService.getConfig();
+    if (!apiUrl) return;
+    try {
+      await fetch(apiUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({
+          action: 'saveData',
+          sheet: 'Configuracion',
+          ssId: spreadsheetId,
+          payload: { id: 'app_version', value: APP_VERSION }
+        })
+      });
+    } catch (e) { }
+  },
+
+  initSheets: async (preserveExisting = true) => {
+    const { apiUrl, spreadsheetId } = dataService.getConfig();
+    if (!apiUrl) return;
+
+    const tables = [
+      { name: 'Personas', headers: ['id', 'nombre', 'genero', 'privilegios', 'habilidades', 'asignaciones'] },
+      { name: 'Reuniones', headers: ['id', 'fecha', 'tipo', 'datos_reunion'] },
+      { name: 'Plantillas', headers: ['id', 'nombre', 'tipo', 'estructura'] },
+      { name: 'Salas', headers: ['id', 'nombre'] },
+      { name: 'TiposAsignacion', headers: ['id', 'nombre'] },
+      { name: 'Configuracion', headers: ['id', 'value'] }
+    ];
+
+    for (const table of tables) {
+      try {
+        await fetch(apiUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          redirect: 'follow',
+          body: JSON.stringify({
+            action: 'initSheet',
+            sheet: table.name,
+            headers: table.headers,
+            ssId: spreadsheetId,
+            preserveExisting: preserveExisting
+          })
+        });
+      } catch (e) {
+        console.error(`Error initializing sheet ${table.name}:`, e);
+      }
+    }
+    await dataService.saveAppVersion();
   },
 
   migrateLocalToCloud: async () => {
@@ -46,44 +115,10 @@ export const dataService = {
       if (localData) {
         const parsed = JSON.parse(localData);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          console.log(`Migrating ${parsed.length} items to ${item.sheet}...`);
           for (const row of parsed) {
             await dataService._save(item.sheet, item.key, row, 'id', true);
           }
         }
-      }
-    }
-  },
-
-  initSheets: async () => {
-    const { apiUrl, spreadsheetId } = dataService.getConfig();
-    if (!apiUrl) return;
-
-    const tables = [
-      { name: 'Personas', headers: ['id', 'nombre', 'genero', 'privilegios', 'habilidades'] },
-      { name: 'Reuniones', headers: ['id', 'fecha', 'tipo', 'datos_reunion'] },
-      { name: 'Plantillas', headers: ['id', 'nombre', 'tipo', 'estructura'] },
-      { name: 'Salas', headers: ['id', 'nombre'] },
-      { name: 'TiposAsignacion', headers: ['id', 'nombre'] },
-      { name: 'Configuracion', headers: ['id', 'value'] }
-    ];
-
-    for (const table of tables) {
-      try {
-        await fetch(apiUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          redirect: 'follow',
-          body: JSON.stringify({
-            action: 'initSheet',
-            sheet: table.name,
-            headers: table.headers,
-            ssId: spreadsheetId,
-            preserveExisting: true // Nueva bandera para el backend
-          })
-        });
-      } catch (e) {
-        console.error(`Error initializing sheet ${table.name}:`, e);
       }
     }
   },
@@ -116,15 +151,11 @@ export const dataService = {
     if (keys[sheetName]) localStorage.removeItem(keys[sheetName]);
   },
 
-  // Generic Get/Save
   _get: async (sheet, storageKey) => {
     const { apiUrl, spreadsheetId } = dataService.getConfig();
     if (apiUrl) {
       try {
-        const response = await fetch(`${apiUrl}?action=getData&sheet=${sheet}&ssId=${spreadsheetId || ''}`, {
-          method: 'GET',
-          redirect: 'follow'
-        });
+        const response = await fetch(`${apiUrl}?action=getData&sheet=${sheet}&ssId=${spreadsheetId || ''}`);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
         return data;
@@ -169,16 +200,12 @@ export const dataService = {
 
   getPersonas: () => dataService._get('Personas', STORAGE_KEY_PERSONAS),
   savePersona: (persona) => dataService._save('Personas', STORAGE_KEY_PERSONAS, persona),
-
   getReuniones: () => dataService._get('Reuniones', STORAGE_KEY_REUNIONES),
   saveReunion: (reunion) => dataService._save('Reuniones', STORAGE_KEY_REUNIONES, reunion),
-
   getPlantillas: () => dataService._get('Plantillas', STORAGE_KEY_PLANTILLAS),
   savePlantilla: (plantilla) => dataService._save('Plantillas', STORAGE_KEY_PLANTILLAS, plantilla),
-
   getSalas: () => dataService._get('Salas', STORAGE_KEY_SALAS),
   saveSala: (sala) => dataService._save('Salas', STORAGE_KEY_SALAS, sala),
-
   getTiposAsignacion: () => dataService._get('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION),
   saveTipoAsignacion: (tipo) => dataService._save('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION, tipo),
 

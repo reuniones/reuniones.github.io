@@ -21,12 +21,24 @@ const App = () => {
   const [editingSala, setEditingSala] = useState(null);
   const [editingTipoAsignacion, setEditingTipoAsignacion] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [cloudVersion, setCloudVersion] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
-    // Ejemplo de uso de JSONata: Obtener todos los publicadores ordenados por nombre
+
+    // Check version if API is configured
+    if (config.apiUrl) {
+      const v = await dataService.getAppVersion();
+      if (v && v !== dataService.APP_VERSION) {
+        setCloudVersion(v);
+        setShowVersionModal(true);
+        setLoading(false);
+        return;
+      }
+    }
+
     const p = await dataService.queryData('Personas', '$ ^(nombre)');
     const r = await dataService.getReuniones();
     const pl = await dataService.getPlantillas();
@@ -263,6 +275,17 @@ const App = () => {
     setIsSyncing(false);
     setShowTipoAsignacionModal(false);
     setEditingTipoAsignacion(null);
+  };
+
+  const handleRecreateTables = async (preserve) => {
+    if (window.confirm(preserve ? '¿Recrear tablas conservando los datos actuales?' : '¡ADVERTENCIA! Se borrarán todos los datos. ¿Continuar?')) {
+      setIsSyncing(true);
+      await dataService.initSheets(preserve);
+      setShowVersionModal(false);
+      setShowConfigModal(false);
+      await fetchData();
+      setIsSyncing(false);
+    }
   };
 
   const handleDeleteTipoAsignacion = async (id) => {
@@ -872,7 +895,7 @@ const App = () => {
       {/* Modal Configuración */}
       {showConfigModal && (
         <div className="modal-overlay">
-          <div className="glass modal-content">
+          <div className="glass modal-content" style={{ maxWidth: '500px' }}>
             <h3>Configuración del Sistema</h3>
             <form onSubmit={handleSaveConfig} style={{ marginTop: '1.5rem' }}>
               <div className="form-group">
@@ -880,34 +903,57 @@ const App = () => {
                 <input name="apiUrl" defaultValue={config.apiUrl} placeholder="https://script.google.com/macros/s/.../exec" />
               </div>
               <div className="form-group">
-                <label>Spreadsheet ID (Opcional si es script vinculado)</label>
-                <input name="spreadsheetId" defaultValue={config.spreadsheetId} placeholder="ID de la hoja de cálculo (de la URL)" />
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                  Deja en blanco para usar la hoja vinculada al script o almacenamiento local.
-                </p>
+                <label>Spreadsheet ID</label>
+                <input name="spreadsheetId" defaultValue={config.spreadsheetId} placeholder="ID de la hoja de cálculo" />
               </div>
-              <div className="modal-actions" style={{ justifyContent: 'space-between' }}>
-                <button type="button" className="danger" style={{ background: 'var(--danger)', color: 'white' }} onClick={async () => {
-                  if (window.confirm('¿Estás seguro de que deseas borrar TODOS los datos?')) {
-                    setLoading(true);
-                    await dataService.clearData('Personas');
-                    await dataService.clearData('Reuniones');
-                    await dataService.clearData('Plantillas');
-                    await fetchData();
-                    setShowConfigModal(false);
-                  }
-                }}>
-                  Limpiar Todo
+              <div className="modal-actions">
+                <button type="button" onClick={() => setShowConfigModal(false)}>Cerrar</button>
+                <button type="submit" className="primary">Guardar y Conectar</button>
+              </div>
+
+              <hr style={{ margin: '1.5rem 0', opacity: 0.1 }} />
+
+              <h4>Mantenimiento</h4>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                Usa estas opciones si necesitas recrear la estructura de las hojas (ej. al actualizar la app).
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <button type="button" onClick={() => handleRecreateTables(true)} style={{ fontSize: '0.8rem' }}>
+                  Actualizar Estructura (Conservar Datos)
                 </button>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button type="button" onClick={() => setShowConfigModal(false)}>Cerrar</button>
-                  <button type="submit" className="primary">Guardar URL</button>
-                </div>
+                <button type="button" className="danger" onClick={() => handleRecreateTables(false)} style={{ fontSize: '0.8rem' }}>
+                  Reiniciar Todo (BORRAR DATOS)
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Modal Versión */}
+      {showVersionModal && (
+        <div className="modal-overlay">
+          <div className="glass modal" style={{ maxWidth: '450px', border: '1px solid var(--accent)', padding: '2rem' }}>
+            <h2 style={{ color: 'var(--accent)', marginBottom: '1rem' }}>Actualización Necesaria</h2>
+            <p>La versión de tu base de datos (<b>{cloudVersion || '0.0.0'}</b>) es antigua.</p>
+            <p>La aplicación requiere la versión <b>{dataService.APP_VERSION}</b> para funcionar correctamente.</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '2rem' }}>
+              <button onClick={() => handleRecreateTables(true)} className="primary">
+                Actualizar y CONSERVAR datos
+              </button>
+              <button onClick={() => handleRecreateTables(false)} className="danger">
+                Actualizar y BORRAR TODO (Limpiar)
+              </button>
+              <button onClick={() => setShowVersionModal(false)} style={{ background: 'none', border: '1px solid var(--text-muted)', color: 'var(--text-muted)' }}>
+                Continuar sin actualizar (No recomendado)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSyncing && <SyncLoader />}
     </div>
   );
 };
