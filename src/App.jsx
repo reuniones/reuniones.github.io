@@ -27,6 +27,9 @@ const App = () => {
   const [cloudVersion, setCloudVersion] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Estado temporal para editar estructura de plantilla
+  const [tempEstructura, setTempEstructura] = useState([]);
+
   // Sistema de Temas (Material 3)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
 
@@ -139,13 +142,14 @@ const App = () => {
     const newPlantilla = {
       id: editingPlantilla?.id || Date.now(),
       nombre: formData.get('nombre'),
-      estructura: editingPlantilla?.estructura || '[]'
+      estructura: JSON.stringify(tempEstructura)
     };
     const updated = await dataService.savePlantilla(newPlantilla);
     setPlantillas(updated);
     setIsSyncing(false);
     setShowPlantillaModal(false);
     setEditingPlantilla(null);
+    setTempEstructura([]);
   };
 
   const handleSaveReunion = async (e) => {
@@ -394,8 +398,8 @@ const App = () => {
             { id: 'personas', label: 'Personas', icon: 'people' },
             { id: 'plantillas', label: 'Plantillas', icon: 'description' },
             { id: 'salas', label: 'Salas', icon: 'meeting_room' },
-            { id: 'asignaciones', label: 'Asignaciones', icon: 'assignment' },
-            { id: 'programacion', label: 'Programación', icon: 'calendar_month' },
+            { id: 'tiposAsignacion', label: 'Tipos Asignación', icon: 'assignment' },
+            { id: 'reuniones', label: 'Programación', icon: 'calendar_month' },
           ].map((item) => (
             <button
               key={item.id}
@@ -611,7 +615,11 @@ const App = () => {
                           <td className="px-6 py-4 text-sm opacity-80">{JSON.parse(pl.estructura || '[]').length} secciones</td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-2">
-                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantilla(pl); setShowPlantillaModal(true); }}>
+                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => {
+                                setEditingPlantilla(pl);
+                                setTempEstructura(JSON.parse(pl.estructura || '[]'));
+                                setShowPlantillaModal(true);
+                              }}>
                                 <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
                               </button>
                               <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeletePlantilla(pl.id)}>
@@ -799,22 +807,46 @@ const App = () => {
                                         <span className="material-icons text-[14px] group-hover:scale-110 block">edit</span>
                                       </button>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                      <PillSelector
-                                        items={salas}
-                                        selectedIds={parte.salaIds || [1]}
-                                        onAdd={(id) => {
-                                          const datos = JSON.parse(selectedReunion.datos_reunion);
-                                          datos.secciones[sIdx].partes[pIdx].salaIds = [...(datos.secciones[sIdx].partes[pIdx].salaIds || [1]), id];
-                                          handleUpdateWeeklyStructure(datos);
-                                        }}
-                                        onRemove={(id) => {
-                                          const datos = JSON.parse(selectedReunion.datos_reunion);
-                                          datos.secciones[sIdx].partes[pIdx].salaIds = (datos.secciones[sIdx].partes[pIdx].salaIds || [1]).filter(sid => sid != id);
-                                          handleUpdateWeeklyStructure(datos);
-                                        }}
-                                      />
-                                      {parte.duracion && <span className="text-xs font-medium opacity-50 px-2 py-1 bg-surface-light dark:bg-white/5 rounded-md">{parte.duracion} min</span>}
+                                    <div className="flex items-center gap-4 mt-2">
+                                      <div className="space-y-1">
+                                        <span className="text-[9px] font-bold opacity-40 uppercase">Aptitudes Requeridas</span>
+                                        <PillSelector
+                                          items={tiposAsignacion}
+                                          selectedIds={parte.tipoAsignacionIds || []}
+                                          onAdd={(id) => {
+                                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                                            const p = datos.secciones[sIdx].partes[pIdx];
+                                            p.tipoAsignacionIds = [...(p.tipoAsignacionIds || []), id];
+                                            handleUpdateWeeklyStructure(datos);
+                                          }}
+                                          onRemove={(id) => {
+                                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                                            const p = datos.secciones[sIdx].partes[pIdx];
+                                            p.tipoAsignacionIds = (p.tipoAsignacionIds || []).filter(tid => tid != id);
+                                            handleUpdateWeeklyStructure(datos);
+                                          }}
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <span className="text-[9px] font-bold opacity-40 uppercase">Salas destinadas</span>
+                                        <PillSelector
+                                          items={salas}
+                                          selectedIds={parte.salaIds || [1]}
+                                          onAdd={(id) => {
+                                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                                            const p = datos.secciones[sIdx].partes[pIdx];
+                                            p.salaIds = [...(p.salaIds || [1]), id];
+                                            handleUpdateWeeklyStructure(datos);
+                                          }}
+                                          onRemove={(id) => {
+                                            const datos = JSON.parse(selectedReunion.datos_reunion);
+                                            const p = datos.secciones[sIdx].partes[pIdx];
+                                            p.salaIds = (p.salaIds || [1]).filter(sid => sid != id);
+                                            handleUpdateWeeklyStructure(datos);
+                                          }}
+                                        />
+                                      </div>
+                                      {parte.duracion && <span className="text-xs font-medium opacity-50 px-2 py-1 bg-surface-light dark:bg-white/5 rounded-md self-end">{parte.duracion} min</span>}
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-3">
@@ -950,6 +982,135 @@ const App = () => {
             ), onClose: () => setShowReunionModal(false)
           },
           {
+            show: showPlantillaModal, title: editingPlantilla ? 'Editar Plantilla' : 'Nueva Plantilla', content: (
+              <form onSubmit={handleSavePlantilla} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold opacity-60 ml-1 uppercase">Nombre de la Plantilla</label>
+                    <input name="nombre" className="input-field" defaultValue={editingPlantilla?.nombre} placeholder="Ej: Entre Semana, Fin de Semana..." required />
+                  </div>
+
+                  <div className="space-y-4 border-t border-outline-light/10 pt-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-sm font-bold opacity-60 uppercase">Estructura de la Reunión</h4>
+                      <button type="button" className="text-xs btn-primary py-1 px-3" onClick={() => {
+                        setTempEstructura([...tempEstructura, { id: Date.now().toString(), nombre: 'Nueva Sección', showHeader: true, headerColor: '#6366f1', partes: [] }]);
+                      }}>+ Añadir Sección</button>
+                    </div>
+
+                    <div className="space-y-6">
+                      {tempEstructura.map((seccion, sIdx) => (
+                        <div key={seccion.id} className="p-4 rounded-2xl bg-surface-light dark:bg-white/5 border border-outline-light/10 space-y-4">
+                          <div className="flex items-center gap-3">
+                            <input
+                              className="bg-transparent font-bold border-none outline-none flex-1 focus:ring-1 focus:ring-primary-light rounded px-1"
+                              value={seccion.nombre}
+                              onChange={(e) => {
+                                const newEst = [...tempEstructura];
+                                newEst[sIdx].nombre = e.target.value;
+                                setTempEstructura(newEst);
+                              }}
+                            />
+                            <input type="color" value={seccion.headerColor} className="w-6 h-6 rounded border-none p-0 cursor-pointer" onChange={(e) => {
+                              const newEst = [...tempEstructura];
+                              newEst[sIdx].headerColor = e.target.value;
+                              setTempEstructura(newEst);
+                            }} />
+                            <button type="button" className="text-error-light" onClick={() => {
+                              const newEst = [...tempEstructura];
+                              newEst.splice(sIdx, 1);
+                              setTempEstructura(newEst);
+                            }}><span className="material-icons text-sm">delete</span></button>
+                          </div>
+
+                          <div className="space-y-2 pl-4 border-l-2 border-outline-light/20">
+                            {seccion.partes.map((parte, pIdx) => (
+                              <div key={parte.id} className="p-3 rounded-xl bg-white dark:bg-white/5 border border-outline-light/5 space-y-3">
+                                <div className="flex gap-2">
+                                  <input
+                                    className="text-xs font-bold bg-transparent border-none outline-none flex-1 focus:ring-1 focus:ring-primary-light rounded px-1"
+                                    value={parte.nombre}
+                                    placeholder="Nombre de la parte"
+                                    onChange={(e) => {
+                                      const newEst = [...tempEstructura];
+                                      newEst[sIdx].partes[pIdx].nombre = e.target.value;
+                                      setTempEstructura(newEst);
+                                    }}
+                                  />
+                                  <input
+                                    type="number"
+                                    className="bg-transparent text-[10px] w-12 border-none outline-none opacity-60"
+                                    value={parte.duracion}
+                                    onChange={(e) => {
+                                      const newEst = [...tempEstructura];
+                                      newEst[sIdx].partes[pIdx].duracion = Number(e.target.value);
+                                      setTempEstructura(newEst);
+                                    }}
+                                  />
+                                  <button type="button" className="opacity-40 hover:opacity-100" onClick={() => {
+                                    const newEst = [...tempEstructura];
+                                    newEst[sIdx].partes.splice(pIdx, 1);
+                                    setTempEstructura(newEst);
+                                  }}><span className="material-icons text-xs">close</span></button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="space-y-1">
+                                    <span className="text-[9px] font-bold opacity-40 uppercase">Aptitudes Requeridas</span>
+                                    <PillSelector
+                                      items={tiposAsignacion}
+                                      selectedIds={parte.tipoAsignacionIds || []}
+                                      onAdd={(id) => {
+                                        const newEst = [...tempEstructura];
+                                        newEst[sIdx].partes[pIdx].tipoAsignacionIds = [...(newEst[sIdx].partes[pIdx].tipoAsignacionIds || []), id];
+                                        setTempEstructura(newEst);
+                                      }}
+                                      onRemove={(id) => {
+                                        const newEst = [...tempEstructura];
+                                        newEst[sIdx].partes[pIdx].tipoAsignacionIds = (newEst[sIdx].partes[pIdx].tipoAsignacionIds || []).filter(tid => tid != id);
+                                        setTempEstructura(newEst);
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <span className="text-[9px] font-bold opacity-40 uppercase">Salas</span>
+                                    <PillSelector
+                                      items={salas}
+                                      selectedIds={parte.salaIds || [1]}
+                                      onAdd={(id) => {
+                                        const newEst = [...tempEstructura];
+                                        newEst[sIdx].partes[pIdx].salaIds = [...(newEst[sIdx].partes[pIdx].salaIds || [1]), id];
+                                        setTempEstructura(newEst);
+                                      }}
+                                      onRemove={(id) => {
+                                        const newEst = [...tempEstructura];
+                                        newEst[sIdx].partes[pIdx].salaIds = (newEst[sIdx].partes[pIdx].salaIds || [1]).filter(sid => sid != id);
+                                        setTempEstructura(newEst);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            <button type="button" className="text-[10px] font-bold opacity-60 hover:opacity-100 py-1" onClick={() => {
+                              const newEst = [...tempEstructura];
+                              newEst[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', duracion: 5, tipoAsignacionIds: [], salaIds: [1] });
+                              setTempEstructura(newEst);
+                            }}>+ Añadir Parte</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-outline-light/10">
+                  <button type="button" className="px-6 py-2.5 rounded-full font-bold opacity-60 hover:opacity-100 transition-all" onClick={() => { setShowPlantillaModal(false); setTempEstructura([]); }}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar Plantilla</button>
+                </div>
+              </form>
+            ), onClose: () => { setShowPlantillaModal(false); setTempEstructura([]); }
+          },
+          {
             show: showSalaModal, title: editingSala ? 'Editar Sala' : 'Nueva Sala', content: (
               <form onSubmit={handleSaveSala} className="space-y-6">
                 <div className="space-y-1">
@@ -1049,7 +1210,7 @@ const App = () => {
           </div>
         ))
       }
-    </div>
+    </div >
   );
 };
 
