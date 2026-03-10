@@ -39,8 +39,11 @@ const App = () => {
   const [tempEstructura, setTempEstructura] = useState([]);
 
   // Utilidad para parsear JSON de forma segura
+  // Utilidad para parsear JSON de forma segura (soporta objetos ya parseados)
   const safeParse = (str, fallback = []) => {
-    if (!str || typeof str !== 'string' || str.trim() === '') return fallback;
+    if (!str) return fallback;
+    if (typeof str === 'object') return str; // Ya es un objeto/array
+    if (typeof str !== 'string' || str.trim() === '') return fallback;
     try {
       return JSON.parse(str);
     } catch (e) {
@@ -94,12 +97,13 @@ const App = () => {
     if (batch) {
       // Ordenar personas por nombre localmente
       const p = (batch.Personas || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-      const r = batch.Reuniones || [];
-      const pl = batch.Plantillas || [];
-      const plp = batch.PlantillasPartes || [];
-      const sl = batch.Salas || [];
-      const ta = batch.TiposAsignacion || [];
-      const an = batch.Anuncios || [];
+      const r = (batch.Reuniones || []).map(item => ({ ...item, datos_reunion: safeParse(item.datos_reunion, { secciones: [] }) }));
+      const pl = (batch.Plantillas || []).map(item => ({ ...item, estructura: safeParse(item.estructura, []) }))
+        .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+      const plp = (batch.PlantillasPartes || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+      const sl = (batch.Salas || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+      const ta = (batch.TiposAsignacion || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+      const an = (batch.Anuncios || []).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')); // Anuncios por fecha descendente
 
       setPersonas(p);
       setReuniones(r);
@@ -183,12 +187,8 @@ const App = () => {
       cupos: Number(formData.get('cupos')),
       permiteAyudante: formData.get('permiteAyudante') === 'on' || formData.get('permiteAyudante') === 'true',
       permiteLector: formData.get('permiteLector') === 'on' || formData.get('permiteLector') === 'true',
-      tipoAsignacionIds: Array.from(e.target.elements.tipoAsignacionIds || [])
-        .filter(input => input.checked)
-        .map(input => input.value),
-      salaIds: Array.from(e.target.elements.salaIds || [])
-        .filter(input => input.checked)
-        .map(input => input.value)
+      tipoAsignacionIds: editingPlantillaParte?.tipoAsignacionIds || [],
+      salaIds: editingPlantillaParte?.salaIds || [1]
     };
     const updated = await dataService.savePlantillaParte(newPlantilla);
     setPlantillasPartes(updated);
@@ -203,13 +203,13 @@ const App = () => {
       .filter(input => input.checked)
       .map(input => input.value);
 
-    let datosReunion = selectedReunion?.datos_reunion ? JSON.parse(selectedReunion.datos_reunion) : { secciones: [] };
+    let datosReunion = selectedReunion?.datos_reunion ? safeParse(selectedReunion.datos_reunion, { secciones: [] }) : { secciones: [] };
 
     if (selectedTemplateIds.length > 0) {
       selectedTemplateIds.forEach(id => {
         const plantilla = plantillas.find(p => p.id == id);
         if (plantilla) {
-          const seccionesImportadas = JSON.parse(plantilla.estructura || '[]').map(s => ({
+          const seccionesImportadas = safeParse(plantilla.estructura, []).map(s => ({
             ...s,
             id: Math.random().toString(36).substr(2, 9),
             partes: s.partes.map(p => ({ ...p, id: Math.random().toString(36).substr(2, 9), asignadoId: null }))
@@ -261,7 +261,7 @@ const App = () => {
 
   const handleAsignar = async (parteId, personaId) => {
     if (!selectedReunion) return;
-    const datos = JSON.parse(selectedReunion.datos_reunion);
+    const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
     datos.secciones = datos.secciones.map(s => ({
       ...s,
       partes: s.partes.map(p => p.id === parteId ? { ...p, asignadoId: personaId } : p)
@@ -378,9 +378,12 @@ const App = () => {
         style={{ width: 'auto', border: 'none', background: 'none' }}
       >
         <option value="" disabled>{placeholder || '+ Añadir'}</option>
-        {items.filter(i => !selectedIds.includes(String(i.id)) && !selectedIds.includes(Number(i.id))).map(i => (
-          <option key={i.id} value={i.id}>{i.nombre}</option>
-        ))}
+        {items
+          .filter(i => !selectedIds.includes(String(i.id)) && !selectedIds.includes(Number(i.id)))
+          .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+          .map(i => (
+            <option key={i.id} value={i.id}>{i.nombre}</option>
+          ))}
       </select>
     </div>
   );
@@ -1469,40 +1472,38 @@ const App = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-xs font-bold opacity-60 ml-1 uppercase">Aptitudes Requeridas</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 rounded-2xl bg-surface-light dark:bg-white/5 border border-outline-light/10">
-                      {tiposAsignacion.map(t => (
-                        <label key={t.id} className="flex items-center gap-2 cursor-pointer p-1">
-                          <input
-                            type="checkbox"
-                            name="tipoAsignacionIds"
-                            value={t.id}
-                            defaultChecked={editingPlantillaParte?.tipoAsignacionIds?.includes(String(t.id)) || editingPlantillaParte?.tipoAsignacionIds?.includes(Number(t.id))}
-                            className="w-4 h-4 rounded text-primary-light"
-                          />
-                          <span className="text-xs">{t.nombre}</span>
-                        </label>
-                      ))}
-                    </div>
+                    <PillSelector
+                      items={tiposAsignacion}
+                      selectedIds={editingPlantillaParte?.tipoAsignacionIds || []}
+                      onAdd={(id) => setEditingPlantillaParte({
+                        ...editingPlantillaParte,
+                        tipoAsignacionIds: [...(editingPlantillaParte?.tipoAsignacionIds || []), id]
+                      })}
+                      onRemove={(id) => setEditingPlantillaParte({
+                        ...editingPlantillaParte,
+                        tipoAsignacionIds: (editingPlantillaParte?.tipoAsignacionIds || []).filter(aid => aid != id)
+                      })}
+                      placeholder="+ Añadir aptitud"
+                    />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-xs font-bold opacity-60 ml-1 uppercase">Salas Permitidas</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 rounded-2xl bg-surface-light dark:bg-white/5 border border-outline-light/10">
-                      {salas.map(s => (
-                        <label key={s.id} className="flex items-center gap-2 cursor-pointer p-1">
-                          <input
-                            type="checkbox"
-                            name="salaIds"
-                            value={s.id}
-                            defaultChecked={editingPlantillaParte?.salaIds?.includes(String(s.id)) || editingPlantillaParte?.salaIds?.includes(Number(s.id)) || (!editingPlantillaParte && s.id == 1)}
-                            className="w-4 h-4 rounded text-primary-light"
-                          />
-                          <span className="text-xs">{s.nombre}</span>
-                        </label>
-                      ))}
-                    </div>
+                    <PillSelector
+                      items={salas}
+                      selectedIds={editingPlantillaParte?.salaIds || [1]}
+                      onAdd={(id) => setEditingPlantillaParte({
+                        ...editingPlantillaParte,
+                        salaIds: [...(editingPlantillaParte?.salaIds || [1]), id]
+                      })}
+                      onRemove={(id) => setEditingPlantillaParte({
+                        ...editingPlantillaParte,
+                        salaIds: (editingPlantillaParte?.salaIds || [1]).filter(sid => sid != id)
+                      })}
+                      placeholder="+ Añadir sala"
+                    />
                   </div>
                 </div>
 
