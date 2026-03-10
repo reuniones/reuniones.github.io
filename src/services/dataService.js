@@ -7,8 +7,9 @@ const STORAGE_KEY_REUNIONES = 'jw_reuniones_reuniones';
 const STORAGE_KEY_PLANTILLAS = 'jw_reuniones_plantillas';
 const STORAGE_KEY_SALAS = 'jw_reuniones_salas';
 const STORAGE_KEY_TIPOS_ASIGNACION = 'jw_reuniones_tipos_asignacion';
+const STORAGE_KEY_PLANTILLAS_PARTES = 'jw_reuniones_plantillas_partes';
 
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.2.0';
 
 export const dataService = {
   APP_VERSION: APP_VERSION,
@@ -73,6 +74,7 @@ export const dataService = {
       { name: 'Personas', headers: ['id', 'nombre', 'genero', 'privilegios', 'habilidades', 'asignaciones'] },
       { name: 'Reuniones', headers: ['id', 'fecha', 'tipo', 'datos_reunion'] },
       { name: 'Plantillas', headers: ['id', 'nombre', 'tipo', 'estructura'] },
+      { name: 'PlantillasPartes', headers: ['id', 'nombre', 'cupos', 'permiteAyudante', 'tipoAsignacionIds', 'salaIds'] },
       { name: 'Salas', headers: ['id', 'nombre'] },
       { name: 'TiposAsignacion', headers: ['id', 'nombre'] },
       { name: 'Configuracion', headers: ['id', 'value'] }
@@ -108,7 +110,8 @@ export const dataService = {
       { key: STORAGE_KEY_REUNIONES, sheet: 'Reuniones' },
       { key: STORAGE_KEY_PLANTILLAS, sheet: 'Plantillas' },
       { key: STORAGE_KEY_SALAS, sheet: 'Salas' },
-      { key: STORAGE_KEY_TIPOS_ASIGNACION, sheet: 'TiposAsignacion' }
+      { key: STORAGE_KEY_TIPOS_ASIGNACION, sheet: 'TiposAsignacion' },
+      { key: STORAGE_KEY_PLANTILLAS_PARTES, sheet: 'PlantillasPartes' }
     ];
 
     for (const item of migrationMap) {
@@ -167,7 +170,8 @@ export const dataService = {
           'Reuniones': STORAGE_KEY_REUNIONES,
           'Plantillas': STORAGE_KEY_PLANTILLAS,
           'Salas': STORAGE_KEY_SALAS,
-          'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION
+          'TiposAsignacion': STORAGE_KEY_TIPOS_ASIGNACION,
+          'PlantillasPartes': STORAGE_KEY_PLANTILLAS_PARTES
         };
 
         Object.keys(data).forEach(sheet => {
@@ -323,6 +327,10 @@ export const dataService = {
   saveSala: (sala) => dataService._save('Salas', STORAGE_KEY_SALAS, sala),
   deleteSala: (id) => dataService._delete('Salas', STORAGE_KEY_SALAS, id),
 
+  getPlantillasPartes: () => dataService._get('PlantillasPartes', STORAGE_KEY_PLANTILLAS_PARTES),
+  savePlantillaParte: (plantilla) => dataService._save('PlantillasPartes', STORAGE_KEY_PLANTILLAS_PARTES, plantilla),
+  deletePlantillaParte: (id) => dataService._delete('PlantillasPartes', STORAGE_KEY_PLANTILLAS_PARTES, id),
+
   getTiposAsignacion: () => dataService._get('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION),
   saveTipoAsignacion: (tipo) => dataService._save('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION, tipo),
   deleteTipoAsignacion: (id) => dataService._delete('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION, id),
@@ -333,7 +341,8 @@ export const dataService = {
         sheetName === 'Reuniones' ? dataService.getReuniones() :
           sheetName === 'Plantillas' ? dataService.getPlantillas() :
             sheetName === 'Salas' ? dataService.getSalas() :
-              sheetName === 'TiposAsignacion' ? dataService.getTiposAsignacion() : null
+              sheetName === 'TiposAsignacion' ? dataService.getTiposAsignacion() :
+                sheetName === 'PlantillasPartes' ? dataService.getPlantillasPartes() : null
     );
     if (!data) return null;
     try {

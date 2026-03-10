@@ -7,6 +7,7 @@ const App = () => {
   const [personas, setPersonas] = useState([]);
   const [reuniones, setReuniones] = useState([]);
   const [plantillas, setPlantillas] = useState([]);
+  const [plantillasPartes, setPlantillasPartes] = useState([]);
   const [salas, setSalas] = useState([]);
   const [tiposAsignacion, setTiposAsignacion] = useState([]);
   const [config, setConfig] = useState(dataService.getConfig());
@@ -18,9 +19,11 @@ const App = () => {
   const [showSalaModal, setShowSalaModal] = useState(false);
   const [showTipoAsignacionModal, setShowTipoAsignacionModal] = useState(false);
   const [showReunionModal, setShowReunionModal] = useState(false);
+  const [showPlantillaParteModal, setShowPlantillaParteModal] = useState(false);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
   const [editingPlantilla, setEditingPlantilla] = useState(null);
+  const [editingPlantillaParte, setEditingPlantillaParte] = useState(null);
   const [editingSala, setEditingSala] = useState(null);
   const [editingTipoAsignacion, setEditingTipoAsignacion] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
@@ -80,7 +83,7 @@ const App = () => {
       }
     }
 
-    const tables = ['Personas', 'Reuniones', 'Plantillas', 'Salas', 'TiposAsignacion'];
+    const tables = ['Personas', 'Reuniones', 'Plantillas', 'PlantillasPartes', 'Salas', 'TiposAsignacion'];
     const batch = await dataService.getBatchData(tables);
 
     if (batch) {
@@ -88,12 +91,14 @@ const App = () => {
       const p = (batch.Personas || []).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
       const r = batch.Reuniones || [];
       const pl = batch.Plantillas || [];
+      const plp = batch.PlantillasPartes || [];
       const sl = batch.Salas || [];
       const ta = batch.TiposAsignacion || [];
 
       setPersonas(p);
       setReuniones(r);
       setPlantillas(pl);
+      setPlantillasPartes(plp);
       setSalas(sl.length > 0 ? sl : [{ id: 1, nombre: 'Principal' }]);
       setTiposAsignacion(ta);
     }
@@ -159,6 +164,27 @@ const App = () => {
     setShowPlantillaModal(false);
     setEditingPlantilla(null);
     setTempEstructura([]);
+  };
+
+  const handleSavePlantillaParte = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const newPlantilla = {
+      id: editingPlantillaParte?.id || Date.now(),
+      nombre: formData.get('nombre'),
+      cupos: Number(formData.get('cupos')),
+      permiteAyudante: formData.get('permiteAyudante') === 'on',
+      tipoAsignacionIds: Array.from(e.target.elements.tipoAsignacionIds || [])
+        .filter(input => input.checked)
+        .map(input => input.value),
+      salaIds: Array.from(e.target.elements.salaIds || [])
+        .filter(input => input.checked)
+        .map(input => input.value)
+    };
+    const updated = await dataService.savePlantillaParte(newPlantilla);
+    setPlantillasPartes(updated);
+    setShowPlantillaParteModal(false);
+    setEditingPlantillaParte(null);
   };
 
   const handleSaveReunion = async (e) => {
@@ -259,6 +285,13 @@ const App = () => {
     if (window.confirm('¿Eliminar esta plantilla?')) {
       const updated = await dataService.deletePlantilla(id);
       setPlantillas(updated);
+    }
+  };
+
+  const handleDeletePlantillaParte = async (id) => {
+    if (window.confirm('¿Eliminar esta plantilla de parte?')) {
+      const updated = await dataService.deletePlantillaParte(id);
+      setPlantillasPartes(updated);
     }
   };
 
@@ -566,12 +599,12 @@ const App = () => {
             {activeTab === 'ajustes' && (
               <div className="flex flex-col gap-6 animate-fade-in">
 
-                {/* Plantillas */}
+                {/* Plantillas de Reuniones */}
                 <div className="card shadow-md overflow-hidden p-0">
                   <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
                     <h3 className="font-bold flex items-center gap-2">
                       <span className="material-icons text-primary-light dark:text-primary-dark text-xl">description</span>
-                      Plantillas
+                      Plantillas de reuniones
                     </h3>
                     <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingPlantilla(null); setTempEstructura([]); setShowPlantillaModal(true); }}>+ Añadir</button>
                   </div>
@@ -593,7 +626,41 @@ const App = () => {
                           </td>
                         </tr>
                       ))}
-                      {plantillas.length === 0 && <tr><td colSpan="3" className="px-6 py-6 text-center opacity-40 italic">No hay plantillas.</td></tr>}
+                      {plantillas.length === 0 && <tr><td colSpan="3" className="px-6 py-6 text-center opacity-40 italic">No hay plantillas de reuniones.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Plantillas de Partes */}
+                <div className="card shadow-md overflow-hidden p-0">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
+                    <h3 className="font-bold flex items-center gap-2">
+                      <span className="material-icons text-primary-light dark:text-primary-dark text-xl">extension</span>
+                      Plantillas de partes
+                    </h3>
+                    <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingPlantillaParte(null); setShowPlantillaParteModal(true); }}>+ Añadir</button>
+                  </div>
+                  <table className="w-full text-left border-collapse">
+                    <tbody className="divide-y divide-outline-light/5">
+                      {plantillasPartes.map(pl => (
+                        <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                          <td className="px-6 py-3 font-semibold">{pl.nombre}</td>
+                          <td className="px-6 py-3 text-sm opacity-60">
+                            {pl.cupos} cupo(s) · {salas.filter(s => pl.salaIds?.includes(String(s.id)) || pl.salaIds?.includes(Number(s.id))).map(s => s.nombre).join(', ')}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-1">
+                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantillaParte(pl); setShowPlantillaParteModal(true); }}>
+                                <span className="material-icons text-base group-hover:scale-110 block">edit</span>
+                              </button>
+                              <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeletePlantillaParte(pl.id)}>
+                                <span className="material-icons text-base group-hover:scale-110 block">delete</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {plantillasPartes.length === 0 && <tr><td colSpan="3" className="px-6 py-6 text-center opacity-40 italic">No hay plantillas de partes.</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -1150,6 +1217,77 @@ const App = () => {
               </form>
             ), onClose: () => { setShowPlantillaModal(false); setTempEstructura([]); },
             full: true
+          },
+          {
+            show: showPlantillaParteModal, title: editingPlantillaParte ? 'Editar Plantilla de Parte' : 'Nueva Plantilla de Parte', content: (
+              <form onSubmit={handleSavePlantillaParte} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold opacity-60 ml-1 uppercase">Nombre de la Plantilla</label>
+                    <input name="nombre" className="input-field" defaultValue={editingPlantillaParte?.nombre} placeholder="Ej: Lectura, Oración..." required />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold opacity-60 ml-1 uppercase">Cupos (Asignados)</label>
+                      <input type="number" name="cupos" min="1" className="input-field" defaultValue={editingPlantillaParte?.cupos || 1} required />
+                    </div>
+                    <div className="flex items-center pt-6">
+                      <label className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          name="permiteAyudante"
+                          defaultChecked={!!editingPlantillaParte?.permiteAyudante}
+                          className="w-5 h-5 rounded border-outline-light text-primary-light focus:ring-primary-light"
+                        />
+                        <span className="text-sm font-bold opacity-60 uppercase">Permitir Ayudante</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold opacity-60 ml-1 uppercase">Aptitudes Requeridas</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 rounded-2xl bg-surface-light dark:bg-white/5 border border-outline-light/10">
+                      {tiposAsignacion.map(t => (
+                        <label key={t.id} className="flex items-center gap-2 cursor-pointer p-1">
+                          <input
+                            type="checkbox"
+                            name="tipoAsignacionIds"
+                            value={t.id}
+                            defaultChecked={editingPlantillaParte?.tipoAsignacionIds?.includes(String(t.id)) || editingPlantillaParte?.tipoAsignacionIds?.includes(Number(t.id))}
+                            className="w-4 h-4 rounded text-primary-light"
+                          />
+                          <span className="text-xs">{t.nombre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold opacity-60 ml-1 uppercase">Salas Permitidas</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 rounded-2xl bg-surface-light dark:bg-white/5 border border-outline-light/10">
+                      {salas.map(s => (
+                        <label key={s.id} className="flex items-center gap-2 cursor-pointer p-1">
+                          <input
+                            type="checkbox"
+                            name="salaIds"
+                            value={s.id}
+                            defaultChecked={editingPlantillaParte?.salaIds?.includes(String(s.id)) || editingPlantillaParte?.salaIds?.includes(Number(s.id)) || (!editingPlantillaParte && s.id == 1)}
+                            className="w-4 h-4 rounded text-primary-light"
+                          />
+                          <span className="text-xs">{s.nombre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-outline-light/10">
+                  <button type="button" className="px-6 py-2.5 rounded-full font-bold opacity-60 hover:opacity-100 transition-all" onClick={() => setShowPlantillaParteModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn-primary">Guardar Plantilla</button>
+                </div>
+              </form>
+            ), onClose: () => setShowPlantillaParteModal(false)
           },
           {
             show: showSalaModal, title: editingSala ? 'Editar Sala' : 'Nueva Sala', content: (
