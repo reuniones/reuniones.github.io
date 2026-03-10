@@ -926,6 +926,9 @@ const App = () => {
                   Reiniciar Todo (BORRAR DATOS)
                 </button>
               </div>
+              <div style={{ marginTop: '1.5rem', textAlign: 'center', opacity: 0.4, fontSize: '0.7rem' }}>
+                JW Gestor de Reuniones v{dataService.APP_VERSION}
+              </div>
             </form>
           </div>
         </div>
@@ -935,9 +938,18 @@ const App = () => {
       {showVersionModal && (
         <div className="modal-overlay">
           <div className="glass modal" style={{ maxWidth: '450px', border: '1px solid var(--accent)', padding: '2rem' }}>
-            <h2 style={{ color: 'var(--accent)', marginBottom: '1rem' }}>Actualización Necesaria</h2>
-            <p>La versión de tu base de datos (<b>{cloudVersion || '0.0.0'}</b>) es antigua.</p>
-            <p>La aplicación requiere la versión <b>{dataService.APP_VERSION}</b> para funcionar correctamente.</p>
+            <h2 style={{ color: 'var(--accent)', marginBottom: '1.5rem', textAlign: 'center' }}>Actualización del Sistema</h2>
+            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <span style={{ opacity: 0.7 }}>Versión de la App:</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>v{dataService.APP_VERSION}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ opacity: 0.7 }}>Versión en la Nube:</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--warning)' }}>{cloudVersion ? `v${cloudVersion}` : 'Desconocida'}</span>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.9rem', marginBottom: '1.5rem' }}>Se ha detectado un cambio en la estructura de datos. Para continuar, es necesario actualizar las tablas de Google Sheets.</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '2rem' }}>
               <button onClick={() => handleRecreateTables(true)} className="primary">
