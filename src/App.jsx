@@ -22,6 +22,7 @@ const App = () => {
   const [editingTipoAsignacion, setEditingTipoAsignacion] = useState(null);
   const [selectedReunion, setSelectedReunion] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -79,29 +80,32 @@ const App = () => {
     };
     const updated = await dataService.savePersona(newPersona);
     setPersonas(updated);
+    setIsSyncing(false);
     setShowModal(false);
     setEditingPersona(null);
   };
 
   const handleSavePlantilla = async (e) => {
     e.preventDefault();
+    setIsSyncing(true);
     const formData = new FormData(e.target);
     const newPlantilla = {
       id: editingPlantilla?.id || Date.now(),
       nombre: formData.get('nombre'),
-      tipo: formData.get('tipo'),
-      estructura: editingPlantilla?.estructura || []
+      estructura: editingPlantilla?.estructura || '[]'
     };
     const updated = await dataService.savePlantilla(newPlantilla);
     setPlantillas(updated);
+    setIsSyncing(false);
     setShowPlantillaModal(false);
     setEditingPlantilla(null);
   };
 
   const handleSaveReunion = async (e) => {
     e.preventDefault();
+    setIsSyncing(true);
     const formData = new FormData(e.target);
-    const selectedTemplateIds = Array.from(e.target.elements.plantillaIds)
+    const selectedTemplateIds = Array.from(e.target.elements.plantillaIds || [])
       .filter(input => input.checked)
       .map(input => input.value);
 
@@ -129,12 +133,14 @@ const App = () => {
     };
     const updated = await dataService.saveReunion(newReunion);
     setReuniones(updated);
+    setIsSyncing(false);
     setShowReunionModal(false);
     setSelectedReunion(null);
   };
 
   const handleUpdateWeeklyStructure = async (newDatos) => {
     if (!selectedReunion) return;
+    setIsSyncing(true);
     const updatedReunion = {
       ...selectedReunion,
       datos_reunion: JSON.stringify(newDatos)
@@ -142,10 +148,12 @@ const App = () => {
     const updated = await dataService.saveReunion(updatedReunion);
     setReuniones(updated);
     setSelectedReunion(updatedReunion);
+    setIsSyncing(false);
   };
 
   const handleSaveConfig = async (e) => {
     e.preventDefault();
+    setIsSyncing(true);
     const formData = new FormData(e.target);
     const newConfig = {
       apiUrl: formData.get('apiUrl'),
@@ -153,16 +161,15 @@ const App = () => {
     };
     await dataService.saveConfig(newConfig);
     setConfig(newConfig);
+    await dataService.initSheets();
+    await fetchData();
+    setIsSyncing(false);
     setShowConfigModal(false);
-    if (newConfig.apiUrl) {
-      setLoading(true);
-      await dataService.initSheets();
-      await fetchData();
-    }
   };
 
   const handleAsignar = async (parteId, personaId) => {
     if (!selectedReunion) return;
+    setIsSyncing(true);
     const datos = JSON.parse(selectedReunion.datos_reunion);
     datos.secciones = datos.secciones.map(s => ({
       ...s,
@@ -176,10 +183,12 @@ const App = () => {
     const updated = await dataService.saveReunion(updatedReunion);
     setReuniones(updated);
     setSelectedReunion(updatedReunion);
+    setIsSyncing(false);
   };
 
   const handleDeleteReunion = async (id) => {
     if (window.confirm('¿Eliminar esta reunión?')) {
+      setIsSyncing(true);
       const { apiUrl, spreadsheetId } = dataService.getConfig();
       let updated;
       if (apiUrl) {
@@ -192,19 +201,33 @@ const App = () => {
       setReuniones(updated);
       if (selectedReunion?.id === id) setSelectedReunion(null);
       localStorage.setItem('jw_reuniones_reuniones', JSON.stringify(updated));
+      setIsSyncing(false);
+    }
+  };
+
+  const handleDeletePersona = async (id) => {
+    if (window.confirm('¿Eliminar esta persona?')) {
+      setIsSyncing(true);
+      const updated = personas.filter(p => p.id !== id);
+      setPersonas(updated);
+      localStorage.setItem('jw_reuniones_personas', JSON.stringify(updated));
+      setIsSyncing(false);
     }
   };
 
   const handleDeletePlantilla = async (id) => {
     if (window.confirm('¿Eliminar esta plantilla?')) {
+      setIsSyncing(true);
       const updated = plantillas.filter(p => p.id !== id);
       setPlantillas(updated);
       localStorage.setItem('jw_reuniones_plantillas', JSON.stringify(updated));
+      setIsSyncing(false);
     }
   };
 
   const handleSaveSala = async (e) => {
     e.preventDefault();
+    setIsSyncing(true);
     const formData = new FormData(e.target);
     const newSala = {
       id: editingSala?.id || Date.now(),
@@ -212,20 +235,24 @@ const App = () => {
     };
     const updated = await dataService.saveSala(newSala);
     setSalas(updated);
+    setIsSyncing(false);
     setShowSalaModal(false);
     setEditingSala(null);
   };
 
   const handleDeleteSala = async (id) => {
     if (window.confirm('¿Eliminar esta sala?')) {
+      setIsSyncing(true);
       const updated = salas.filter(s => s.id !== id);
       setSalas(updated);
       localStorage.setItem('jw_reuniones_salas', JSON.stringify(updated));
+      setIsSyncing(false);
     }
   };
 
   const handleSaveTipoAsignacion = async (e) => {
     e.preventDefault();
+    setIsSyncing(true);
     const formData = new FormData(e.target);
     const newTipo = {
       id: editingTipoAsignacion?.id || Date.now(),
@@ -233,22 +260,56 @@ const App = () => {
     };
     const updated = await dataService.saveTipoAsignacion(newTipo);
     setTiposAsignacion(updated);
+    setIsSyncing(false);
     setShowTipoAsignacionModal(false);
     setEditingTipoAsignacion(null);
   };
 
   const handleDeleteTipoAsignacion = async (id) => {
     if (window.confirm('¿Eliminar este tipo de asignación?')) {
+      setIsSyncing(true);
       const updated = tiposAsignacion.filter(t => t.id !== id);
       setTiposAsignacion(updated);
       localStorage.setItem('jw_reuniones_tipos_asignacion', JSON.stringify(updated));
+      setIsSyncing(false);
     }
   };
 
   const getPersonaName = (id) => personas.find(p => p.id === Number(id))?.nombre || 'Sin asignar';
 
+  const PillSelector = ({ items, selectedIds, onAdd, onRemove, placeholder }) => (
+    <div className="pill-container">
+      {selectedIds.map(id => {
+        const item = items.find(i => i.id == id);
+        return item ? (
+          <div key={id} className="pill">
+            {item.nombre}
+            <button type="button" onClick={() => onRemove(id)}>×</button>
+          </div>
+        ) : null;
+      })}
+      <select
+        value=""
+        onChange={(e) => onAdd(e.target.value)}
+        className="minimal-select pill-add"
+        style={{ width: 'auto', border: 'none', background: 'none' }}
+      >
+        <option value="" disabled>{placeholder || '+ Añadir'}</option>
+        {items.filter(i => !selectedIds.includes(String(i.id)) && !selectedIds.includes(Number(i.id))).map(i => (
+          <option key={i.id} value={i.id}>{i.nombre}</option>
+        ))}
+      </select>
+    </div>
+  );
+
   return (
     <div className="layout">
+      {isSyncing && (
+        <div className="sync-loader">
+          <div className="spinner"></div>
+          <span style={{ fontSize: '0.8rem', fontWeight: '500' }}>Sincronizando...</span>
+        </div>
+      )}
       <aside className="sidebar glass">
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '2.5rem', gap: '0.75rem' }}>
           <div style={{ width: '40px', height: '40px', background: 'var(--primary)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>JW</div>
@@ -494,9 +555,10 @@ const App = () => {
                               if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') {
                                 if (p.genero !== 'H') return false;
                               }
-                              // Filtrado por Tipo de Asignación
-                              if (parte.tipoAsignacionId) {
-                                return p.asignaciones?.includes(String(parte.tipoAsignacionId));
+                              // Filtrado por Tipo de Asignación (debe tener alguna de las requeridas)
+                              if (parte.tipoAsignacionIds && parte.tipoAsignacionIds.length > 0) {
+                                const hasRequired = parte.tipoAsignacionIds.some(tid => p.asignaciones?.includes(String(tid)) || p.asignaciones?.includes(Number(tid)));
+                                if (!hasRequired) return false;
                               }
                               return true;
                             });
@@ -506,9 +568,13 @@ const App = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <span style={{ fontWeight: '500' }}>{parte.nombre}</span>
-                                    <small className="badge" style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.1)' }}>
-                                      {salas.find(s => s.id == parte.salaId)?.nombre || 'Principal'}
-                                    </small>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                                      {(parte.salaIds || [1]).map(sid => (
+                                        <small key={sid} className="badge" style={{ fontSize: '0.65rem', padding: '0.1rem 0.3rem', background: 'rgba(255,255,255,0.1)' }}>
+                                          {salas.find(s => s.id == sid)?.nombre || 'Principal'}
+                                        </small>
+                                      ))}
+                                    </div>
                                     <button className="btn-icon" style={{ fontSize: '0.7rem', padding: '0.1rem' }} onClick={() => {
                                       const datos = JSON.parse(selectedReunion.datos_reunion);
                                       const n = prompt('Nombre de la parte:', parte.nombre);
@@ -518,19 +584,21 @@ const App = () => {
                                       }
                                     }}>✎</button>
                                   </div>
-                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                    <select
-                                      className="minimal-select"
-                                      style={{ fontSize: '0.7rem', padding: '0', background: 'none', border: 'none', color: 'var(--text-muted)' }}
-                                      value={parte.salaId || 1}
-                                      onChange={(e) => {
+                                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <PillSelector
+                                      items={salas}
+                                      selectedIds={parte.salaIds || [1]}
+                                      onAdd={(id) => {
                                         const datos = JSON.parse(selectedReunion.datos_reunion);
-                                        datos.secciones[sIdx].partes[pIdx].salaId = e.target.value;
+                                        datos.secciones[sIdx].partes[pIdx].salaIds = [...(datos.secciones[sIdx].partes[pIdx].salaIds || [1]), id];
                                         handleUpdateWeeklyStructure(datos);
                                       }}
-                                    >
-                                      {salas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                                    </select>
+                                      onRemove={(id) => {
+                                        const datos = JSON.parse(selectedReunion.datos_reunion);
+                                        datos.secciones[sIdx].partes[pIdx].salaIds = (datos.secciones[sIdx].partes[pIdx].salaIds || [1]).filter(sid => sid != id);
+                                        handleUpdateWeeklyStructure(datos);
+                                      }}
+                                    />
                                     {parte.duracion && <small style={{ color: 'var(--text-muted)' }}>{parte.duracion} min</small>}
                                   </div>
                                 </div>
@@ -595,19 +663,13 @@ const App = () => {
               </div>
               <div className="form-group">
                 <label>Tipos de Asignación (Apto para:)</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', maxHeight: '100px', overflowY: 'auto' }}>
-                  {tiposAsignacion.map(t => (
-                    <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                      <input
-                        type="checkbox"
-                        name="asignaciones"
-                        value={t.id}
-                        defaultChecked={editingPersona?.asignaciones?.includes(String(t.id))}
-                      />
-                      {t.nombre}
-                    </label>
-                  ))}
-                </div>
+                <PillSelector
+                  items={tiposAsignacion}
+                  selectedIds={editingPersona?.asignaciones || []}
+                  onAdd={(id) => setEditingPersona({ ...editingPersona, asignaciones: [...(editingPersona?.asignaciones || []), id] })}
+                  onRemove={(id) => setEditingPersona({ ...editingPersona, asignaciones: (editingPersona?.asignaciones || []).filter(aid => aid != id) })}
+                  placeholder="+ Añadir aptitud"
+                />
               </div>
               <div className="modal-actions"><button type="button" onClick={() => setShowModal(false)}>Cancelar</button><button type="submit" className="primary">Guardar</button></div>
             </form>
@@ -698,39 +760,54 @@ const App = () => {
                       <div style={{ paddingLeft: '1rem', borderLeft: '1px solid var(--border)' }}>
                         {seccion.partes.map((p, pIdx) => (
                           <div key={pIdx} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                            <input
-                              placeholder="Parte"
-                              value={p.nombre}
-                              style={{ flex: 1 }}
-                              onChange={(e) => {
-                                const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                est[sIdx].partes[pIdx].nombre = e.target.value;
-                                setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                              }}
-                            />
-                            <select
-                              style={{ width: '120px', padding: '0.2rem', fontSize: '0.8rem' }}
-                              value={p.salaId || 1}
-                              onChange={(e) => {
-                                const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                est[sIdx].partes[pIdx].salaId = e.target.value;
-                                setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                              }}
-                            >
-                              {salas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                            </select>
-                            <select
-                              style={{ width: '150px', padding: '0.2rem', fontSize: '0.8rem' }}
-                              value={p.tipoAsignacionId || ''}
-                              onChange={(e) => {
-                                const est = JSON.parse(editingPlantilla?.estructura || '[]');
-                                est[sIdx].partes[pIdx].tipoAsignacionId = e.target.value;
-                                setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
-                              }}
-                            >
-                              <option value="">Cualquier tipo...</option>
-                              {tiposAsignacion.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-                            </select>
+                            <div style={{ flex: 1, display: 'grid', gap: '0.5rem' }}>
+                              <input
+                                placeholder="Parte"
+                                value={p.nombre}
+                                style={{ width: '100%', fontWeight: '500' }}
+                                onChange={(e) => {
+                                  const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                                  est[sIdx].partes[pIdx].nombre = e.target.value;
+                                  setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                                }}
+                              />
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                <div>
+                                  <small style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Salas:</small>
+                                  <PillSelector
+                                    items={salas}
+                                    selectedIds={p.salaIds || [1]}
+                                    onAdd={(id) => {
+                                      const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                                      est[sIdx].partes[pIdx].salaIds = [...(est[sIdx].partes[pIdx].salaIds || [1]), id];
+                                      setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                                    }}
+                                    onRemove={(id) => {
+                                      const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                                      est[sIdx].partes[pIdx].salaIds = (est[sIdx].partes[pIdx].salaIds || [1]).filter(sid => sid != id);
+                                      setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <small style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Asignaciones Requeridas:</small>
+                                  <PillSelector
+                                    items={tiposAsignacion}
+                                    selectedIds={p.tipoAsignacionIds || []}
+                                    onAdd={(id) => {
+                                      const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                                      est[sIdx].partes[pIdx].tipoAsignacionIds = [...(est[sIdx].partes[pIdx].tipoAsignacionIds || []), id];
+                                      setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                                    }}
+                                    onRemove={(id) => {
+                                      const est = JSON.parse(editingPlantilla?.estructura || '[]');
+                                      est[sIdx].partes[pIdx].tipoAsignacionIds = (est[sIdx].partes[pIdx].tipoAsignacionIds || []).filter(tid => tid != id);
+                                      setEditingPlantilla({ ...editingPlantilla, estructura: JSON.stringify(est) });
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
                             <button type="button" className="danger" onClick={() => {
                               const est = JSON.parse(editingPlantilla?.estructura || '[]');
                               est[sIdx].partes.splice(pIdx, 1);
