@@ -34,7 +34,7 @@ function doPost(e) {
     if (action === 'saveData') {
       const sheet = ss.getSheetByName(sheetName);
       if (!sheet) return createResponse({ error: 'Hoja no encontrada: ' + sheetName });
-      updateOrInsert(sheet, postData.payload);
+      updateOrInsert(sheet, postData.payload, postData.onlyIfNew);
       return createResponse({ success: true });
     } 
     
@@ -99,7 +99,7 @@ function getSheetData(sheet) {
   });
 }
 
-function updateOrInsert(sheet, item) {
+function updateOrInsert(sheet, item, onlyIfNew) {
   if (!sheet) return;
   const rows = sheet.getDataRange().getValues();
   const headers = rows[0];
@@ -112,6 +112,8 @@ function updateOrInsert(sheet, item) {
       break;
     }
   }
+  
+  if (rowIndex > 0 && onlyIfNew) return; // Skip if already exists and onlyIfNew is true
   
   const values = headers.map(h => {
     const val = item[h];

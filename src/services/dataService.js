@@ -48,7 +48,7 @@ export const dataService = {
         if (Array.isArray(parsed) && parsed.length > 0) {
           console.log(`Migrating ${parsed.length} items to ${item.sheet}...`);
           for (const row of parsed) {
-            await dataService._save(item.sheet, item.key, row);
+            await dataService._save(item.sheet, item.key, row, 'id', true);
           }
         }
       }
@@ -136,7 +136,7 @@ export const dataService = {
     return data ? JSON.parse(data) : [];
   },
 
-  _save: async (sheet, storageKey, payload, idField = 'id') => {
+  _save: async (sheet, storageKey, payload, idField = 'id', onlyIfNew = false) => {
     const { apiUrl, spreadsheetId } = dataService.getConfig();
     if (apiUrl) {
       try {
@@ -148,7 +148,8 @@ export const dataService = {
             action: 'saveData',
             sheet: sheet,
             payload: payload,
-            ssId: spreadsheetId
+            ssId: spreadsheetId,
+            onlyIfNew: onlyIfNew
           })
         });
       } catch (e) {
@@ -157,7 +158,11 @@ export const dataService = {
     }
     const data = await dataService._get(sheet, storageKey);
     const index = data.findIndex(item => item[idField] == payload[idField]);
-    if (index >= 0) data[index] = payload; else data.push(payload);
+    if (index >= 0) {
+      if (!onlyIfNew) data[index] = payload;
+    } else {
+      data.push(payload);
+    }
     localStorage.setItem(storageKey, JSON.stringify(data));
     return data;
   },
