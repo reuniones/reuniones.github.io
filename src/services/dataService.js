@@ -11,6 +11,7 @@ const STORAGE_KEY_TIPOS_ASIGNACION = 'jw_reuniones_tipos_asignacion';
 export const APP_VERSION = '1.1.0';
 
 export const dataService = {
+  APP_VERSION: APP_VERSION,
   getConfig: () => {
     const config = localStorage.getItem(STORAGE_KEY_CONFIG);
     return config ? JSON.parse(config) : { apiUrl: '', spreadsheetId: '' };
