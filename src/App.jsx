@@ -366,7 +366,7 @@ const App = () => {
             <span className="material-icons">event_note</span>
           </div>
           <h1 className="text-xl font-bold tracking-tight text-primary-light dark:text-primary-dark">
-            Gestor Reuniones
+            Reuniones
           </h1>
         </div>
 
@@ -432,7 +432,7 @@ const App = () => {
             >
               <span className="material-icons">menu</span>
             </button>
-            <span className="font-bold tracking-tight text-primary-light dark:text-primary-dark">Gestor Reuniones</span>
+            <span className="font-bold tracking-tight text-primary-light dark:text-primary-dark">Reuniones</span>
           </div>
           <button
             onClick={() => setShowConfigModal(true)}
@@ -446,10 +446,10 @@ const App = () => {
           <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 animate-fade-in">
             <div>
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tighter mb-1">
-                {activeTab === 'dashboard' ? 'Tablero General' :
-                  activeTab === 'personas' ? 'Gestión de Personas' :
-                    activeTab === 'plantillas' ? 'Plantillas de Reunión' :
-                      activeTab === 'ajustes' ? 'Ajustes' : 'Programación Semanal'}
+                {activeTab === 'dashboard' ? 'Tablero' :
+                  activeTab === 'personas' ? 'Personas' :
+                    activeTab === 'plantillas' ? 'Plantillas' :
+                      activeTab === 'ajustes' ? 'Ajustes' : 'Programación'}
               </h1>
               <p className="text-sm text-on-surface-light/60 dark:text-on-surface-dark/60 font-medium">
                 {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
@@ -458,14 +458,14 @@ const App = () => {
             <div className="flex gap-3">
               {activeTab === 'personas' && (
                 <button className="btn-primary flex items-center gap-2" onClick={() => { setEditingPersona(null); setShowModal(true); }}>
-                  <span>+</span> Añadir Persona
+                  <span>+</span> Añadir persona
                 </button>
               )}
               {activeTab === 'plantillas' && (
-                <button className="btn-primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva Plantilla</button>
+                <button className="btn-primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva plantilla</button>
               )}
               {activeTab === 'reuniones' && (
-                <button className="btn-primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva Reunión</button>
+                <button className="btn-primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva reunión</button>
               )}
             </div>
           </header>
@@ -475,9 +475,9 @@ const App = () => {
               <div className="bg-error-light/10 dark:bg-error-dark/20 border border-error-light/30 p-6 rounded-2xl flex items-start gap-4">
                 <span className="material-icons text-error-light dark:text-error-dark">report_problem</span>
                 <div>
-                  <h3 className="font-bold text-error-light dark:text-error-dark">Configuración Requerida</h3>
+                  <h3 className="font-bold text-error-light dark:text-error-dark">Configuración requerida</h3>
                   <p className="text-sm opacity-80 mb-4">Por favor, configura la URL de la API y el Spreadsheet ID para comenzar a sincronizar datos.</p>
-                  <button className="bg-error-light text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm" onClick={() => setShowConfigModal(true)}>Configurar Ahora</button>
+                  <button className="bg-error-light text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm" onClick={() => setShowConfigModal(true)}>Configurar ahora</button>
                 </div>
               </div>
             )}
@@ -486,15 +486,15 @@ const App = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
                 <div className="card shadow-md">
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <span className="material-icons text-primary-light dark:text-primary-dark">analytics</span> Estado de la Congregación
+                    <span className="material-icons text-primary-light dark:text-primary-dark">analytics</span> Estado de la congregación
                   </h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
-                      <span className="text-sm opacity-70">Total Publicadores</span>
+                      <span className="text-sm opacity-70">Total publicadores</span>
                       <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{personas.length}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
-                      <span className="text-sm opacity-70">Reuniones Programadas</span>
+                      <span className="text-sm opacity-70">Reuniones programadas</span>
                       <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{reuniones.length}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
