@@ -374,7 +374,6 @@ const App = () => {
           {[
             { id: 'dashboard', label: 'Tablero', icon: 'dashboard' },
             { id: 'personas', label: 'Personas', icon: 'people' },
-            { id: 'plantillas', label: 'Plantillas', icon: 'description' },
             { id: 'reuniones', label: 'Programación', icon: 'calendar_month' },
             { id: 'ajustes', label: 'Ajustes', icon: 'tune' },
           ].map((item) => (
@@ -448,8 +447,7 @@ const App = () => {
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tighter mb-1">
                 {activeTab === 'dashboard' ? 'Tablero' :
                   activeTab === 'personas' ? 'Personas' :
-                    activeTab === 'plantillas' ? 'Plantillas' :
-                      activeTab === 'ajustes' ? 'Ajustes' : 'Programación'}
+                    activeTab === 'ajustes' ? 'Ajustes' : 'Programación'}
               </h1>
               <p className="text-sm text-on-surface-light/60 dark:text-on-surface-dark/60 font-medium">
                 {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
@@ -460,9 +458,6 @@ const App = () => {
                 <button className="btn-primary flex items-center gap-2" onClick={() => { setEditingPersona(null); setShowModal(true); }}>
                   <span>+</span> Añadir persona
                 </button>
-              )}
-              {activeTab === 'plantillas' && (
-                <button className="btn-primary" onClick={() => { setEditingPlantilla(null); setShowPlantillaModal(true); }}>+ Nueva plantilla</button>
               )}
               {activeTab === 'reuniones' && (
                 <button className="btn-primary" onClick={() => { setSelectedReunion(null); setShowReunionModal(true); }}>+ Nueva reunión</button>
@@ -567,110 +562,106 @@ const App = () => {
               </div>
             )}
 
-            {activeTab === 'plantillas' && (
-              <div className="card shadow-md overflow-hidden p-0 animate-fade-in">
-                <div className="overflow-x-auto">
+
+            {activeTab === 'ajustes' && (
+              <div className="flex flex-col gap-6 animate-fade-in">
+
+                {/* Plantillas */}
+                <div className="card shadow-md overflow-hidden p-0">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
+                    <h3 className="font-bold flex items-center gap-2">
+                      <span className="material-icons text-primary-light dark:text-primary-dark text-xl">description</span>
+                      Plantillas
+                    </h3>
+                    <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingPlantilla(null); setTempEstructura([]); setShowPlantillaModal(true); }}>+ Añadir</button>
+                  </div>
                   <table className="w-full text-left border-collapse">
-                    <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
-                      <tr>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre (Tipo)</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Secciones</th>
-                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
-                      </tr>
-                    </thead>
                     <tbody className="divide-y divide-outline-light/5">
                       {plantillas.map(pl => (
                         <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-4 font-semibold">{pl.nombre}</td>
-                          <td className="px-6 py-4 text-sm opacity-80">{safeParse(pl.estructura).length} secciones</td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => {
-                                setEditingPlantilla(pl);
-                                setTempEstructura(safeParse(pl.estructura));
-                                setShowPlantillaModal(true);
-                              }}>
-                                <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
+                          <td className="px-6 py-3 font-semibold">{pl.nombre}</td>
+                          <td className="px-6 py-3 text-sm opacity-60">{safeParse(pl.estructura).length} sección(es)</td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-1">
+                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantilla(pl); setTempEstructura(safeParse(pl.estructura)); setShowPlantillaModal(true); }}>
+                                <span className="material-icons text-base group-hover:scale-110 block">edit</span>
                               </button>
                               <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeletePlantilla(pl.id)}>
-                                <span className="material-icons text-lg group-hover:scale-110 block">delete</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {plantillas.length === 0 && <tr><td colSpan="3" className="px-6 py-8 text-center opacity-40 italic">No hay plantillas creadas.</td></tr>}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'ajustes' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
-
-                {/* Salas */}
-                <div className="card shadow-md overflow-hidden p-0">
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
-                    <h3 className="font-bold flex items-center gap-2">
-                      <span className="material-icons text-primary-light dark:text-primary-dark text-xl">meeting_room</span>
-                      Salas
-                    </h3>
-                    <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Añadir</button>
-                  </div>
-                  <table className="w-full text-left border-collapse">
-                    <tbody className="divide-y divide-outline-light/5">
-                      {salas.map(s => (
-                        <tr key={s.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-3 font-semibold">{s.nombre}</td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-1">
-                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>
-                                <span className="material-icons text-base group-hover:scale-110 block">edit</span>
-                              </button>
-                              <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteSala(s.id)}>
                                 <span className="material-icons text-base group-hover:scale-110 block">delete</span>
                               </button>
                             </div>
                           </td>
                         </tr>
                       ))}
-                      {salas.length === 0 && <tr><td colSpan="2" className="px-6 py-6 text-center opacity-40 italic">No hay salas definidas.</td></tr>}
+                      {plantillas.length === 0 && <tr><td colSpan="3" className="px-6 py-6 text-center opacity-40 italic">No hay plantillas.</td></tr>}
                     </tbody>
                   </table>
                 </div>
 
-                {/* Tipos de Asignación */}
-                <div className="card shadow-md overflow-hidden p-0">
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
-                    <h3 className="font-bold flex items-center gap-2">
-                      <span className="material-icons text-primary-light dark:text-primary-dark text-xl">assignment</span>
-                      Tipos de Asignación
-                    </h3>
-                    <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingTipoAsignacion(null); setShowTipoAsignacionModal(true); }}>+ Añadir</button>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Salas */}
+                  <div className="card shadow-md overflow-hidden p-0">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
+                      <h3 className="font-bold flex items-center gap-2">
+                        <span className="material-icons text-primary-light dark:text-primary-dark text-xl">meeting_room</span>
+                        Salas
+                      </h3>
+                      <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Añadir</button>
+                    </div>
+                    <table className="w-full text-left border-collapse">
+                      <tbody className="divide-y divide-outline-light/5">
+                        {salas.map(s => (
+                          <tr key={s.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                            <td className="px-6 py-3 font-semibold">{s.nombre}</td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>
+                                  <span className="material-icons text-base group-hover:scale-110 block">edit</span>
+                                </button>
+                                <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteSala(s.id)}>
+                                  <span className="material-icons text-base group-hover:scale-110 block">delete</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {salas.length === 0 && <tr><td colSpan="2" className="px-6 py-6 text-center opacity-40 italic">No hay salas definidas.</td></tr>}
+                      </tbody>
+                    </table>
                   </div>
-                  <table className="w-full text-left border-collapse">
-                    <tbody className="divide-y divide-outline-light/5">
-                      {tiposAsignacion.map(t => (
-                        <tr key={t.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-3 font-semibold">{t.nombre}</td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-1">
-                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>
-                                <span className="material-icons text-base group-hover:scale-110 block">edit</span>
-                              </button>
-                              <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteTipoAsignacion(t.id)}>
-                                <span className="material-icons text-base group-hover:scale-110 block">delete</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {tiposAsignacion.length === 0 && <tr><td colSpan="2" className="px-6 py-6 text-center opacity-40 italic">No hay tipos definidos.</td></tr>}
-                    </tbody>
-                  </table>
-                </div>
 
+                  {/* Tipos de Asignación */}
+                  <div className="card shadow-md overflow-hidden p-0">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
+                      <h3 className="font-bold flex items-center gap-2">
+                        <span className="material-icons text-primary-light dark:text-primary-dark text-xl">assignment</span>
+                        Tipos de Asignación
+                      </h3>
+                      <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingTipoAsignacion(null); setShowTipoAsignacionModal(true); }}>+ Añadir</button>
+                    </div>
+                    <table className="w-full text-left border-collapse">
+                      <tbody className="divide-y divide-outline-light/5">
+                        {tiposAsignacion.map(t => (
+                          <tr key={t.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                            <td className="px-6 py-3 font-semibold">{t.nombre}</td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex justify-end gap-1">
+                                <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>
+                                  <span className="material-icons text-base group-hover:scale-110 block">edit</span>
+                                </button>
+                                <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteTipoAsignacion(t.id)}>
+                                  <span className="material-icons text-base group-hover:scale-110 block">delete</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {tiposAsignacion.length === 0 && <tr><td colSpan="2" className="px-6 py-6 text-center opacity-40 italic">No hay tipos definidos.</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
               </div>
             )}
 
@@ -1260,7 +1251,7 @@ const App = () => {
           </div>
         ))
       }
-    </div >
+    </div>
   );
 };
 
