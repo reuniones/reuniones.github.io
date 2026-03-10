@@ -75,6 +75,14 @@ function doPost(e) {
       return createResponse({ success: true });
     }
 
+    if (action === 'deleteData') {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) return createResponse({ error: 'Hoja no encontrada' });
+      deleteRowById(sheet, postData.id);
+      clearCache(ss.getId(), sheetName);
+      return createResponse({ success: true });
+    }
+
     if (action === 'deleteSheet') {
       const sheet = ss.getSheetByName(sheetName);
       if (sheet) ss.deleteSheet(sheet);
@@ -171,6 +179,21 @@ function updateOrInsert(sheet, item, onlyIfNew) {
     sheet.getRange(rowIndex, 1, 1, values.length).setValues([values]);
   } else {
     sheet.appendRow(values);
+  }
+}
+
+function deleteRowById(sheet, id) {
+  if (!sheet || !id) return;
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return;
+  const idIndex = rows[0].indexOf('id');
+  if (idIndex < 0) return;
+
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][idIndex] == id) {
+      sheet.deleteRow(i + 1);
+      break;
+    }
   }
 }
 

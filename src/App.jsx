@@ -148,7 +148,6 @@ const App = () => {
 
   const handleSavePlantilla = async (e) => {
     e.preventDefault();
-    setIsSyncing(true);
     const formData = new FormData(e.target);
     const newPlantilla = {
       id: editingPlantilla?.id || Date.now(),
@@ -157,7 +156,6 @@ const App = () => {
     };
     const updated = await dataService.savePlantilla(newPlantilla);
     setPlantillas(updated);
-    setIsSyncing(false);
     setShowPlantillaModal(false);
     setEditingPlantilla(null);
     setTempEstructura([]);
@@ -165,7 +163,6 @@ const App = () => {
 
   const handleSaveReunion = async (e) => {
     e.preventDefault();
-    setIsSyncing(true);
     const formData = new FormData(e.target);
     const selectedTemplateIds = Array.from(e.target.elements.plantillaIds || [])
       .filter(input => input.checked)
@@ -195,14 +192,12 @@ const App = () => {
     };
     const updated = await dataService.saveReunion(newReunion);
     setReuniones(updated);
-    setIsSyncing(false);
     setShowReunionModal(false);
     setSelectedReunion(null);
   };
 
   const handleUpdateWeeklyStructure = async (newDatos) => {
     if (!selectedReunion) return;
-    setIsSyncing(true);
     const updatedReunion = {
       ...selectedReunion,
       datos_reunion: JSON.stringify(newDatos)
@@ -210,7 +205,6 @@ const App = () => {
     const updated = await dataService.saveReunion(updatedReunion);
     setReuniones(updated);
     setSelectedReunion(updatedReunion);
-    setIsSyncing(false);
   };
 
   const handleSaveConfig = async (e) => {
@@ -231,7 +225,6 @@ const App = () => {
 
   const handleAsignar = async (parteId, personaId) => {
     if (!selectedReunion) return;
-    setIsSyncing(true);
     const datos = JSON.parse(selectedReunion.datos_reunion);
     datos.secciones = datos.secciones.map(s => ({
       ...s,
@@ -245,51 +238,32 @@ const App = () => {
     const updated = await dataService.saveReunion(updatedReunion);
     setReuniones(updated);
     setSelectedReunion(updatedReunion);
-    setIsSyncing(false);
   };
 
   const handleDeleteReunion = async (id) => {
     if (window.confirm('¿Eliminar esta reunión?')) {
-      setIsSyncing(true);
-      const { apiUrl, spreadsheetId } = dataService.getConfig();
-      let updated;
-      if (apiUrl) {
-        // En un sistema genérico ideal, el backend borraría la fila. 
-        // Por ahora, lo manejamos filtrando y guardando la lista completa si fuera necesario, 
-        // o implementando una acción 'deleteRow' en la API.
-        // Como simplificación para este MVP, borramos local y notificamos.
-      }
-      updated = reuniones.filter(r => r.id !== id);
+      const updated = await dataService.deleteReunion(id);
       setReuniones(updated);
       if (selectedReunion?.id === id) setSelectedReunion(null);
-      localStorage.setItem('jw_reuniones_reuniones', JSON.stringify(updated));
-      setIsSyncing(false);
     }
   };
 
   const handleDeletePersona = async (id) => {
     if (window.confirm('¿Eliminar esta persona?')) {
-      setIsSyncing(true);
-      const updated = personas.filter(p => p.id !== id);
+      const updated = await dataService.deletePersona(id);
       setPersonas(updated);
-      localStorage.setItem('jw_reuniones_personas', JSON.stringify(updated));
-      setIsSyncing(false);
     }
   };
 
   const handleDeletePlantilla = async (id) => {
     if (window.confirm('¿Eliminar esta plantilla?')) {
-      setIsSyncing(true);
-      const updated = plantillas.filter(p => p.id !== id);
+      const updated = await dataService.deletePlantilla(id);
       setPlantillas(updated);
-      localStorage.setItem('jw_reuniones_plantillas', JSON.stringify(updated));
-      setIsSyncing(false);
     }
   };
 
   const handleSaveSala = async (e) => {
     e.preventDefault();
-    setIsSyncing(true);
     const formData = new FormData(e.target);
     const newSala = {
       id: editingSala?.id || Date.now(),
@@ -297,24 +271,14 @@ const App = () => {
     };
     const updated = await dataService.saveSala(newSala);
     setSalas(updated);
-    setIsSyncing(false);
     setShowSalaModal(false);
     setEditingSala(null);
   };
 
-  const handleDeleteSala = async (id) => {
-    if (window.confirm('¿Eliminar esta sala?')) {
-      setIsSyncing(true);
-      const updated = salas.filter(s => s.id !== id);
-      setSalas(updated);
-      localStorage.setItem('jw_reuniones_salas', JSON.stringify(updated));
-      setIsSyncing(false);
-    }
-  };
+
 
   const handleSaveTipoAsignacion = async (e) => {
     e.preventDefault();
-    setIsSyncing(true);
     const formData = new FormData(e.target);
     const newTipo = {
       id: editingTipoAsignacion?.id || Date.now(),
@@ -322,7 +286,6 @@ const App = () => {
     };
     const updated = await dataService.saveTipoAsignacion(newTipo);
     setTiposAsignacion(updated);
-    setIsSyncing(false);
     setShowTipoAsignacionModal(false);
     setEditingTipoAsignacion(null);
   };
@@ -340,11 +303,15 @@ const App = () => {
 
   const handleDeleteTipoAsignacion = async (id) => {
     if (window.confirm('¿Eliminar este tipo de asignación?')) {
-      setIsSyncing(true);
-      const updated = tiposAsignacion.filter(t => t.id !== id);
+      const updated = await dataService.deleteTipoAsignacion(id);
       setTiposAsignacion(updated);
-      localStorage.setItem('jw_reuniones_tipos_asignacion', JSON.stringify(updated));
-      setIsSyncing(false);
+    }
+  };
+
+  const handleDeleteSala = async (id) => {
+    if (window.confirm('¿Eliminar esta sala?')) {
+      const updated = await dataService.deleteSala(id);
+      setSalas(updated);
     }
   };
 

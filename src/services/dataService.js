@@ -215,27 +215,55 @@ export const dataService = {
     return data ? JSON.parse(data) : [];
   },
 
-  _save: async (sheet, storageKey, payload, idField = 'id', onlyIfNew = false) => {
+  // --- Cola de Sincronización Asíncrona (Optimistic UI) ---
+  syncQueue: [],
+  isProcessingQueue: false,
+
+  processQueue: async () => {
+    if (dataService.isProcessingQueue || dataService.syncQueue.length === 0) return;
+    dataService.isProcessingQueue = true;
+
     const { apiUrl, spreadsheetId } = dataService.getConfig();
-    if (apiUrl) {
+    if (!apiUrl) {
+      dataService.isProcessingQueue = false;
+      return;
+    }
+
+    while (dataService.syncQueue.length > 0) {
+      const task = dataService.syncQueue[0];
       try {
-        await fetch(apiUrl, {
+        const payload = { ...task.payload, ssId: spreadsheetId };
+        const response = await fetch(apiUrl, {
           method: 'POST',
           mode: 'no-cors',
           redirect: 'follow',
-          body: JSON.stringify({
-            action: 'saveData',
-            sheet: sheet,
-            payload: payload,
-            ssId: spreadsheetId,
-            onlyIfNew: onlyIfNew
-          })
+          body: JSON.stringify(payload)
         });
+
+        // Asumimos éxito al completarse el fetch no-cors
+        dataService.syncQueue.shift();
       } catch (e) {
-        console.error(`Error saving ${sheet}:`, e);
+        console.error(`Error procesando cola de sincronización:`, e);
+        // Rompemos el bucle para reintentar más tarde
+        break;
       }
     }
-    const data = await dataService._get(sheet, storageKey);
+
+    dataService.isProcessingQueue = false;
+  },
+
+  _enqueueSync: (payload) => {
+    dataService.syncQueue.push({ payload });
+    // Iniciar el procesamiento si no está corriendo
+    setTimeout(dataService.processQueue, 100);
+  },
+
+  _save: async (sheet, storageKey, payload, idField = 'id', onlyIfNew = false) => {
+    // 1. Obtención Inmediata de Local Storage para Actualización Optimista
+    const localDataAttr = localStorage.getItem(storageKey);
+    const data = localDataAttr ? JSON.parse(localDataAttr) : [];
+
+    // 2. Modificación Local Inmediata
     const index = data.findIndex(item => item[idField] == payload[idField]);
     if (index >= 0) {
       if (!onlyIfNew) data[index] = payload;
@@ -243,19 +271,61 @@ export const dataService = {
       data.push(payload);
     }
     localStorage.setItem(storageKey, JSON.stringify(data));
+
+    // 3. Encolar la petición de red (Asíncrona, no bloqueante)
+    const { apiUrl } = dataService.getConfig();
+    if (apiUrl) {
+      dataService._enqueueSync({
+        action: 'saveData',
+        sheet: sheet,
+        payload: payload,
+        onlyIfNew: onlyIfNew
+      });
+    }
+
+    // 4. Devolver la nueva lista inmediatamente
+    return data;
+  },
+
+  _delete: async (sheet, storageKey, id, idField = 'id') => {
+    // 1. Eliminación Local Inmediata
+    const localDataAttr = localStorage.getItem(storageKey);
+    let data = localDataAttr ? JSON.parse(localDataAttr) : [];
+    data = data.filter(item => item[idField] != id);
+    localStorage.setItem(storageKey, JSON.stringify(data));
+
+    // 2. Encolar la petición de eliminación a red
+    const { apiUrl } = dataService.getConfig();
+    if (apiUrl) {
+      dataService._enqueueSync({
+        action: 'deleteData',
+        sheet: sheet,
+        id: id
+      });
+    }
+
     return data;
   },
 
   getPersonas: () => dataService._get('Personas', STORAGE_KEY_PERSONAS),
   savePersona: (persona) => dataService._save('Personas', STORAGE_KEY_PERSONAS, persona),
+  deletePersona: (id) => dataService._delete('Personas', STORAGE_KEY_PERSONAS, id),
+
   getReuniones: () => dataService._get('Reuniones', STORAGE_KEY_REUNIONES),
   saveReunion: (reunion) => dataService._save('Reuniones', STORAGE_KEY_REUNIONES, reunion),
+  deleteReunion: (id) => dataService._delete('Reuniones', STORAGE_KEY_REUNIONES, id),
+
   getPlantillas: () => dataService._get('Plantillas', STORAGE_KEY_PLANTILLAS),
   savePlantilla: (plantilla) => dataService._save('Plantillas', STORAGE_KEY_PLANTILLAS, plantilla),
+  deletePlantilla: (id) => dataService._delete('Plantillas', STORAGE_KEY_PLANTILLAS, id),
+
   getSalas: () => dataService._get('Salas', STORAGE_KEY_SALAS),
   saveSala: (sala) => dataService._save('Salas', STORAGE_KEY_SALAS, sala),
+  deleteSala: (id) => dataService._delete('Salas', STORAGE_KEY_SALAS, id),
+
   getTiposAsignacion: () => dataService._get('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION),
   saveTipoAsignacion: (tipo) => dataService._save('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION, tipo),
+  deleteTipoAsignacion: (id) => dataService._delete('TiposAsignacion', STORAGE_KEY_TIPOS_ASIGNACION, id),
 
   queryData: async (sheetName, expression) => {
     const data = await (
