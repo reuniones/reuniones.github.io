@@ -783,7 +783,11 @@ const App = () => {
                           )}
                           <div className="divide-y divide-outline-light/5">
                             {seccion.partes.map((parte, pIdx) => {
-                              const asignadoId = parte.asignadoId;
+                              const asignadosIds = parte.asignadosIds || (parte.asignadoId ? [parte.asignadoId] : []);
+                              const ayudanteId = parte.ayudanteId;
+                              const cupos = parte.cupos || 1;
+                              const permiteAyudante = !!parte.permiteAyudante;
+
                               const aptos = personas.filter(p => {
                                 if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') {
                                   if (p.genero !== 'H') return false;
@@ -857,22 +861,58 @@ const App = () => {
                                           }}
                                         />
                                       </div>
-                                      {parte.duracion && <span className="text-xs font-medium opacity-50 px-2 py-1 bg-surface-light dark:bg-white/5 rounded-md self-end">{parte.duracion} min</span>}
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <div className={`text-right ${asignadoId ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-error-light dark:text-error-dark'}`}>
-                                      <div className="text-[10px] uppercase font-bold opacity-40 leading-none mb-1">Asignado</div>
-                                      <div className="font-bold text-sm tracking-tight">{getPersonaName(asignadoId)}</div>
+                                    <div className="flex flex-col gap-2">
+                                      {/* Selectores de asignados principales */}
+                                      {Array.from({ length: cupos }).map((_, i) => (
+                                        <div key={`asignado-${i}`} className="flex items-center gap-2 justify-end">
+                                          <div className={`text-right ${asignadosIds[i] ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-error-light dark:text-error-dark'}`}>
+                                            <div className="text-[9px] uppercase font-bold opacity-40 leading-none mb-1">
+                                              {cupos > 1 ? `Asignado ${i + 1}` : 'Asignado'}
+                                            </div>
+                                            <div className="font-bold text-sm tracking-tight">{getPersonaName(asignadosIds[i])}</div>
+                                          </div>
+                                          <select
+                                            className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-2 py-1.5 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 transition-all mw-[120px]"
+                                            value={asignadosIds[i] || ''}
+                                            onChange={(e) => {
+                                              const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                              const newAsignados = [...(datos.secciones[sIdx].partes[pIdx].asignadosIds || [])];
+                                              newAsignados[i] = e.target.value;
+                                              datos.secciones[sIdx].partes[pIdx].asignadosIds = newAsignados;
+                                              handleUpdateWeeklyStructure(datos);
+                                            }}
+                                          >
+                                            <option value="">Cambiar...</option>
+                                            {aptos.filter(p => !asignadosIds.includes(String(p.id)) || String(p.id) === String(asignadosIds[i])).map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
+                                          </select>
+                                        </div>
+                                      ))}
+
+                                      {/* Selector de ayudante si aplica */}
+                                      {permiteAyudante && (
+                                        <div className="flex items-center gap-2 justify-end mt-1 pt-2 border-t border-outline-light/10">
+                                          <div className={`text-right ${ayudanteId ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-warning-light dark:text-warning-dark'}`}>
+                                            <div className="text-[9px] uppercase font-bold opacity-40 leading-none mb-1">Ayudante</div>
+                                            <div className="font-bold text-sm tracking-tight">{getPersonaName(ayudanteId)}</div>
+                                          </div>
+                                          <select
+                                            className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-2 py-1.5 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 transition-all mw-[120px]"
+                                            value={ayudanteId || ''}
+                                            onChange={(e) => {
+                                              const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                              datos.secciones[sIdx].partes[pIdx].ayudanteId = e.target.value;
+                                              handleUpdateWeeklyStructure(datos);
+                                            }}
+                                          >
+                                            <option value="">Cambiar...</option>
+                                            {personas.filter(p => !asignadosIds.includes(String(p.id)) || String(p.id) === String(ayudanteId)).map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
+                                          </select>
+                                        </div>
+                                      )}
                                     </div>
-                                    <select
-                                      className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-3 py-2 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 active:scale-95 transition-all"
-                                      value={asignadoId || ''}
-                                      onChange={(e) => handleAsignar(parte.id, e.target.value)}
-                                    >
-                                      <option value="">Cambiar...</option>
-                                      {aptos.map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
-                                    </select>
                                     <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors opacity-0 group-hover:opacity-100 group" onClick={() => {
                                       if (confirm('¿Eliminar esta parte?')) {
                                         const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
@@ -888,7 +928,7 @@ const App = () => {
                             })}
                             <button className="w-full py-4 text-xs font-bold opacity-40 hover:opacity-100 hover:bg-surface-light dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 border-t border-outline-light/5 group" onClick={() => {
                               const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                              datos.secciones[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', duracion: 5, asignadoId: null });
+                              datos.secciones[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', cupos: 1, permiteAyudante: false, asignadosIds: [] });
                               handleUpdateWeeklyStructure(datos);
                             }}>
                               <span className="material-icons text-sm group-hover:scale-110">add</span> AÑADIR PARTE AD-HOC
@@ -1061,21 +1101,40 @@ const App = () => {
                                       setTempEstructura(newEst);
                                     }}
                                   />
-                                  <input
-                                    type="number"
-                                    className="bg-transparent text-[10px] w-12 border-none outline-none opacity-60"
-                                    value={parte.duracion}
-                                    onChange={(e) => {
-                                      const newEst = [...tempEstructura];
-                                      newEst[sIdx].partes[pIdx].duracion = Number(e.target.value);
-                                      setTempEstructura(newEst);
-                                    }}
-                                  />
                                   <button type="button" className="opacity-40 hover:opacity-100" onClick={() => {
                                     const newEst = [...tempEstructura];
                                     newEst[sIdx].partes.splice(pIdx, 1);
                                     setTempEstructura(newEst);
                                   }}><span className="material-icons text-xs">close</span></button>
+                                </div>
+                                <div className="flex flex-wrap gap-4 pt-1">
+                                  <label className="flex items-center gap-2 cursor-pointer select-none bg-surface-light dark:bg-black/20 px-2 py-1 rounded-lg">
+                                    <span className="text-[10px] font-bold opacity-60 uppercase">Asignados</span>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      className="bg-transparent border-none outline-none w-10 text-xs font-bold p-0 text-center"
+                                      value={parte.cupos || 1}
+                                      onChange={(e) => {
+                                        const newEst = [...tempEstructura];
+                                        newEst[sIdx].partes[pIdx].cupos = Number(e.target.value);
+                                        setTempEstructura(newEst);
+                                      }}
+                                    />
+                                  </label>
+                                  <label className="flex items-center gap-2 cursor-pointer select-none bg-surface-light dark:bg-black/20 px-2 py-1 rounded-lg">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!parte.permiteAyudante}
+                                      className="w-4 h-4 rounded border-outline-light text-primary-light focus:ring-primary-light"
+                                      onChange={(e) => {
+                                        const newEst = [...tempEstructura];
+                                        newEst[sIdx].partes[pIdx].permiteAyudante = e.target.checked;
+                                        setTempEstructura(newEst);
+                                      }}
+                                    />
+                                    <span className="text-[10px] font-bold opacity-60 uppercase mt-0.5">Permitir Ayudante</span>
+                                  </label>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                   <div className="space-y-1">
@@ -1117,7 +1176,7 @@ const App = () => {
                             ))}
                             <button type="button" className="text-[10px] font-bold opacity-60 hover:opacity-100 py-1" onClick={() => {
                               const newEst = [...tempEstructura];
-                              newEst[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', duracion: 5, tipoAsignacionIds: [], salaIds: [1] });
+                              newEst[sIdx].partes.push({ id: Date.now().toString(), nombre: 'Nueva Parte', cupos: 1, permiteAyudante: false, tipoAsignacionIds: [], salaIds: [1] });
                               setTempEstructura(newEst);
                             }}>+ Añadir Parte</button>
                           </div>
