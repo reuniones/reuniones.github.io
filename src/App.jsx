@@ -37,6 +37,45 @@ const App = () => {
 
   // Estado temporal para editar estructura de plantilla
   const [tempEstructura, setTempEstructura] = useState([]);
+  const [expandedSections, setExpandedSections] = useState({ personas: true });
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // Utilidades de Fechas
+  const getWeekRange = (date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajustar a Lunes
+    const monday = new Date(d.setDate(diff));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const formatDate = (date) => {
+      const day = date.getDate();
+      const month = date.toLocaleString('es-ES', { month: 'long' });
+      return `${day} de ${month}`;
+    };
+
+    return `Semana del ${formatDate(monday)} al ${formatDate(sunday)}`;
+  };
+
+  const getUpcomingWeeks = (count = 12) => {
+    const weeks = [];
+    let current = new Date();
+    // Ajustar actual al lunes de esta semana
+    const day = current.getDay();
+    const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+    current.setDate(diff);
+
+    for (let i = 0; i < count; i++) {
+      weeks.push(getWeekRange(new Date(current)));
+      current.setDate(current.getDate() + 7);
+    }
+    return weeks;
+  };
+
 
   // Utilidad para parsear JSON de forma segura
   // Utilidad para parsear JSON de forma segura (soporta objetos ya parseados)
@@ -212,7 +251,11 @@ const App = () => {
           const seccionesImportadas = safeParse(plantilla.estructura, []).map(s => ({
             ...s,
             id: Math.random().toString(36).substr(2, 9),
-            partes: s.partes.map(p => ({ ...p, id: Math.random().toString(36).substr(2, 9), asignadoId: null }))
+            partes: s.partes.map(p => ({
+              ...p,
+              id: Math.random().toString(36).substr(2, 9),
+              asignaciones: {}
+            }))
           }));
           datosReunion.secciones.push(...seccionesImportadas);
         }
@@ -450,9 +493,8 @@ const App = () => {
                 {mod.id === 'reuniones' && activeModule === 'reuniones' && (
                   <div className="mt-1 ml-6 pl-4 border-l border-outline-light/10 space-y-1 animate-fade-in">
                     {[
-                      { id: 'dashboard', label: 'Tablero', icon: 'dashboard' },
-                      { id: 'personas', label: 'Personas', icon: 'people' },
-                      { id: 'reuniones', label: 'Programación', icon: 'calendar_month' },
+                      { id: 'dashboard', label: 'Programa semanal', icon: 'dashboard' },
+                      { id: 'reuniones', label: 'Confección', icon: 'calendar_month' },
                       { id: 'ajustes', label: 'Ajustes', icon: 'tune' },
                     ].map((item) => (
                       <button
@@ -589,9 +631,9 @@ const App = () => {
                     activeModule === 'salon' ? (
                       activeTab === 'mantenimiento' ? 'Plan de mantenimiento' : 'Salón del Reino'
                     ) :
-                      (activeTab === 'dashboard' ? 'Tablero' :
-                        activeTab === 'personas' ? 'Personas' :
-                          activeTab === 'ajustes' ? 'Ajustes' : 'Programación')}
+                      (activeTab === 'dashboard' ? 'Programa semanal' :
+                        activeTab === 'reuniones' ? 'Confección' :
+                          activeTab === 'ajustes' ? 'Ajustes' : 'Reuniones')}
               </h1>
               <p className="text-sm text-on-surface-light/60 dark:text-on-surface-dark/60 font-medium">
                 {loading ? 'Sincronizando datos...' : (config.apiUrl ? 'Sincronizado con Google Sheets' : 'Usando almacenamiento local')}
@@ -636,222 +678,237 @@ const App = () => {
 
               {activeTab === 'dashboard' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-                  <div className="card shadow-md">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                      <span className="material-icons text-primary-light dark:text-primary-dark">analytics</span> Estado de la congregación
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
-                        <span className="text-sm opacity-70">Total publicadores</span>
-                        <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{personas.length}</span>
+                  {reuniones.filter(r => safeParse(r.datos_reunion, {}).publicado).length > 0 ? (
+                    reuniones.filter(r => safeParse(r.datos_reunion, {}).publicado).map(reunion => (
+                      <div key={reunion.id} className="card shadow-md flex flex-col border border-outline-light/5">
+                        <div className="flex justify-between items-center mb-4 pb-2 border-b border-outline-light/5">
+                          <h3 className="font-black text-sm tracking-tight">{reunion.fecha}</h3>
+                          <span className="text-[10px] font-black text-success-light uppercase tracking-widest">Publicado</span>
+                        </div>
+                        <div className="space-y-4 overflow-y-auto max-h-[400px] pr-2 custom-scrollbar">
+                          {safeParse(reunion.datos_reunion, { secciones: [] }).secciones.map((sec, sIdx) => (
+                            <div key={sIdx} className="space-y-2">
+                              {sec.showHeader !== false && (
+                                <h4 className="text-[9px] font-black uppercase opacity-30 tracking-widest flex items-center gap-2">
+                                  <span className="w-1 h-3 bg-primary-light rounded-full"></span>
+                                  {sec.nombre}
+                                </h4>
+                              )}
+                              <div className="space-y-1.5 pl-3">
+                                {sec.partes.map((p, pIdx) => (
+                                  <div key={pIdx} className="flex flex-col gap-0.5">
+                                    <div className="flex justify-between items-start gap-4">
+                                      <span className="text-[11px] font-medium opacity-70 leading-tight">{p.nombre}</span>
+                                      <div className="flex flex-col items-end">
+                                        {Object.entries(p.asignaciones || {}).map(([sId, asig]) => (
+                                          <div key={sId} className="flex flex-col items-end leading-none">
+                                            <span className="text-[11px] font-black text-on-surface-light dark:text-on-surface-dark">{getPersonaName(asig.personaId)}</span>
+                                            {asig.ayudanteId && <span className="text-[9px] opacity-40 italic">con {getPersonaName(asig.ayudanteId)}</span>}
+                                            {asig.lectorId && <span className="text-[9px] opacity-40">Lector: {getPersonaName(asig.lectorId)}</span>}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
-                        <span className="text-sm opacity-70">Reuniones programadas</span>
-                        <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{reuniones.length}</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-surface-light dark:bg-white/5">
-                        <span className="text-sm opacity-70">Plantillas Disponibles</span>
-                        <span className="text-xl font-bold text-primary-light dark:text-primary-dark">{plantillas.length}</span>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-20 text-center opacity-40 italic">
+                      No hay programas publicados actualmente.
                     </div>
-                  </div>
-                  <div className="card shadow-md border-primary-light/20 dark:border-primary-dark/20">
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                      <span className="material-icons text-primary-light dark:text-primary-dark">campaign</span> Próxima Reunión
-                    </h3>
-                    {reuniones.length > 0 ? (
-                      <div className="p-4 rounded-2xl bg-primary-light/5 dark:bg-primary-dark/10 border border-primary-light/10">
-                        <p className="text-lg font-bold text-primary-light dark:text-primary-dark mb-1">{reuniones[0].tipo}</p>
-                        <p className="text-2xl font-black tracking-tighter">{reuniones[0].fecha}</p>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 opacity-40 italic">No hay reuniones próximas.</div>
-                    )}
-                  </div>
+                  )}
                 </div>
               )}
 
-              {activeTab === 'personas' && (
-                <div className="card shadow-md overflow-hidden p-0 animate-fade-in">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
-                        <tr>
-                          <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Nombre</th>
-                          <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Género</th>
-                          <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Privilegios</th>
-                          <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60">Habilidades</th>
-                          <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-outline-light/5">
-                        {personas.map(p => (
-                          <tr key={p.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                            <td className="px-6 py-4 font-semibold">{p.nombre}</td>
-                            <td className="px-6 py-4">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${p.genero === 'H'
-                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                : 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300'
-                                }`}>
-                                {p.genero === 'H' ? 'VARÓN' : 'MUJER'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-sm opacity-80">{p.privilegios}</td>
-                            <td className="px-6 py-4">
-                              <div className="flex flex-wrap gap-1">
-                                {p.habilidades?.map(h => (
-                                  <span key={h} className="px-2 py-0.5 rounded bg-surface-light dark:bg-white/10 text-[10px] opacity-70 border border-outline-light/10">
-                                    {h}
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPersona(p); setShowModal(true); }}>
-                                <span className="material-icons text-lg group-hover:scale-110 block">edit</span>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
+              {/* La sección de personas se ha movido dentro de Ajustes */}
 
 
               {activeTab === 'ajustes' && (
-                <div className="flex flex-col gap-6 animate-fade-in">
+                <div className="flex flex-col gap-4 animate-fade-in">
 
-                  {/* Plantillas de Reuniones */}
-                  <div className="card shadow-md overflow-hidden p-0">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
+                  {/* Sección: Personas */}
+                  <div className="card shadow-md overflow-hidden p-0 border border-outline-light/10 dark:border-outline-dark/10">
+                    <button
+                      onClick={() => toggleSection('personas')}
+                      className="w-full flex items-center justify-between px-6 py-4 hover:bg-surface-light dark:hover:bg-white/5 transition-colors"
+                    >
+                      <h3 className="font-bold flex items-center gap-2">
+                        <span className="material-icons text-primary-light dark:text-primary-dark text-xl">people</span>
+                        Gestión de Personas
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        <button className="btn-primary text-[10px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setEditingPersona(null); setShowModal(true); }}>+ Añadir</button>
+                        <span className={`material-icons transition-transform duration-300 ${expandedSections.personas ? 'rotate-180' : ''}`}>expand_more</span>
+                      </div>
+                    </button>
+                    {expandedSections.personas && (
+                      <div className="border-t border-outline-light/5 overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="bg-surface-light dark:bg-white/5 border-b border-outline-light/10">
+                            <tr>
+                              <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider opacity-60">Nombre</th>
+                              <th className="px-6 py-3 text-[10px] font-bold uppercase tracking-wider opacity-60 text-right">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-outline-light/5">
+                            {personas.map(p => (
+                              <tr key={p.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                                <td className="px-6 py-2 text-sm font-semibold">{p.nombre}</td>
+                                <td className="px-6 py-2 text-right">
+                                  <button className="p-1.5 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPersona(p); setShowModal(true); }}>
+                                    <span className="material-icons text-base group-hover:scale-110 block">edit</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sección: Plantillas de Reuniones */}
+                  <div className="card shadow-md overflow-hidden p-0 border border-outline-light/10 dark:border-outline-dark/10">
+                    <button
+                      onClick={() => toggleSection('plantillas')}
+                      className="w-full flex items-center justify-between px-6 py-4 hover:bg-surface-light dark:hover:bg-white/5 transition-colors"
+                    >
                       <h3 className="font-bold flex items-center gap-2">
                         <span className="material-icons text-primary-light dark:text-primary-dark text-xl">description</span>
                         Plantillas de reuniones
                       </h3>
-                      <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingPlantilla(null); setTempEstructura([]); setShowPlantillaModal(true); }}>+ Añadir</button>
-                    </div>
-                    <table className="w-full text-left border-collapse">
-                      <tbody className="divide-y divide-outline-light/5">
-                        {plantillas.map(pl => (
-                          <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                            <td className="px-6 py-3 font-semibold">{pl.nombre}</td>
-                            <td className="px-6 py-3 text-sm opacity-60">{safeParse(pl.estructura).length} sección(es)</td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex justify-end gap-1">
-                                <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantilla(pl); setTempEstructura(safeParse(pl.estructura)); setShowPlantillaModal(true); }}>
-                                  <span className="material-icons text-base group-hover:scale-110 block">edit</span>
-                                </button>
-                                <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeletePlantilla(pl.id)}>
-                                  <span className="material-icons text-base group-hover:scale-110 block">delete</span>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {plantillas.length === 0 && <tr><td colSpan="3" className="px-6 py-6 text-center opacity-40 italic">No hay plantillas de reuniones.</td></tr>}
-                      </tbody>
-                    </table>
+                      <div className="flex items-center gap-3">
+                        <button className="btn-primary text-[10px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setEditingPlantilla(null); setTempEstructura([]); setShowPlantillaModal(true); }}>+ Añadir</button>
+                        <span className={`material-icons transition-transform duration-300 ${expandedSections.plantillas ? 'rotate-180' : ''}`}>expand_more</span>
+                      </div>
+                    </button>
+                    {expandedSections.plantillas && (
+                      <div className="border-t border-outline-light/5">
+                        <table className="w-full text-left border-collapse">
+                          <tbody className="divide-y divide-outline-light/5">
+                            {plantillas.map(pl => (
+                              <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                                <td className="px-6 py-3 text-sm font-semibold">{pl.nombre}</td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className="flex justify-end gap-1">
+                                    <button className="p-1.5 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantilla(pl); setTempEstructura(safeParse(pl.estructura)); setShowPlantillaModal(true); }}>
+                                      <span className="material-icons text-base group-hover:scale-110 block">edit</span>
+                                    </button>
+                                    <button className="p-1.5 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light rounded-full transition-colors group" onClick={() => handleDeletePlantilla(pl.id)}>
+                                      <span className="material-icons text-base group-hover:scale-110 block">delete</span>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Plantillas de Partes */}
-                  <div className="card shadow-md overflow-hidden p-0">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
+                  {/* Sección: Plantillas de Partes */}
+                  <div className="card shadow-md overflow-hidden p-0 border border-outline-light/10 dark:border-outline-dark/10">
+                    <button
+                      onClick={() => toggleSection('partes')}
+                      className="w-full flex items-center justify-between px-6 py-4 hover:bg-surface-light dark:hover:bg-white/5 transition-colors"
+                    >
                       <h3 className="font-bold flex items-center gap-2">
                         <span className="material-icons text-primary-light dark:text-primary-dark text-xl">extension</span>
                         Plantillas de partes
                       </h3>
-                      <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingPlantillaParte(null); setShowPlantillaParteModal(true); }}>+ Añadir</button>
-                    </div>
-                    <table className="w-full text-left border-collapse">
-                      <tbody className="divide-y divide-outline-light/5">
-                        {plantillasPartes.map(pl => (
-                          <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                            <td className="px-6 py-3 font-semibold">{pl.nombre}</td>
-                            <td className="px-6 py-3 text-sm opacity-60">
-                              {pl.cupos} cupo(s) · {salas.filter(s => pl.salaIds?.includes(String(s.id)) || pl.salaIds?.includes(Number(s.id))).map(s => s.nombre).join(', ')}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex justify-end gap-1">
-                                <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantillaParte(pl); setShowPlantillaParteModal(true); }}>
-                                  <span className="material-icons text-base group-hover:scale-110 block">edit</span>
-                                </button>
-                                <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeletePlantillaParte(pl.id)}>
-                                  <span className="material-icons text-base group-hover:scale-110 block">delete</span>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {plantillasPartes.length === 0 && <tr><td colSpan="3" className="px-6 py-6 text-center opacity-40 italic">No hay plantillas de partes.</td></tr>}
-                      </tbody>
-                    </table>
+                      <div className="flex items-center gap-3">
+                        <button className="btn-primary text-[10px] py-1 px-2" onClick={(e) => { e.stopPropagation(); setEditingPlantillaParte(null); setShowPlantillaParteModal(true); }}>+ Añadir</button>
+                        <span className={`material-icons transition-transform duration-300 ${expandedSections.partes ? 'rotate-180' : ''}`}>expand_more</span>
+                      </div>
+                    </button>
+                    {expandedSections.partes && (
+                      <div className="border-t border-outline-light/5">
+                        <table className="w-full text-left border-collapse">
+                          <tbody className="divide-y divide-outline-light/5">
+                            {plantillasPartes.map(pl => (
+                              <tr key={pl.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                                <td className="px-6 py-2 text-sm font-semibold">{pl.nombre}</td>
+                                <td className="px-4 py-2 text-right">
+                                  <div className="flex justify-end gap-1">
+                                    <button className="p-1.5 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingPlantillaParte(pl); setShowPlantillaParteModal(true); }}>
+                                      <span className="material-icons text-base group-hover:scale-110 block">edit</span>
+                                    </button>
+                                    <button className="p-1.5 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light rounded-full transition-colors group" onClick={() => handleDeletePlantillaParte(pl.id)}>
+                                      <span className="material-icons text-base group-hover:scale-110 block">delete</span>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Salas */}
-                    <div className="card shadow-md overflow-hidden p-0">
-                      <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
+                  {/* Sección: Salas y Tipos */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="card shadow-md overflow-hidden p-0 border border-outline-light/10 dark:border-outline-dark/10">
+                      <button onClick={() => toggleSection('salas')} className="w-full flex items-center justify-between px-6 py-4 hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
                         <h3 className="font-bold flex items-center gap-2">
                           <span className="material-icons text-primary-light dark:text-primary-dark text-xl">meeting_room</span>
                           Salas
                         </h3>
-                        <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingSala(null); setShowSalaModal(true); }}>+ Añadir</button>
-                      </div>
-                      <table className="w-full text-left border-collapse">
-                        <tbody className="divide-y divide-outline-light/5">
-                          {salas.map(s => (
-                            <tr key={s.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                              <td className="px-6 py-3 font-semibold">{s.nombre}</td>
-                              <td className="px-4 py-3 text-right">
-                                <div className="flex justify-end gap-1">
-                                  <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>
-                                    <span className="material-icons text-base group-hover:scale-110 block">edit</span>
-                                  </button>
-                                  <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteSala(s.id)}>
-                                    <span className="material-icons text-base group-hover:scale-110 block">delete</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                          {salas.length === 0 && <tr><td colSpan="2" className="px-6 py-6 text-center opacity-40 italic">No hay salas definidas.</td></tr>}
-                        </tbody>
-                      </table>
+                        <span className={`material-icons transition-transform duration-300 ${expandedSections.salas ? 'rotate-180' : ''}`}>expand_more</span>
+                      </button>
+                      {expandedSections.salas && (
+                        <div className="border-t border-outline-light/5">
+                          <table className="w-full text-left border-collapse">
+                            <tbody className="divide-y divide-outline-light/5">
+                              {salas.map(s => (
+                                <tr key={s.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                                  <td className="px-6 py-2 text-sm font-semibold">{s.nombre}</td>
+                                  <td className="px-4 py-2 text-right">
+                                    <button className="p-1.5 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingSala(s); setShowSalaModal(true); }}>
+                                      <span className="material-icons text-base group-hover:scale-110 block">edit</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Tipos de Asignación */}
-                    <div className="card shadow-md overflow-hidden p-0">
-                      <div className="flex items-center justify-between px-6 py-4 border-b border-outline-light/10">
+                    <div className="card shadow-md overflow-hidden p-0 border border-outline-light/10 dark:border-outline-dark/10">
+                      <button onClick={() => toggleSection('tipos')} className="w-full flex items-center justify-between px-6 py-4 hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
                         <h3 className="font-bold flex items-center gap-2">
                           <span className="material-icons text-primary-light dark:text-primary-dark text-xl">assignment</span>
-                          Tipos de Asignación
+                          Tipos
                         </h3>
-                        <button className="btn-primary text-xs py-1.5 px-3" onClick={() => { setEditingTipoAsignacion(null); setShowTipoAsignacionModal(true); }}>+ Añadir</button>
-                      </div>
-                      <table className="w-full text-left border-collapse">
-                        <tbody className="divide-y divide-outline-light/5">
-                          {tiposAsignacion.map(t => (
-                            <tr key={t.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
-                              <td className="px-6 py-3 font-semibold">{t.nombre}</td>
-                              <td className="px-4 py-3 text-right">
-                                <div className="flex justify-end gap-1">
-                                  <button className="p-2 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>
-                                    <span className="material-icons text-base group-hover:scale-110 block">edit</span>
-                                  </button>
-                                  <button className="p-2 hover:bg-error-light/10 dark:hover:bg-error-dark/20 text-error-light dark:text-error-dark rounded-full transition-colors group" onClick={() => handleDeleteTipoAsignacion(t.id)}>
-                                    <span className="material-icons text-base group-hover:scale-110 block">delete</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                          {tiposAsignacion.length === 0 && <tr><td colSpan="2" className="px-6 py-6 text-center opacity-40 italic">No hay tipos definidos.</td></tr>}
-                        </tbody>
-                      </table>
+                        <span className={`material-icons transition-transform duration-300 ${expandedSections.tipos ? 'rotate-180' : ''}`}>expand_more</span>
+                      </button>
+                      {expandedSections.tipos && (
+                        <div className="border-t border-outline-light/5">
+                          <table className="w-full text-left border-collapse">
+                            <tbody className="divide-y divide-outline-light/5">
+                              {tiposAsignacion.map(t => (
+                                <tr key={t.id} className="hover:bg-surface-light dark:hover:bg-white/5 transition-colors">
+                                  <td className="px-6 py-2 text-sm font-semibold">{t.nombre}</td>
+                                  <td className="px-4 py-2 text-right">
+                                    <button className="p-1.5 hover:bg-primary-light/10 dark:hover:bg-primary-dark/20 rounded-full transition-colors group" onClick={() => { setEditingTipoAsignacion(t); setShowTipoAsignacionModal(true); }}>
+                                      <span className="material-icons text-base group-hover:scale-110 block">edit</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
-
                   </div>
                 </div>
               )}
@@ -893,10 +950,59 @@ const App = () => {
 
                   {selectedReunion ? (
                     <div className="card shadow-md flex-1 w-full bg-white/50 dark:bg-surface-dark/50">
-                      <div className="flex justify-between items-center mb-6 pb-4 border-b border-outline-light/10">
-                        <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
-                          <span className="text-primary-light dark:text-primary-dark font-normal">Programa de la semana:</span> {selectedReunion.fecha}
-                        </h3>
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-outline-light/10">
+                        <div>
+                          <h3 className="text-xl font-black tracking-tight flex items-center gap-3">
+                            <span className="text-primary-light dark:text-primary-dark font-normal">Programa de la semana:</span> {selectedReunion.fecha}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={!!safeParse(selectedReunion.datos_reunion, {}).publicado}
+                                onChange={(e) => {
+                                  const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                  datos.publicado = e.target.checked;
+                                  handleUpdateWeeklyStructure(datos);
+                                }}
+                              />
+                              <div className={`block w-10 h-6 rounded-full transition-colors ${safeParse(selectedReunion.datos_reunion, {}).publicado ? 'bg-primary-light' : 'bg-outline-light/30'}`}></div>
+                              <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${safeParse(selectedReunion.datos_reunion, {}).publicado ? 'translate-x-4' : ''}`}></div>
+                            </div>
+                            <span className="text-xs font-black uppercase tracking-widest">{safeParse(selectedReunion.datos_reunion, {}).publicado ? 'Publicado' : 'Borrador'}</span>
+                          </label>
+                          <button
+                            className="btn-primary text-xs py-2 px-4 flex items-center gap-2"
+                            onClick={() => {
+                              const listaNames = plantillasPartes.map(p => p.nombre).join(', ');
+                              const name = prompt('Nombre de la parte a añadir:\n(Disponibles: ' + listaNames + ')');
+                              if (name) {
+                                const plp = plantillasPartes.find(p => p.nombre.toLowerCase().includes(name.toLowerCase()));
+                                if (plp) {
+                                  const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                  if (datos.secciones.length === 0) datos.secciones.push({ nombre: 'Adicional', partes: [] });
+                                  datos.secciones[0].partes.push({
+                                    id: Date.now().toString(),
+                                    nombre: plp.nombre,
+                                    salaIds: plp.salaIds || [1],
+                                    tipoAsignacionIds: plp.tipoAsignacionIds || [],
+                                    permiteAyudante: plp.permiteAyudante,
+                                    permiteLector: plp.permiteLector,
+                                    asignaciones: {}
+                                  });
+                                  handleUpdateWeeklyStructure(datos);
+                                } else {
+                                  alert('No se encontró una plantilla con ese nombre.');
+                                }
+                              }
+                            }}
+                          >
+                            <span className="material-icons text-sm">add</span> Añadir Parte
+                          </button>
+                        </div>
                       </div>
 
                       <div className="space-y-8">
@@ -931,169 +1037,139 @@ const App = () => {
                             )}
                             <div className="divide-y divide-outline-light/5">
                               {seccion.partes.map((parte, pIdx) => {
-                                const asignadosIds = parte.asignadosIds || (parte.asignadoId ? [parte.asignadoId] : []);
-                                const ayudanteId = parte.ayudanteId;
-                                const cupos = parte.cupos || 1;
-                                const permiteAyudante = !!parte.permiteAyudante;
-                                const permiteLector = !!parte.permiteLector;
-                                const lectorId = parte.lectorId;
-
-                                const aptos = personas.filter(p => {
-                                  if (parte.nombre.includes('Oración') || parte.nombre === 'Lectura') {
-                                    if (p.genero !== 'H') return false;
-                                  }
-                                  if (parte.tipoAsignacionIds && parte.tipoAsignacionIds.length > 0) {
-                                    const hasRequired = parte.tipoAsignacionIds.some(tid => p.asignaciones?.includes(String(tid)) || p.asignaciones?.includes(Number(tid)));
-                                    if (!hasRequired) return false;
-                                  }
-                                  return true;
-                                });
+                                const salaIds = parte.salaIds || [1];
+                                const asignaciones = parte.asignaciones || {}; // { salaId: { personaId, ayudanteId, lectorId } }
 
                                 return (
-                                  <div key={parte.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:bg-primary-light/5 dark:hover:bg-primary-dark/5 transition-colors">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-3 mb-2">
-                                        <span className="font-bold text-base">{parte.nombre}</span>
-                                        <div className="flex flex-wrap gap-1">
-                                          {(parte.salaIds || [1]).map(sid => (
-                                            <span key={sid} className="text-[9px] px-2 py-0.5 rounded-full bg-outline-light/10 dark:bg-outline-dark/20 font-bold uppercase opacity-60">
-                                              {salas.find(s => s.id == sid)?.nombre || 'Principal'}
-                                            </span>
-                                          ))}
+                                  <div key={parte.id || pIdx} className="p-6 transition-all hover:bg-surface-light dark:hover:bg-white/[0.02]">
+                                    <div className="flex flex-col gap-6">
+                                      {/* Cabecera de la Parte */}
+                                      <div className="flex justify-between items-start">
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-3">
+                                            <h5 className="font-black text-lg tracking-tight">{parte.nombre}</h5>
+                                            <button className="opacity-40 hover:opacity-100 transition-opacity" onClick={() => {
+                                              const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                              const n = prompt('Nombre de la parte:', parte.nombre);
+                                              if (n) {
+                                                datos.secciones[sIdx].partes[pIdx].nombre = n;
+                                                handleUpdateWeeklyStructure(datos);
+                                              }
+                                            }}>
+                                              <span className="material-icons text-sm">edit</span>
+                                            </button>
+                                          </div>
+                                          <div className="flex flex-wrap gap-2">
+                                            {parte.tipoAsignacionIds?.map(taId => (
+                                              <span key={taId} className="text-[9px] px-2 py-0.5 rounded-full bg-primary-light/10 text-primary-light font-black uppercase tracking-tighter">
+                                                {tiposAsignacion.find(t => t.id == taId)?.nombre}
+                                              </span>
+                                            ))}
+                                          </div>
                                         </div>
-                                        <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-all group" onClick={() => {
-                                          const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                          const n = prompt('Nombre de la parte:', parte.nombre);
-                                          if (n) {
-                                            datos.secciones[sIdx].partes[pIdx].nombre = n;
+                                        <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors group" onClick={() => {
+                                          if (confirm('¿Eliminar esta parte?')) {
+                                            const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                            datos.secciones[sIdx].partes.splice(pIdx, 1);
                                             handleUpdateWeeklyStructure(datos);
                                           }
                                         }}>
-                                          <span className="material-icons text-[14px] group-hover:scale-110 block">edit</span>
+                                          <span className="material-icons text-xs group-hover:scale-110 block">delete</span>
                                         </button>
                                       </div>
-                                      <div className="flex items-center gap-4 mt-2">
-                                        <div className="space-y-1">
-                                          <span className="text-[9px] font-bold opacity-40 uppercase">Aptitudes Requeridas</span>
-                                          <PillSelector
-                                            items={tiposAsignacion}
-                                            selectedIds={parte.tipoAsignacionIds || []}
-                                            onAdd={(id) => {
-                                              const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                              const p = datos.secciones[sIdx].partes[pIdx];
-                                              p.tipoAsignacionIds = [...(p.tipoAsignacionIds || []), id];
-                                              handleUpdateWeeklyStructure(datos);
-                                            }}
-                                            onRemove={(id) => {
-                                              const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                              const p = datos.secciones[sIdx].partes[pIdx];
-                                              p.tipoAsignacionIds = (p.tipoAsignacionIds || []).filter(tid => tid != id);
-                                              handleUpdateWeeklyStructure(datos);
-                                            }}
-                                          />
-                                        </div>
-                                        <div className="space-y-1">
-                                          <span className="text-[9px] font-bold opacity-40 uppercase">Salas destinadas</span>
-                                          <PillSelector
-                                            items={salas}
-                                            selectedIds={parte.salaIds || [1]}
-                                            onAdd={(id) => {
-                                              const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                              const p = datos.secciones[sIdx].partes[pIdx];
-                                              p.salaIds = [...(p.salaIds || [1]), id];
-                                              handleUpdateWeeklyStructure(datos);
-                                            }}
-                                            onRemove={(id) => {
-                                              const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                              const p = datos.secciones[sIdx].partes[pIdx];
-                                              p.salaIds = (p.salaIds || [1]).filter(sid => sid != id);
-                                              handleUpdateWeeklyStructure(datos);
-                                            }}
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex flex-col gap-2">
-                                        {/* Selectores de asignados principales */}
-                                        {Array.from({ length: cupos }).map((_, i) => (
-                                          <div key={`asignado-${i}`} className="flex items-center gap-2 justify-end">
-                                            <div className={`text-right ${asignadosIds[i] ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-error-light dark:text-error-dark'}`}>
-                                              <div className="text-[9px] uppercase font-bold opacity-40 leading-none mb-1">
-                                                {cupos > 1 ? `Asignado ${i + 1}` : 'Asignado'}
+
+                                      {/* Asignaciones por Sala */}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {salaIds.map(sId => {
+                                          const sala = salas.find(s => s.id == sId);
+                                          const asignacion = asignaciones[sId] || {};
+
+                                          // Filtrar personas aptas
+                                          const aptos = personas.filter(p => {
+                                            if (!parte.tipoAsignacionIds || parte.tipoAsignacionIds.length === 0) return true;
+                                            return p.tipoAsignacionIds?.some(taId => parte.tipoAsignacionIds.includes(taId));
+                                          });
+
+                                          return (
+                                            <div key={sId} className="bg-surface-light dark:bg-white/[0.03] p-5 rounded-[2rem] border border-outline-light/10 dark:border-white/5 space-y-4">
+                                              <div className="flex items-center gap-2 mb-2 px-1">
+                                                <span className="material-icons text-primary-light text-sm">meeting_room</span>
+                                                <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">{sala?.nombre || 'Sala Principal'}</span>
                                               </div>
-                                              <div className="font-bold text-sm tracking-tight">{getPersonaName(asignadosIds[i])}</div>
-                                            </div>
-                                            <select
-                                              className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-2 py-1.5 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 transition-all mw-[120px]"
-                                              value={asignadosIds[i] || ''}
-                                              onChange={(e) => {
-                                                const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                                const newAsignados = [...(datos.secciones[sIdx].partes[pIdx].asignadosIds || [])];
-                                                newAsignados[i] = e.target.value;
-                                                datos.secciones[sIdx].partes[pIdx].asignadosIds = newAsignados;
-                                                handleUpdateWeeklyStructure(datos);
-                                              }}
-                                            >
-                                              <option value="">Cambiar...</option>
-                                              {aptos.filter(p => !asignadosIds.includes(String(p.id)) || String(p.id) === String(asignadosIds[i])).map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
-                                            </select>
-                                          </div>
-                                        ))}
 
-                                        {/* Selector de ayudante si aplica */}
-                                        {permiteAyudante && (
-                                          <div className="flex items-center gap-2 justify-end mt-1 pt-2 border-t border-outline-light/10">
-                                            <div className={`text-right ${ayudanteId ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-warning-light dark:text-warning-dark'}`}>
-                                              <div className="text-[9px] uppercase font-bold opacity-40 leading-none mb-1">Ayudante</div>
-                                              <div className="font-bold text-sm tracking-tight">{getPersonaName(ayudanteId)}</div>
-                                            </div>
-                                            <select
-                                              className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-2 py-1.5 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 transition-all mw-[120px]"
-                                              value={ayudanteId || ''}
-                                              onChange={(e) => {
-                                                const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                                datos.secciones[sIdx].partes[pIdx].ayudanteId = e.target.value;
-                                                handleUpdateWeeklyStructure(datos);
-                                              }}
-                                            >
-                                              <option value="">Cambiar...</option>
-                                              {personas.filter(p => !asignadosIds.includes(String(p.id)) || String(p.id) === String(ayudanteId)).map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
-                                            </select>
-                                          </div>
-                                        )}
+                                              <div className="space-y-4">
+                                                {/* Selector Principal */}
+                                                <div className="space-y-1">
+                                                  <div className="flex justify-between items-center px-1">
+                                                    <label className="text-[9px] font-bold opacity-30 uppercase tracking-widest">Asignado</label>
+                                                    {asignacion.personaId && <span className="text-[10px] font-black text-primary-light">✓</span>}
+                                                  </div>
+                                                  <select
+                                                    className={`input-field py-2.5 text-xs font-bold rounded-2xl ${!asignacion.personaId ? 'border-error-light/30 text-error-light' : ''}`}
+                                                    value={asignacion.personaId || ''}
+                                                    onChange={(e) => {
+                                                      const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                                      if (!datos.secciones[sIdx].partes[pIdx].asignaciones) datos.secciones[sIdx].partes[pIdx].asignaciones = {};
+                                                      if (!datos.secciones[sIdx].partes[pIdx].asignaciones[sId]) datos.secciones[sIdx].partes[pIdx].asignaciones[sId] = {};
+                                                      datos.secciones[sIdx].partes[pIdx].asignaciones[sId].personaId = e.target.value;
+                                                      handleUpdateWeeklyStructure(datos);
+                                                    }}
+                                                  >
+                                                    <option value="">(SIN ASIGNAR)</option>
+                                                    {aptos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                                                  </select>
+                                                </div>
 
-                                        {/* Selector de lector si aplica */}
-                                        {permiteLector && (
-                                          <div className="flex items-center gap-2 justify-end mt-1 pt-2 border-t border-outline-light/10">
-                                            <div className={`text-right ${lectorId ? 'text-on-surface-light dark:text-on-surface-dark' : 'text-warning-light dark:text-warning-dark'}`}>
-                                              <div className="text-[9px] uppercase font-bold opacity-40 leading-none mb-1">Lector</div>
-                                              <div className="font-bold text-sm tracking-tight">{getPersonaName(lectorId)}</div>
+                                                {/* Ayudante */}
+                                                {parte.permiteAyudante && (
+                                                  <div className="space-y-1 animate-fade-in">
+                                                    <label className="text-[9px] font-bold opacity-30 uppercase ml-1 tracking-widest flex items-center gap-1">
+                                                      <span className="material-icons text-[10px]">person_add</span> Ayudante
+                                                    </label>
+                                                    <select
+                                                      className="input-field py-2 text-xs rounded-2xl border-dashed"
+                                                      value={asignacion.ayudanteId || ''}
+                                                      onChange={(e) => {
+                                                        const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                                        if (!datos.secciones[sIdx].partes[pIdx].asignaciones) datos.secciones[sIdx].partes[pIdx].asignaciones = {};
+                                                        if (!datos.secciones[sIdx].partes[pIdx].asignaciones[sId]) datos.secciones[sIdx].partes[pIdx].asignaciones[sId] = {};
+                                                        datos.secciones[sIdx].partes[pIdx].asignaciones[sId].ayudanteId = e.target.value;
+                                                        handleUpdateWeeklyStructure(datos);
+                                                      }}
+                                                    >
+                                                      <option value="">(Opcional)</option>
+                                                      {personas.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                                                    </select>
+                                                  </div>
+                                                )}
+
+                                                {/* Lector */}
+                                                {parte.permiteLector && (
+                                                  <div className="space-y-1 animate-fade-in">
+                                                    <label className="text-[9px] font-bold opacity-30 uppercase ml-1 tracking-widest flex items-center gap-1">
+                                                      <span className="material-icons text-[10px]">menu_book</span> Lector
+                                                    </label>
+                                                    <select
+                                                      className="input-field py-2 text-xs rounded-2xl border-dotted"
+                                                      value={asignacion.lectorId || ''}
+                                                      onChange={(e) => {
+                                                        const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
+                                                        if (!datos.secciones[sIdx].partes[pIdx].asignaciones) datos.secciones[sIdx].partes[pIdx].asignaciones = {};
+                                                        if (!datos.secciones[sIdx].partes[pIdx].asignaciones[sId]) datos.secciones[sIdx].partes[pIdx].asignaciones[sId] = {};
+                                                        datos.secciones[sIdx].partes[pIdx].asignaciones[sId].lectorId = e.target.value;
+                                                        handleUpdateWeeklyStructure(datos);
+                                                      }}
+                                                    >
+                                                      <option value="">(Opcional)</option>
+                                                      {personas.filter(p => p.genero === 'H').map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                                                    </select>
+                                                  </div>
+                                                )}
+                                              </div>
                                             </div>
-                                            <select
-                                              className="bg-surface-light dark:bg-white/5 border-none text-xs rounded-xl px-2 py-1.5 outline-none font-bold text-primary-light dark:text-primary-dark cursor-pointer hover:bg-primary-light/10 transition-all mw-[120px]"
-                                              value={lectorId || ''}
-                                              onChange={(e) => {
-                                                const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                                datos.secciones[sIdx].partes[pIdx].lectorId = e.target.value;
-                                                handleUpdateWeeklyStructure(datos);
-                                              }}
-                                            >
-                                              <option value="">Cambiar...</option>
-                                              {personas.filter(p => p.genero === 'H' && (!asignadosIds.includes(String(p.id)) || String(p.id) === String(lectorId))).map(p => <option key={p.id} value={p.id} className="text-black">{p.nombre}</option>)}
-                                            </select>
-                                          </div>
-                                        )}
+                                          );
+                                        })}
                                       </div>
-                                      <button className="p-2 hover:bg-error-light/10 text-error-light rounded-full transition-colors opacity-0 group-hover:opacity-100 group" onClick={() => {
-                                        if (confirm('¿Eliminar esta parte?')) {
-                                          const datos = safeParse(selectedReunion.datos_reunion, { secciones: [] });
-                                          datos.secciones[sIdx].partes.splice(pIdx, 1);
-                                          handleUpdateWeeklyStructure(datos);
-                                        }
-                                      }}>
-                                        <span className="material-icons text-sm group-hover:scale-110 block">close</span>
-                                      </button>
                                     </div>
                                   </div>
                                 );
@@ -1603,6 +1679,39 @@ const App = () => {
                 </div>
               </div>
             ), onClose: () => setShowVersionModal(false)
+          },
+          {
+            show: showReunionModal, title: 'Nueva Reunión Semanal', content: (
+              <form onSubmit={handleSaveReunion} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold opacity-60 ml-1 uppercase">Seleccionar Semana</label>
+                    <select name="week" className="input-field" required>
+                      {getUpcomingWeeks().map((w, i) => (
+                        <option key={i} value={w}>{w}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold opacity-60 ml-1 uppercase">Plantillas de Reunión (Aplicar)</label>
+                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 border border-outline-light/10 rounded-xl">
+                      {plantillas.map(pl => (
+                        <label key={pl.id} className="flex items-center gap-3 p-3 bg-surface-light dark:bg-white/5 rounded-xl cursor-pointer hover:bg-primary-light/5 transition-all">
+                          <input type="checkbox" name="templateIds" value={pl.id} className="w-5 h-5 rounded border-outline-light text-primary-light" />
+                          <span className="text-sm font-bold">{pl.nombre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <button type="button" className="px-6 py-2.5 rounded-full font-bold opacity-60 hover:opacity-100 transition-all" onClick={() => setShowReunionModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn-primary" disabled={isSyncing}>
+                    {isSyncing ? 'Creando...' : 'Crear Programa'}
+                  </button>
+                </div>
+              </form>
+            ), onClose: () => setShowReunionModal(false)
           },
         ].map((m, idx) => m.show && (
           <div key={idx} className={`fixed inset-0 z-[3000] flex items-center justify-center ${m.full ? 'p-0' : 'p-4'} bg-on-surface-light/40 dark:bg-surface-dark/80 backdrop-blur-sm animate-fade-in`}>
