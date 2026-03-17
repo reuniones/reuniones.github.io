@@ -1,66 +1,58 @@
-# SGC: Especificación Detallada del Backend
+# SGC: Especificación de la Interfaz del Backend
 
-El backend del SGC utiliza una arquitectura **Serverless** basada en **Google Apps Script (GAS)** y **Google Sheets**, diseñada bajo principios de **Privacidad por Diseño** y **Conocimiento Cero (Zero-Knowledge)**.
+En la arquitectura modular del SGC, el Backend se define como un **Proveedor de Servicios** (Data Provider) que debe cumplir con un protocolo de comunicación estándar. Actúa como el motor de ejecución para un sistema modular con segmentación física de datos.
 
-## 1. Estrategia de Conexión Dinámica y Persistencia
--   **Primer Ingreso:** El usuario accede mediante una URL con parámetros (ej: `https://congregacion.github.io/?api=URL_GAS`).
--   **Persistencia de API:** El frontend guarda la URL de la API en `localStorage`.
--   **Protección de Infraestructura:** El ID de la hoja de cálculo se gestiona internamente en GAS vía `ScriptProperties`.
+## 1. El Protocolo Backend (API Multi-ID)
+Cualquier implementación de backend debe procesar las siguientes acciones, aceptando un identificador de base de datos (`ssId` en GSheets) para permitir la segmentación de datos:
 
-## 2. Modelo de Seguridad: El Cofre Criptográfico
-El sistema utiliza un esquema de cifrado de doble capa para garantizar que los datos sensibles solo sean legibles por personas autorizadas.
+-   **`batchGetData`**: Recuperación de múltiples tablas de un recurso específico en una sola petición.
+-   **`saveData`**: Operación *upsert* (insertar o actualizar) en un recurso específico.
+-   **`deleteData`**: Borrado físico o lógico de registros.
+-   **`initSheet/initTable`**: Preparación estructural del recurso basado en el esquema.
 
-### Capa A: La Master Key (MK)
--   Es una clave de alta entropía generada aleatoriamente al inicializar el sistema.
--   **Función:** Cifra todos los campos sensibles en la tabla `Personas` (teléfonos, correos, direcciones, comentarios).
+### Seguridad del Recurso
+El backend debe validar que el `ssId` solicitado sea un recurso autorizado por el Núcleo para evitar accesos a archivos externos no relacionados con el sistema.
 
-### Capa B: Envoltura de Clave (Key Wrapping)
--   La **MK** no se guarda en texto plano. Se almacena en la tabla `Usuarios` una versión cifrada para cada editor.
--   **Clave de Envoltura:** Se utiliza el **TOTP Secret** (la semilla de 16-32 caracteres del autenticador) de cada usuario como llave para cifrar la MK.
--   **Resultado:** Google Sheets solo almacena "cofres cerrados". Para abrir el sistema, se necesita la "llave" que reside únicamente en el dispositivo móvil del editor (app de autenticación).
-
-## 3. Niveles de Autenticación y Acceso
-
-### Capa 1: Acceso Público (Modo Invitado)
--   **Seguridad:** El backend filtra las peticiones. Solo devuelve registros con `publicado: true`.
--   **Sanitización:** Se eliminan automáticamente todos los campos cifrados o marcados como privados antes de enviar el JSON al navegador.
-
-### Capa 2: Acceso Administrativo (Cero Conocimiento)
-1.  **Validación de Identidad:** El usuario ingresa su código TOTP de 6 dígitos. El backend lo valida contra el `totp_secret`.
-2.  **Descarga del Cofre:** Si el código es válido, el backend envía al frontend la **MK cifrada** (específica para ese usuario).
-3.  **Apertura Local:** El frontend solicita al usuario su `TOTP Secret` (o lo recupera de un almacenamiento seguro local) y descifra la **Master Key** en la memoria del navegador.
-4.  **Acceso a Datos:** Con la MK ya disponible, el frontend puede descifrar y mostrar los datos privados de los hermanos.
+## 2. Requerimientos Funcionales (Motor JSONata)
+Para que el backend sea compatible con el SGC, debe integrar un motor de **JSONata** para ejecutar:
+-   **Validaciones:** Reglas de integridad definidas en el esquema evaluadas antes de persistir.
+-   **Sanitización de Segmentos:** Filtrado dinámico de campos para el **GSheet Público**, asegurando que los datos de invitación nunca contengan trazas de datos sensibles.
 
 ---
 
-## 4. Estructura de la Base de Datos (Seguridad)
+## 3. Implementación de Referencia: Google Apps Script (GAS)
+El script `api.gs` es el plug-in de backend primario y utiliza Google Sheets como base de datos distribuida.
 
-### Hoja: `Usuarios`
-| id | usuario | email | permisos (JSON) | totp_secret | wrapped_mk (MK cifrada con TOTP_Secret) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| u1 | admin_1 | `...` | `{"reuniones": "admin"}` | `JBSW...` | `U2FsdGVkX19v8...` |
+### Seguridad y Acceso
+-   **Persistencia de API:** El frontend identifica el URL del GAS mediante el parámetro `api` en la URL y lo persiste localmente.
+-   **Aislamiento:** El GAS gestiona el acceso a diferentes archivos de Google Sheets basándose en los IDs proporcionados por el Núcleo para el GSheet Core, el Público, el de Personas y los Operativos.
 
-### Hoja: `Personas` (Cifrado en Reposo con MK)
-| id | nombre | email (Cifrado XXTEA) | telefono (Cifrado XXTEA) | ... |
-| :--- | :--- | :--- | :--- | :--- |
+### Modelo de Seguridad (Zero-Knowledge)
+-   **Cofre Criptográfico:** El backend almacena la **Master Key (MK)** cifrada con el **TOTP Secret** de cada usuario (`wrapped_mk`).
+-   **Cifrado en Reposo:** El backend almacena y entrega bloques de texto cifrados con XXTEA sin conocer su contenido original.
+
+## 4. Niveles de Autenticación
+El proveedor de backend debe validar los factores de autenticación requeridos antes de emitir un `session_token`. El sistema soporta:
+
+1.  **Autenticación Biométrica (Passkeys/WebAuthn):** Método primario para administradores. Requiere almacenamiento de la `Public Key` para validación de firmas.
+2.  **TOTP (Time-based OTP):** Sincronización basada en tiempo (Google Authenticator).
+3.  **OTP via Email:** Envío de códigos de respaldo vía Gmail (`MailApp`).
 
 ---
 
-## 5. Lógica del Lado del Servidor (`api.gs`)
--   **Independencia Criptográfica:** El script de Google no conoce la Master Key ni realiza el descifrado de datos personales. Actúa como un almacén de datos cifrados y un validador de factores de forma (OTP/TOTP).
--   **Gestión de Permisos:** Verifica que el `session_token` tenga el nivel de acceso requerido para cada operación de escritura.
+## 5. El Cofre Criptográfico y Passkeys
+Cuando un usuario se autentica mediante **Passkey**, el backend valida el desafío y entrega la **Master Key cifrada** (`wrapped_mk`). 
+-   El frontend descifra la MK localmente para mantener el modelo de **Conocimiento Cero**.
+-   Se recomienda el uso del Keyring del sistema operativo para mantener las llaves de desbloqueo de forma persistente y segura.
 
-## 7. Optimización de Lectura: Carga por Lotes (Batch)
-Para minimizar la latencia de red y reducir el consumo de cuotas de Google Apps Script, el backend implementa una estrategia de carga masiva:
+---
 
--   **Acción:** `batchGetData`.
--   **Funcionamiento:** El script recibe el parámetro `sheets` con una lista de nombres de hojas separadas por comas (ej: `?action=batchGetData&sheets=Personas,Plantillas,Salas`).
--   **Procesamiento:** 
-    1.  Divide la cadena en un array de nombres.
-    2.  Itera por cada hoja, consultando el **Sistema de Caché** primero y luego la hoja física si es necesario.
-    3.  Construye un único objeto JSON donde cada clave es el nombre de la tabla y su valor es el array de registros.
--   **Beneficio Crítico:** Permite que la aplicación React obtenga todo el estado inicial del sistema en **una sola petición HTTP**, lo que acelera drásticamente el tiempo de carga inicial y mejora la experiencia en conexiones lentas.
+## 6. Optimización: Sistema de Lotes y Caché
+-   **Batching:** Agrupamiento de respuestas para minimizar latencia. Crucial para cargar el esquema y los datos públicos inicialmente.
+-   **Capa de Caché:** Implementación de `CacheService` para acelerar lecturas masivas de datos públicos y configuraciones de plugins.
 
-## 8. Logs y Mantenimiento
--   **Logs de Acceso:** Registro de intentos de login y cambios críticos en la base de datos.
--   **Modo Mantenimiento:** Capacidad de bloquear accesos administrativos desde las `ScriptProperties` en caso de brecha de seguridad.
+## 7. Logs y Auditoría
+El backend es responsable de registrar en el GSheet Core:
+-   Intentos de acceso fallidos y exitosos.
+-   Cambios en la tabla maestra de Esquema.
+-   Historial de operaciones de escritura en la tabla de Personas y configuraciones de Plugins.

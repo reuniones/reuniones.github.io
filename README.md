@@ -1,16 +1,44 @@
-# React + Vite
+# Sistema de Gestión de Congregación (SGC)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este proyecto es una aplicación web modular diseñada para la gestión integral de una congregación. Utiliza una arquitectura avanzada de **Núcleo y Plug-ins**, garantizando seguridad de **Conocimiento Cero (Zero-Knowledge)** y flexibilidad total mediante un motor **Schema-Driven**.
 
-Currently, two official plugins are available:
+## 🚀 Arquitectura y Tecnologías
+-   **Core:** React + Tailwind CSS (Material Design 3).
+-   **Backend:** Google Apps Script (GAS) como proveedor de datos primario.
+-   **Almacenamiento:** Segmentación física en múltiples Google Sheets (Core, Público, Personas, Operativos).
+-   **Seguridad:** Cifrado simétrico XXTEA con Key Wrapping basado en TOTP Seed.
+-   **Lógica:** Procesamiento universal de datos mediante **JSONata**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 📚 Documentación del Sistema
+Para comprender el funcionamiento detallado, consulta los siguientes archivos de especificación:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1.  [**Índice General (SGC_README.md)**](./SGC_README.md): Punto de entrada a toda la especificación técnica.
+2.  [**Arquitectura del Sistema**](./SGC_Arquitectura.md): Definición del framework de plugins y adaptadores.
+3.  [**Especificación del Backend**](./SGC_Backend.md): Protocolo de comunicación y seguridad.
+4.  [**Módulo de Administración**](./SGC_Administracion.md): Control de acceso y gestión del censo.
+5.  [**Módulo de Reuniones**](./SGC_Reuniones.md): Confección de programas y discursos públicos.
+6.  [**Módulo de Predicación**](./SGC_Predicacion.md): Gestión geográfica y programas de casa en casa.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Desarrollo
+Este proyecto utiliza **Vite** para el empaquetado y desarrollo local.
+
+### Comandos Rápidos
+```bash
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
+npm run dev
+
+# Construir para producción (GitHub Pages)
+npm run build
+```
+
+---
+
+## 📋 Estándar de Contribución
+Si deseas añadir un nuevo módulo o modificar uno existente, debes seguir estrictamente el [**Estándar de Documentación de Módulos**](./SGC_Guia_Documentacion.md) para garantizar la consistencia del ecosistema.

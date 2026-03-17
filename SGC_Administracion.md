@@ -1,37 +1,26 @@
 # SGC: Módulo de Administración
 
-Este módulo es el núcleo operativo del sistema, permitiendo gestionar el censo de la congregación y el control de acceso de los usuarios administrativos y editores.
+Este módulo es el núcleo operativo del sistema. Centraliza la gestión del censo, los registros de actividad y la seguridad global. Todos los elementos de menú de esta sección son privados (`shield_lock`).
 
-## Secciones del Módulo
+## Lista de Plug-ins y Menús
 
-### 1. Gestión de Personas
-Panel centralizado para administrar la [Base de Datos de Personas](./SGC_Personas.md).
--   **Interfaz:** Tabla maestra con búsqueda avanzada, filtrado por grupo de predicación y estado de servicio.
--   **Ficha de Edición:** Formulario completo para gestionar datos personales, metadatos y comentarios. Los campos sensibles se marcan visualmente con un icono de "candado" indicando que serán cifrados mediante XXTEA.
--   **Acciones en Lote:** Capacidad para mover personas entre grupos de predicación o actualizar etiquetas de servicio masivamente.
+### 1. Plug-in: Gestión de Personas
+Administración del censo maestro de la congregación.
+-   **Personas** (`shield_lock`): Gestión de personas y entidades relacionadas. Incluye herramientas avanzadas de filtrado y exportación.
+-   [Ver Definición Detallada](./SGC_Admin_Personas.md)
 
-### 2. Gestión de Usuarios y Seguridad
-Control de quién accede al sistema y con qué nivel de privilegios.
--   **Listado de Usuarios:** Gestión de editores y administradores.
--   **Configuración de Permisos:** Matriz de acceso por módulo (Reuniones, Predicación, Salón).
--   **Control de Acceso (2FA/TOTP):** 
-    -   Generación de **Claves Maestras (k)** para nuevos editores.
-    -   Gestión de semillas **TOTP** para aplicaciones de autenticación.
-    -   Soporte para reseteo de "Cofres Criptográficos" en caso de pérdida de dispositivo (solo Administrador Principal).
+### 2. Plug-in: Registros
+Gestión de la actividad histórica y mensual de los publicadores.
+-   **Registros de publicador** (`shield_lock`): Gestión de las fichas de registro histórico.
+-   **Informes de predicación** (`shield_lock`): Interfaz para que superintendentes carguen la actividad mensual de sus grupos.
+-   [Ver Definición Detallada](./SGC_Admin_Registros.md)
 
----
+### 3. Plug-in: Usuarios y Seguridad
+Control de acceso y privilegios del sistema.
+-   **Usuarios** (`shield_lock`): Gestión de cuentas, permisos y factores de autenticación (2FA/Passkeys).
+-   [Ver Definición Detallada](./SGC_Admin_Usuarios.md)
 
-## Interfaz de Usuario Sugerida
-
-### Panel de Personas
--   **Vista Principal:** Diseño de tabla responsiva con "Sticky Header".
--   **Modo de Edición:** Diálogo lateral (Drawer) para no perder el contexto de la lista.
--   **Indicadores de Privacidad:** Los campos que requieren la Master Key para ser visualizados aparecen desenfocados o con un placeholder hasta que la llave es cargada en la sesión.
-
-### Panel de Seguridad
--   **Gestor de Tokens:** Generación de enlaces mágicos (`?api=...&k=...`) para enviar a los nuevos colaboradores.
--   **Monitor de Actividad:** (Opcional) Visualización de los últimos accesos exitosos.
-
-## Integración con el Backend
--   Todas las operaciones de este módulo requieren el permiso de `admin` en el `session_token`.
--   Al guardar una persona, el frontend procesa automáticamente los flags `enc_` y los metadatos marcados para cifrado antes de realizar el `saveData` al Google Apps Script.
+### 4. Plug-in: Sistema
+Configuración técnica del marco de trabajo.
+-   **Ajustes** (`shield_lock`): Opciones generales y configuración de plug-ins activos.
+-   [Ver Definición Detallada](./SGC_Admin_Sistema.md)
