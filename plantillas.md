@@ -1,4 +1,4 @@
-# Sistema de Gestión de Congregación (SGC)
+# Congre-Admin
 
 Este sistema modular permite la gestión integral de una congregación, dividiéndose en tres áreas principales que comparten una base de datos común de personas.
 
