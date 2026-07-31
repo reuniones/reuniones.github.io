@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviso de Operación - OBS Studio</title>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 24px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 20px;
+            margin-bottom: 28px;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: #dc2626;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.3px;
+        }
+
+        .rule-card {
+            background-color: #0f172a;
+            border-radius: 8px;
+            padding: 22px;
+            margin-bottom: 22px;
+            border-left: 6px solid #f59e0b;
+        }
+
+        .rule-card.danger {
+            border-left-color: #ef4444;
+        }
+
+        .rule-title {
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .rule-card.warning .rule-title {
+            color: #fbbf24;
+        }
+
+        .rule-card.danger .rule-title {
+            color: #f87171;
+        }
+
+        .rule-main {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 8px;
+            letter-spacing: -0.2px;
+        }
+
+        .rule-desc {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .highlight-accent {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px dashed #334155;
+            color: #38bdf8;
+            font-weight: 700;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <span class="badge">Aviso Importante</span>
+            <h1>INDICACIONES PARA OPERADORES DE OBS</h1>
+        </div>
+
+        <div class="rule-card warning">
+            
+            <div class="rule-main">NO ACTIVAR LA VISTA PREVIA</div>
+            <div class="rule-desc">
+                Es innecesario y consume recursos del sistema. <span class="highlight-accent">Usá la vista de zoom en cambio.</span>
+            </div>
+        </div>
+
+        <div class="rule-card danger">
+            
+            <div class="rule-main">NO MODIFICAR NI AGREGAR ESCENAS</div>
+            <div class="rule-desc">
+                El controlador puede dejar de funcionar y va a afectar a las otras congregaciones.
+            </div>
+        </div>
+
+        <div class="footer">
+            ¡Muchas gracias!
+        </div>
+    </div>
+
+</body>
+</html>
+
